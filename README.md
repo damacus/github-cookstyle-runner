@@ -16,21 +16,21 @@ Github has a rate limiter, do not run this script continously you will get rate 
 
 Below are a list of variables, what they mean and example values
 
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| GITHUB_TOKEN | `String` | Yes | Token to access the github api with, see [Creating a token](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) |
-| GITHUB_API_ROOT | `String` | No | Where the api root is for github, defaults to api.github.com (Useful for enterprise users) |
-| GCR_DESTINATION_REPO_OWNER | `String` | Yes | The owner of the destination repositories you wish to update |
-| GCR_DESTINATION_REPO_TOPICS | `String` | Yes | The topics that the destination repositories are tagged with to search for, Takes a csv, eg: `chef-cookbook,vscode`
-| GCR_BRANCH_NAME | `String` | Yes | The name of the branch to create if changes are required |
-| GCR_PULL_REQUEST_TITLE | `String` | Yes | The title to apply to the Pull Request |
-| GCR_PULL_REQUEST_LABELS | `String` | No | The labels to apply to the Pull Request, Takes a csv, eg: `tech-debt,automated` |
-| GCR_GIT_NAME | `String` | No | The Name to use when creating the git commits |
-| GCR_GIT_EMAIL | `String` | No | The E-mail address to use when creating the git commits |
-| GCR_CHANGELOG_LOCATION | `String` | No | The location of the change log to update relative to the root of the repo |
-| GCR_CHANGELOG_MARKER | `String` | No | The string to use as the update point in the changelog, if not found it will be added before the next subtitle of `##` |
-| GCR_MANAGE_CHANGELOG | `String` | Yes | Should we be managing the changelog, set to `0` for no, `1` for yes |
-| GCR_DEFAULT_GIT_BRANCH | `String` | No | The name of the default branch, if not set this will default to `main` |
+| Name                        | Type     | Required | Description                                                                                                                                                                   |
+|-----------------------------|----------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| GCR_DESTINATION_REPO_OWNER  | `String` | Yes      | The owner of the destination repositories you wish to update                                                                                                                  |
+| GCR_DESTINATION_REPO_TOPICS | `String` | Yes      | The topics that the destination repositories are tagged with to search for, Takes a csv, eg: `chef-cookbook,vscode`                                                           |
+| GCR_GIT_EMAIL               | `String` | Yes      | The E-mail address to use when creating the git commits                                                                                                                       |
+| GCR_GIT_NAME                | `String` | Yes      | The Name to use when creating the git commits                                                                                                                                 |
+| GCR_MANAGE_CHANGELOG        | `String` | Yes      | Should we be managing the changelog, set to `0` for no, `1` for yes                                                                                                           |
+| GITHUB_TOKEN                | `String` | Yes      | Token to access the github api with, see [Creating a token](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) |
+| GCR_BRANCH_NAME             | `String` | No       | The name of the branch to create if changes are required, defaults to `automated/cookstyle`                                                                                   |
+| GCR_CHANGELOG_LOCATION      | `String` | No       | The location of the change log to update relative to the root of the repo, defaults to `CHANGELOG.md`                                                                         |
+| GCR_CHANGELOG_MARKER        | `String` | No       | The string to use as the update point in the changelog, if not found it will be added before the next subtitle of `##`                                                        |
+| GCR_DEFAULT_GIT_BRANCH      | `String` | No       | The name of the default branch, if not set this will default to `main`                                                                                                        |
+| GCR_PULL_REQUEST_LABELS     | `String` | No       | The labels to apply to the Pull Request, Takes a csv, eg: `tech-debt,automated`, defaults to no labels                                                                        |
+| GCR_PULL_REQUEST_TITLE      | `String` | No       | The title to apply to the Pull Request, defaults to `Automated PR: Cookstyle Changes`                                                                                         |
+| GITHUB_API_ROOT             | `String` | No       | Where the api root is for github, defaults to api.github.com (Useful for enterprise users)                                                                                    |
 
 ## Git Authentication
 

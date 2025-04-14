@@ -4,164 +4,98 @@ set -euo pipefail
 # === Configuration ===
 # Ensure required environment variables are set
 : "${GITHUB_TOKEN:?ERROR: GITHUB_TOKEN is required}"
-: "${TARGET_ORG:?ERROR: TARGET_ORG is required}"
-: "${REPO_TOPIC:?ERROR: REPO_TOPIC is required}"
-: "${CACHE_DIR:?ERROR: CACHE_DIR is required}"
+: "${GCR_DESTINATION_REPO_OWNER:?ERROR: GCR_DESTINATION_REPO_OWNER is required}"
+# Only GCR_MANAGE_CHANGELOG and GITHUB_TOKEN are absolutely required
+: "${GCR_MANAGE_CHANGELOG:?ERROR: GCR_MANAGE_CHANGELOG is required (set to 0 or 1)}"
 
 # Set defaults for optional variables
-DEFAULT_BRANCH_NAME="${DEFAULT_BRANCH_NAME:-main}"
+# Using values from NFS example as defaults
+GCR_DESTINATION_REPO_TOPICS="${GCR_DESTINATION_REPO_TOPICS:-chef-cookbook}"
+GCR_BRANCH_NAME="${GCR_BRANCH_NAME:-automated/cookstyle}"
+GCR_PULL_REQUEST_TITLE="${GCR_PULL_REQUEST_TITLE:-Automated PR: Cookstyle Changes}"
+GCR_CHANGELOG_LOCATION="${GCR_CHANGELOG_LOCATION:-CHANGELOG.md}"
+
+# Other optional variables
+GCR_DEFAULT_GIT_BRANCH="${GCR_DEFAULT_GIT_BRANCH:-main}"
 GITHUB_API_ROOT="${GITHUB_API_ROOT:-api.github.com}"
-API_PER_PAGE=100 # Number of results per API page
+GCR_GIT_NAME="${GCR_GIT_NAME:-Cookstyle Bot}"
+GCR_GIT_EMAIL="${GCR_GIT_EMAIL:-cookstyle@example.com}"
+GCR_PULL_REQUEST_LABELS="${GCR_PULL_REQUEST_LABELS:-""}"
+GCR_CHANGELOG_MARKER="${GCR_CHANGELOG_MARKER:-"## Unreleased"}"
+CACHE_DIR="/tmp/cookstyle-runner"
+export API_PER_PAGE=100 # Number of results per API page - exported for github.sh
 
 # === Setup ===
-mkdir -p "$CACHE_DIR"
+mkdir -p "${CACHE_DIR}"
 echo "--- Configuration ---"
-echo "Target Org:   $TARGET_ORG"
-echo "Repo Topic:   $REPO_TOPIC"
-echo "Cache Dir:    $CACHE_DIR"
-echo "Default Branch: $DEFAULT_BRANCH_NAME"
-echo "GitHub API:   $GITHUB_API_ROOT"
+echo "Destination Repo Owner: ${GCR_DESTINATION_REPO_OWNER}"
+echo "Destination Repo Topics: ${GCR_DESTINATION_REPO_TOPICS}"
+echo "Branch Name: ${GCR_BRANCH_NAME}"
+echo "PR Title: ${GCR_PULL_REQUEST_TITLE}"
+echo "PR Labels: ${GCR_PULL_REQUEST_LABELS:-None}"
+echo "Git Author: ${GCR_GIT_NAME} <${GCR_GIT_EMAIL}>"
+echo "Default Branch: ${GCR_DEFAULT_GIT_BRANCH}"
+echo "GitHub API: ${GITHUB_API_ROOT}"
+echo "Cache Dir: ${CACHE_DIR}"
+echo "Manage Changelog: ${GCR_MANAGE_CHANGELOG}"
+echo "Changelog Location: ${GCR_CHANGELOG_LOCATION:-N/A}"
+echo "Changelog Marker: ${GCR_CHANGELOG_MARKER:-N/A}"
 echo "---------------------"
 
-# === Functions ===
-# Function to log messages
-log() {
-	echo "[$(date +'%Y-%m-%dT%H:%M:%SZ')] $1: $2"
-}
+# Configure git for PR creation
+git config --global user.name "${GCR_GIT_NAME}"
+git config --global user.email "${GCR_GIT_EMAIL}"
 
-# Function to fetch repositories from GitHub API, handles pagination
-fetch_repo_urls() {
-	local api_url="https://${GITHUB_API_ROOT}/search/repositories?q=org:${TARGET_ORG}+topic:${REPO_TOPIC}&per_page=${API_PER_PAGE}"
-	local all_urls=()
-
-	log "INFO" "Fetching repositories..."
-
-	while [ -n "${api_url}" ]; do
-		log "DEBUG" "Fetching page: ${api_url}"
-		# Fetch headers and body separately to handle rate limits and errors gracefully
-		local response_headers
-		response_headers=$(mktemp)
-		local response_body
-		response_body=$(mktemp)
-
-		local http_status
-		http_status=$(curl -s -w "%{http_code}" -o "$response_body" \
-			-D "$response_headers" \
-			-H "Authorization: token $GITHUB_TOKEN" \
-			-H "Accept: application/vnd.github.v3+json" \
-			"$api_url")
-
-		if [ "$http_status" -ne 200 ]; then
-			log "ERROR" "GitHub API request failed with status $http_status. URL: $api_url"
-			log "ERROR" "Response body: $(cat "$response_body")"
-			rm -f "$response_headers" "$response_body"
-			return 1
-		fi
-
-		# Extract clone URLs from the current page
-		local page_urls
-		page_urls=$(jq -r '.items[].clone_url' "$response_body")
-		if [ -n "${page_urls}" ]; then
-			while IFS= read -r url; do
-				all_urls+=("$url")
-			done <<< "${page_urls}"
-		fi
-
-		# Get the URL for the next page from the Link header
-		local link_header
-		link_header=$(grep -i '^Link:' "${response_headers}")
-		api_url=$(echo "${link_header}" | sed -n 's/.*<\\([^>]*\\)>; rel="next".*/\\1/p')
-
-		rm -f "${response_headers}" "${response_body}"
-
-		# Optional: Add a small delay to avoid hitting rate limits aggressively
-		# sleep 1
-	done
-
-	# Return urls by printing them space-separated
-	echo "${all_urls[@]}"
-}
+# Source library functions
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=./app/lib/logging.sh
+source "${SCRIPT_DIR}/lib/logging.sh"
+# shellcheck source=./app/lib/github.sh
+source "${SCRIPT_DIR}/lib/github.sh"
+# shellcheck source=./app/lib/git.sh
+source "${SCRIPT_DIR}/lib/git.sh"
+# shellcheck source=./app/lib/cookstyle.sh
+source "${SCRIPT_DIR}/lib/cookstyle.sh"
 
 # === Discover Repos ===
 declare -a REPO_URLS
 # Call function and read space-separated URLs into the array
-read -r -a REPO_URLS <<< "$(fetch_repo_urls)"
-
-if [[ $? -ne 0 ]]; then
-	log "ERROR" "Failed to fetch repository list. Exiting."
-	exit 1
+if ! repo_urls=$(fetch_repo_urls); then
+    log "ERROR" "Failed to fetch repository list. Exiting."
+    exit 1
 fi
+read -r -a REPO_URLS <<< "${repo_urls}"
 
 log "INFO" "Found ${#REPO_URLS[@]} repositories."
 if [[ ${#REPO_URLS[@]} -eq 0 ]]; then
-	log "WARN" "No repositories found matching the criteria. Exiting."
-	exit 0
+    log "WARN" "No repositories found matching the criteria. Exiting."
+    exit 0
 fi
-
 
 # === Process Repos ===
 lint_failed_count=0
 processed_count=0
 total_repos=${#REPO_URLS[@]}
 
+# Process each repository
 for repo_url in "${REPO_URLS[@]}"; do
-	((processed_count++))
-	repo_name=$(basename "$repo_url" .git)
-	repo_dir="$CACHE_DIR/$repo_name"
-	log "INFO" "[$processed_count/$total_repos] Processing: ${repo_name}"
-
-	# --- Cache Handling ---
-	if [[ -d "${repo_dir}/.git" ]]; then
-		log "INFO" "Updating existing clone: ${repo_dir}"
-		cd "${repo_dir}" || { log "ERROR" "Cannot cd into ${repo_dir}"; ((lint_failed_count++)); continue; }
-		# Use || true to prevent script exit if git commands fail initially
-		if (git fetch origin "$DEFAULT_BRANCH_NAME" --quiet && git reset --hard "origin/$DEFAULT_BRANCH_NAME" --quiet); then
-			log "DEBUG" "Update successful for ${repo_name}."
-		else
-			log "WARN" "Failed to update ${repo_name} cleanly. Attempting full re-clone."
-			cd "$CACHE_DIR" || exit 1 # Exit if we can't cd back
-			rm -rf "$repo_dir"
-			if git clone --depth 1 --branch "$DEFAULT_BRANCH_NAME" "$repo_url" "$repo_dir" --quiet; then
-				log "INFO" "Re-clone successful for ${repo_name}."
-			else
-				log "ERROR" "Failed to re-clone ${repo_name}. Skipping."
-				((lint_failed_count++)) # Consider clone failure a lint failure
-				continue
-			fi
-		fi
-		cd "$CACHE_DIR" || exit 1 # Go back to cache dir base
-	else
-		log "INFO" "Cloning ${repo_name} into ${repo_dir}"
-		if git clone --depth 1 --branch "$DEFAULT_BRANCH_NAME" "$repo_url" "$repo_dir" --quiet; then
-			log "DEBUG" "Clone successful for ${repo_name}."
-		else
-			log "ERROR" "Failed to clone ${repo_name}. Skipping."
-			((lint_failed_count++)) # Consider clone failure a lint failure
-			continue
-		fi
-	fi
-
-	# --- Linting ---
-	log "INFO" "Running cookstyle on ${repo_name}..."
-	# Run cookstyle, capture stdout and stderr, check exit code
-	if output=$(cookstyle "${repo_dir}" 2>&1); then
-		log "INFO" "OK: ${repo_name} passed cookstyle checks."
-	else
-		log "ERROR" "FAIL: ${repo_name} has cookstyle issues:"
-		# Indent cookstyle output for clarity
-		echo "$output" | sed 's/^/  /' # Output indented errors
-		((lint_failed_count++))
-	fi
-	echo # Add a blank line for readability between repos
+    ((processed_count++))
+    
+    # Call the process_repository function from cookstyle.sh
+    if ! process_repository "${repo_url}" "${processed_count}" "${total_repos}"; then
+        ((lint_failed_count++))
+    fi
 done
 
 # === Report ===
 log "INFO" "--- Summary ---"
-log "INFO" "Processed $processed_count repositories."
-if [[ "$lint_failed_count" -gt 0 ]]; then
-	log "ERROR" "Linting finished with $lint_failed_count failure(s)."
-	exit 1
+log "INFO" "Processed ${processed_count} repositories."
+log "INFO" "Found issues in ${lint_failed_count} repositories."
+
+if [[ ${lint_failed_count} -gt 0 ]]; then
+    log "WARN" "${lint_failed_count} repositories had cookstyle issues."
+    exit 1
 else
-	log "INFO" "All processed repositories passed cookstyle checks."
-	exit 0
+    log "INFO" "All repositories passed cookstyle checks!"
+    exit 0
 fi

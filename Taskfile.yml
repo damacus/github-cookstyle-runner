@@ -10,4 +10,4 @@ tasks:
     desc: Run ShellSpec tests inside the Docker container
     deps: [build]
     cmds:
-      - docker run --rm -v "$(pwd):/usr/src/app" -w /usr/src/app cookstyle-runner-test bash -c "shellspec test/spec"
+      - docker run --rm -v "$(pwd):/usr/src/app" -w /usr/src/app cookstyle-runner-test bash -c "./test/run_tests.sh test/spec"
