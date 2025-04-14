@@ -156,7 +156,7 @@ tasks:
 
         # Clean up
         rm "$TEMP_ENV"
-        echo "Test complete. Check GitHub for any created PRs."
+        echo "Test complete"
 
   run-specific:
     desc: Run the cookstyle runner on specific repositories

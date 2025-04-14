@@ -27,7 +27,16 @@ class GitHubPRManager
   def initialize(config, logger)
     @config = config
     @logger = logger
-    @github_client = nil
+    @github_token = ENV['GITHUB_TOKEN']
+    
+    # Initialize GitHub client with token
+    @github_client = Octokit::Client.new(
+      access_token: @github_token,
+      auto_paginate: true
+    )
+    
+    # Configure Octokit to use the right API version
+    @github_client.api_endpoint = 'https://api.github.com'
   end
 
   # Create a pull request for cookstyle fixes
@@ -35,14 +44,14 @@ class GitHubPRManager
   # @param repo_dir [String] Repository directory
   # @param cookstyle_output [String] Output from cookstyle run
   # @param manual_fix [Boolean] Whether this is a PR for manual fixes (no changes committed)
-  # @return [Boolean] True if PR was created successfully
+  # @return [Array<Boolean, Hash>] Array containing [success_boolean, pr_details_hash]
   def create_pull_request(repo_name, repo_dir, cookstyle_output, manual_fix = false)
     # Ensure we're in the repository directory
     Dir.chdir(repo_dir) do
       # For regular PRs, check if there are changes to commit
       unless manual_fix || changes_to_commit?
         logger.info("No changes to commit for #{repo_name}")
-        return false
+        return [false, nil]
       end
 
       # Create a new branch for the fixes
@@ -59,7 +68,7 @@ class GitHubPRManager
         # Commit and push changes
         unless commit_and_push_changes(repo_name)
           logger.error("Failed to commit and push changes for #{repo_name}")
-          return false
+          return [false, nil]
         end
       end
 
@@ -68,16 +77,21 @@ class GitHubPRManager
       pr = create_github_pr(repo_name, cookstyle_output, pr_title, manual_fix)
       if pr
         logger.info("Successfully created PR ##{pr.number} for #{repo_name}: #{pr.html_url}")
-        return true
+        # Return success boolean and PR details hash
+        return [true, {
+          number: pr.number,
+          html_url: pr.html_url,
+          title: pr_title
+        }]
       else
         logger.error("Failed to create PR for #{repo_name}")
-        return false
+        return [false, nil]
       end
     end
   rescue StandardError => e
     logger.error("Error creating pull request for #{repo_name}: #{e.message}")
     logger.debug(e.backtrace.join("\n"))
-    false
+    [false, nil]
   end
 
   private
@@ -89,38 +103,79 @@ class GitHubPRManager
     status.success? && !stdout.strip.empty?
   end
 
-  # Create a new branch for cookstyle fixes
+  # Create a new branch for cookstyle fixes using GitHub API
   # @param repo_name [String] Repository name
   # @return [Boolean] True if branch was created successfully
   def create_branch(repo_name)
     branch_name = config[:branch_name]
     default_branch = config[:default_branch]
+    repo_full_name = "#{config[:owner]}/#{repo_name}"
     
-    # Fetch latest changes
-    system('git fetch origin')
-    
-    # Check if branch already exists
-    if branch_exists?(branch_name)
-      logger.info("Branch #{branch_name} already exists for #{repo_name}, checking out")
+    begin
+      # Get the SHA of the default branch
+      default_branch_ref = github_client.ref(repo_full_name, "heads/#{default_branch}")
+      default_branch_sha = default_branch_ref.object.sha
+      
+      # Check if branch exists
+      begin
+        github_client.ref(repo_full_name, "heads/#{branch_name}")
+        logger.info("Branch #{branch_name} already exists for #{repo_name}, updating")
+        # Update the branch to point to the same commit as default_branch
+        github_client.update_ref(
+          repo_full_name,
+          "heads/#{branch_name}",
+          default_branch_sha,
+          true # Force update
+        )
+      rescue Octokit::NotFound
+        # Branch doesn't exist, create it
+        logger.info("Creating branch #{branch_name} for #{repo_name}")
+        github_client.create_ref(
+          repo_full_name,
+          "heads/#{branch_name}",
+          default_branch_sha
+        )
+      end
+      
+      # Still need to checkout locally for file operations
+      system('git fetch origin')
       system("git checkout #{branch_name}")
-      system("git reset --hard origin/#{default_branch}")
-    else
-      logger.info("Creating branch #{branch_name} for #{repo_name}")
-      system("git checkout -b #{branch_name} origin/#{default_branch}")
+      system("git reset --hard origin/#{branch_name}")
+      
+      # Configure git user
+      system("git config user.name \"#{config[:git_name]}\"")
+      system("git config user.email \"#{config[:git_email]}\"")
+      
+      true
+    rescue => e
+      logger.error("Error creating branch for #{repo_name}: #{e.message}")
+      false
     end
-    
-    # Configure git user
-    system("git config user.name \"#{config[:git_name]}\"")
-    system("git config user.email \"#{config[:git_email]}\"")
-    
-    $?.success?
   end
 
-  # Check if a branch exists
+  # Check if a branch exists using GitHub API
+  # @param repo_name [String] Repository name
   # @param branch_name [String] Branch name
   # @return [Boolean] True if branch exists
-  def branch_exists?(branch_name)
-    system("git branch --list #{branch_name} | grep -q #{branch_name}")
+  def branch_exists?(repo_name, branch_name)
+    begin
+      github_client.ref("#{config[:owner]}/#{repo_name}", "heads/#{branch_name}")
+      true
+    rescue Octokit::NotFound
+      false
+    end
+  end
+  
+  # Find an existing PR for the branch
+  # @param repo_name [String] Repository name
+  # @return [Sawyer::Resource, nil] Pull request object or nil if not found
+  def find_existing_pr(repo_name)
+    repo_full_name = "#{config[:owner]}/#{repo_name}"
+    prs = github_client.pull_requests(repo_full_name, state: 'open')
+    prs.find { |pr| pr.head.ref == config[:branch_name] }
+  rescue StandardError => e
+    logger.error("Error finding existing PR for #{repo_name}: #{e.message}")
+    nil
   end
 
   # Update the changelog with cookstyle fixes
@@ -160,7 +215,10 @@ class GitHubPRManager
     commit_message = "#{config[:pr_title]}\n\nSigned-off-by: #{config[:git_name]} <#{config[:git_email]}>"
     system("git commit -m \"#{commit_message}\"")
 
-    # Push to remote
+    # Push to remote using token authentication
+    # Use the token in the URL to avoid authentication prompts
+    repo_url = "https://#{@github_token}@github.com/#{config[:owner]}/#{repo_name}.git"
+    system("git remote set-url origin #{repo_url}")
     system("git push -u origin #{config[:branch_name]} -f")
 
     $?.success?
@@ -179,7 +237,10 @@ class GitHubPRManager
     commit_message = "Manual cookstyle fixes required\n\nThis is an empty commit to create a PR for manual cookstyle fixes.\n\nSigned-off-by: #{config[:git_name]} <#{config[:git_email]}>"
     system("git commit --allow-empty -m \"#{commit_message}\"")
     
-    # Push to remote
+    # Push to remote using token authentication
+    # Use the token in the URL to avoid authentication prompts
+    repo_url = "https://#{@github_token}@github.com/#{config[:owner]}/#{repo_name}.git"
+    system("git remote set-url origin #{repo_url}")
     system("git push -u origin #{config[:branch_name]} -f")
     
     $?.success?
@@ -196,44 +257,79 @@ class GitHubPRManager
   # @return [Sawyer::Resource, nil] PR object or nil if failed
   def create_github_pr(repo_name, cookstyle_output, pr_title = nil, manual_fix = false)
     repo_full_name = "#{config[:owner]}/#{repo_name}"
-    logger.info("Creating pull request for #{repo_full_name}")
-
+    
     # Format PR body with cookstyle output
     pr_body = manual_fix ? format_manual_fix_pr_body(cookstyle_output) : format_pr_body(cookstyle_output)
 
     # Use provided title or default
     title = pr_title || config[:pr_title]
-
-    # Create the pull request
-    pr = github_client.create_pull_request(
-      repo_full_name,
-      config[:default_branch],
-      config[:branch_name],
-      title,
-      pr_body
-    )
-
-    # Add labels if specified
-    if config[:pr_labels]&.any?
-      github_client.add_labels_to_an_issue(
+    
+    # Check if PR already exists using our dedicated method
+    existing_pr = find_existing_pr(repo_name)
+    
+    if existing_pr
+      logger.info("Pull request already exists for #{repo_full_name}, updating PR ##{existing_pr.number}")
+      
+      # Update the existing PR with new content
+      pr = github_client.update_pull_request(
         repo_full_name,
-        pr.number,
-        config[:pr_labels]
+        existing_pr.number,
+        title: title,
+        body: pr_body
       )
-      logger.info("Added labels #{config[:pr_labels].join(', ')} to PR ##{pr.number}")
+      
+      # Add labels if specified and not already present
+      if config[:pr_labels]&.any?
+        existing_labels = github_client.labels_for_issue(repo_full_name, existing_pr.number).map(&:name)
+        missing_labels = config[:pr_labels] - existing_labels
+        
+        if missing_labels.any?
+          github_client.add_labels_to_an_issue(
+            repo_full_name,
+            existing_pr.number,
+            missing_labels
+          )
+          logger.info("Added labels #{missing_labels.join(', ')} to PR ##{existing_pr.number}")
+        end
+      end
+      
+      pr
+    else
+      logger.info("Creating new pull request for #{repo_full_name}")
+      
+      # Create a new pull request
+      pr = github_client.create_pull_request(
+        repo_full_name,
+        config[:default_branch],
+        config[:branch_name],
+        title,
+        pr_body
+      )
+      
+      # Add labels if specified
+      if config[:pr_labels]&.any?
+        github_client.add_labels_to_an_issue(
+          repo_full_name,
+          pr.number,
+          config[:pr_labels]
+        )
+        logger.info("Added labels #{config[:pr_labels].join(', ')} to PR ##{pr.number}")
+      end
+      
+      pr
     end
-
-    pr
   rescue Octokit::UnprocessableEntity => e
     if e.message.include?('A pull request already exists')
-      logger.info("Pull request already exists for #{repo_full_name}")
-      # Find the existing PR
+      logger.info("Pull request creation failed but one might exist, trying to find it")
+      # Fallback to find the existing PR if our find_existing_pr method failed
       prs = github_client.pull_requests(repo_full_name, head: "#{config[:owner]}:#{config[:branch_name]}")
-      prs.first if prs.any?
-    else
-      logger.error("Error creating pull request for #{repo_full_name}: #{e.message}")
-      nil
+      if prs.any?
+        logger.info("Found existing PR ##{prs.first.number} for #{repo_name}")
+        return prs.first
+      end
     end
+    logger.error("Error creating pull request for #{repo_full_name}: #{e.message}")
+    nil
   rescue StandardError => e
     logger.error("Error creating pull request for #{repo_full_name}: #{e.message}")
     nil
@@ -294,10 +390,9 @@ class GitHubPRManager
 
   # Get or create GitHub client
   # @return [Octokit::Client] GitHub client
+  # Accessor for the GitHub client
+  # @return [Octokit::Client] GitHub client
   def github_client
-    @github_client ||= Octokit::Client.new(
-      access_token: ENV['GITHUB_TOKEN'],
-      auto_paginate: true
-    )
+    @github_client
   end
 end
