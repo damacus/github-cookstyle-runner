@@ -24,8 +24,7 @@
 # Library functions for cookstyle operations - will only be sourced, not run standalone
 
 # Source logging
-# shellcheck source=./app/lib/logging.sh
-source "$(dirname "$0")/logging.sh"
+source "/app/lib/logging.sh"
 
 # Run cookstyle check on a repository
 run_cookstyle_check() {

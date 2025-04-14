@@ -46,16 +46,10 @@ echo "---------------------"
 git config --global user.name "${GCR_GIT_NAME}"
 git config --global user.email "${GCR_GIT_EMAIL}"
 
-# Source library functions
-SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
-# shellcheck source=./app/lib/logging.sh
-source "${SCRIPT_DIR}/lib/logging.sh"
-# shellcheck source=./app/lib/github.sh
-source "${SCRIPT_DIR}/lib/github.sh"
-# shellcheck source=./app/lib/git.sh
-source "${SCRIPT_DIR}/lib/git.sh"
-# shellcheck source=./app/lib/cookstyle.sh
-source "${SCRIPT_DIR}/lib/cookstyle.sh"
+source "/app/lib/cookstyle.sh"
+source "/app/lib/git.sh"
+source "/app/lib/github.sh"
+source "/app/lib/logging.sh"
 
 # === Discover Repos ===
 declare -a REPO_URLS
@@ -80,7 +74,7 @@ total_repos=${#REPO_URLS[@]}
 # Process each repository
 for repo_url in "${REPO_URLS[@]}"; do
     ((processed_count++))
-    
+
     # Call the process_repository function from cookstyle.sh
     if ! process_repository "${repo_url}" "${processed_count}" "${total_repos}"; then
         ((lint_failed_count++))

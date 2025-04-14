@@ -1,7 +1,7 @@
 version: '3'
 
 tasks:
-  build:
+  build-test:
     desc: Build the test Docker image
     cmds:
       - docker build -t cookstyle-runner-test -f Dockerfile.test .
@@ -11,3 +11,14 @@ tasks:
     deps: [build]
     cmds:
       - docker run --rm -v "$(pwd):/usr/src/app" -w /usr/src/app cookstyle-runner-test bash -c "./test/run_tests.sh test/spec"
+
+  build:
+    desc: Build the Docker image
+    cmds:
+      - docker build -t cookstyle-runner:local .
+
+  integration-test:
+    desc: Run integration tests
+    deps: [build]
+    cmds:
+      - docker run --rm -v "$(pwd):/usr/src/app" -w /usr/src/app --env-file .env cookstyle-runner:local bash -c "./test/run_tests.sh test/integration"

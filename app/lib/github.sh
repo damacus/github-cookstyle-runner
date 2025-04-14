@@ -29,7 +29,7 @@
 
 # Source logging
 # shellcheck source=./app/lib/logging.sh
-source "$(dirname "$0")/logging.sh"
+source "/app/lib/logging.sh"
 
 # Function to fetch repositories from GitHub API, handles pagination
 fetch_repo_urls() {

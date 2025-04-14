@@ -24,22 +24,21 @@
 # Library functions for Git operations - will only be sourced, not run standalone
 
 # Source logging
-# shellcheck source=./app/lib/logging.sh
-source "$(dirname "$0")/logging.sh"
+source "/app/lib/logging.sh"
 
 # Clone or update a git repository
 clone_or_update_repo() {
     local repo_url="$1"
     local repo_name="$2"
     local repo_dir="$3"
-    
+
     # Check if repo already exists locally
     if [[ -d "${repo_dir}/.git" ]]; then
         log "INFO" "Updating existing clone: ${repo_dir}"
         cd "${repo_dir}" || return 1
-        
+
         # Use || true to prevent script exit if git commands fail initially
-        if (git fetch origin "${GCR_DEFAULT_GIT_BRANCH}" --quiet && 
+        if (git fetch origin "${GCR_DEFAULT_GIT_BRANCH}" --quiet &&
             git reset --hard "origin/${GCR_DEFAULT_GIT_BRANCH}" --quiet); then
             log "DEBUG" "Update successful for ${repo_name}."
             return 0
@@ -70,13 +69,13 @@ clone_or_update_repo() {
 # Create a branch for cookstyle changes
 create_cookstyle_branch() {
     local branch_name="$1"
-    
+
     # Check if the branch already exists, delete it if it does
     if git rev-parse --verify "${branch_name}" &>/dev/null; then
         log "INFO" "Branch ${branch_name} exists, deleting"
         git branch -D "${branch_name}"
     fi
-    
+
     # Create new branch
     git checkout -b "${branch_name}"
     return $?
@@ -86,14 +85,14 @@ create_cookstyle_branch() {
 update_changelog() {
     local changelog_location="$1"
     local changelog_marker="$2"
-    
+
     log "INFO" "Updating changelog at ${changelog_location}"
-    
+
     # Separate command execution from variable assignment to avoid masking return values
     local current_date
     current_date=$(date +"%Y-%m-%d")
     local changelog_entry="\n* Cookstyle auto-correction applied (${current_date})\n"
-    
+
     # Check if the marker exists in the changelog
     if grep -q "${changelog_marker}" "${changelog_location}"; then
         # Insert after the marker
@@ -104,7 +103,7 @@ update_changelog() {
         sed -i "/## /i${changelog_entry}" "${changelog_location}"
         log "DEBUG" "Inserted entry before next level 2 heading"
     fi
-    
+
     return $?
 }
 
@@ -112,12 +111,12 @@ update_changelog() {
 commit_and_push_changes() {
     local branch_name="$1"
     local commit_message="$2"
-    
+
     # Commit changes
     git add -A
     git commit -m "${commit_message}"
     log "INFO" "Changes committed to branch ${branch_name}"
-    
+
     # Push to GitHub
     if git push -u origin "${branch_name}" -f; then
         log "INFO" "Branch pushed to GitHub"
