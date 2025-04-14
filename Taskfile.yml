@@ -1,0 +1,13 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the test Docker image
+    cmds:
+      - docker build -t cookstyle-runner-test -f Dockerfile.test .
+
+  test:
+    desc: Run ShellSpec tests inside the Docker container
+    deps: [build]
+    cmds:
+      - docker run --rm -v "$(pwd):/usr/src/app" -w /usr/src/app cookstyle-runner-test bash -c "shellspec test/spec"

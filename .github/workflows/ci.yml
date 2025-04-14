@@ -4,64 +4,50 @@ name: ci
 on:
   pull_request:
   push:
-    branches:
-      - master
-      - main
+    branches: [main]
 
 jobs:
   yamllint:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Run yaml Lint
         uses: actionshub/yamllint@main
 
-  mdl:
+  markdownlint:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
-      - name: Run Markdown Lint
-        uses: actionshub/markdownlint@main
+        uses: actions/checkout@v4
+      - name: Run Markdown Lint (markdownlint-cli2)
+        uses: DavidAnson/markdownlint-cli2-action@v14
+        with:
+          globs: '**/*.md'
 
-  psscriptanalyzer:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
-      - name: Install PSScriptAnalyzer
-        shell: pwsh
-        run: Install-Module PSScriptAnalyzer -force
-      - name: Run PS Script Analyzer
-        shell: pwsh
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and test
         run: |
-         Import-Module PSScriptAnalyzer
-         Invoke-ScriptAnalyzer . -Recurse -ExcludeRule 'PSUseShouldProcessForStateChangingFunctions'
+          docker build -t cookstyle-runner-test -f Dockerfile.test .
+          docker run --rm cookstyle-runner-test bash -c "shellspec test/spec"
 
-  pester:
+  publish_beta:
+    needs: [yamllint, markdownlint, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
-      - name: Install Pester
-        shell: pwsh
-        run: Install-Module Pester -force
-      - name: Run PS Pester
-        shell: pwsh
-        run: |
-         Import-Module Pester
-         Invoke-Pester
-
-  publishtoregistry:
-    needs: [pester, psscriptanalyzer, mdl, yamllint]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Publish to Registry
+        uses: actions/checkout@v4
+      - name: Publish to Registry (beta)
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
-          name: xorima/github-cookstyle-runner
+          name: damacus/github-cookstyle-runner
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: "dev"
+          tags: "beta"
