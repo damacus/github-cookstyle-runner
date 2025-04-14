@@ -14,7 +14,7 @@ require 'fileutils'
 require 'time'
 
 class CacheManager
-  attr_reader :cache_dir, :cache_file, :cache_data, :logger
+  attr_reader :cache_dir, :cache_file, :cache_data, :logger, :stats
 
   # Initialize the cache manager
   # @param cache_dir [String] Directory to store cache files
@@ -26,6 +26,15 @@ class CacheManager
     
     # Create cache directory if it doesn't exist
     FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
+    
+    # Initialize statistics
+    @stats = {
+      hits: 0,
+      misses: 0,
+      updates: 0,
+      time_saved: 0,  # in seconds
+      start_time: Time.now.utc
+    }
     
     # Load or initialize cache
     load_cache
@@ -67,8 +76,9 @@ class CacheManager
   # @param repo_name [String] Repository name
   # @param current_sha [String] Current commit SHA
   # @param max_age [Integer] Maximum age of cache in seconds (default: 7 days)
+  # @param avg_processing_time [Float] Average time to process a repository (for stats)
   # @return [Boolean] True if the repository is cached and up-to-date
-  def up_to_date?(repo_name, current_sha, max_age = 7 * 24 * 60 * 60)
+  def up_to_date?(repo_name, current_sha, max_age = 7 * 24 * 60 * 60, avg_processing_time = 5.0)
     return false unless @cache_data['repositories'][repo_name]
     
     repo_cache = @cache_data['repositories'][repo_name]
@@ -80,7 +90,10 @@ class CacheManager
     last_check_time = Time.parse(repo_cache['last_check_time'])
     return false if Time.now.utc - last_check_time > max_age
     
-    # Repository is up-to-date
+    # Repository is up-to-date - update stats
+    @stats[:hits] += 1
+    @stats[:time_saved] += avg_processing_time
+    
     logger.debug("Repository #{repo_name} is up-to-date in cache (SHA: #{current_sha})")
     true
   end
@@ -98,13 +111,20 @@ class CacheManager
   # @param commit_sha [String] Current commit SHA
   # @param had_issues [Boolean] Whether the repository had Cookstyle issues
   # @param result [String] Result message
-  def update(repo_name, commit_sha, had_issues, result)
+  # @param processing_time [Float] Time taken to process the repository (in seconds)
+  def update(repo_name, commit_sha, had_issues, result, processing_time = nil)
     @cache_data['repositories'][repo_name] = {
       'last_commit_sha' => commit_sha,
       'last_check_time' => Time.now.utc.iso8601,
       'had_issues' => had_issues,
-      'last_result' => result
+      'last_result' => result,
+      'processing_time' => processing_time
     }
+    
+    # Update stats
+    @stats[:updates] += 1
+    @stats[:misses] += 1
+    
     save_cache
   end
 
@@ -135,11 +155,36 @@ class CacheManager
 
   # Get cache statistics
   # @return [Hash] Cache statistics
-  def stats
+  def cache_stats
     {
       'total_repositories' => @cache_data['repositories'].size,
       'repositories_with_issues' => @cache_data['repositories'].count { |_, v| v['had_issues'] },
       'last_updated' => @cache_data['last_updated']
     }
+  end
+  
+  # Get runtime statistics
+  # @return [Hash] Runtime statistics
+  def runtime_stats
+    total_requests = @stats[:hits] + @stats[:misses]
+    hit_rate = total_requests > 0 ? (@stats[:hits].to_f / total_requests * 100).round(2) : 0
+    
+    {
+      'cache_hits' => @stats[:hits],
+      'cache_misses' => @stats[:misses],
+      'cache_updates' => @stats[:updates],
+      'cache_hit_rate' => hit_rate,
+      'estimated_time_saved' => @stats[:time_saved].round(2),
+      'runtime' => (Time.now.utc - @stats[:start_time]).round(2)
+    }
+  end
+  
+  # Get average processing time from cache
+  # @return [Float] Average processing time in seconds
+  def average_processing_time
+    times = @cache_data['repositories'].values.map { |v| v['processing_time'] }.compact
+    return 5.0 if times.empty? # Default if no data
+    
+    times.sum / times.size
   end
 end

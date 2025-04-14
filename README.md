@@ -1,6 +1,6 @@
 # Github-cookstyle-runner
 
-This application is designed to run cookstyle against repositories found by a topic in a github org and issue pull requests with the changes
+This application is designed to run cookstyle against repositories found by a topic in a GitHub organization and issue pull requests with the changes. It features multi-threading, intelligent caching, and comprehensive error handling.
 
 ## User Permissions
 
@@ -15,6 +15,8 @@ Github has a rate limiter, do not run this script continously you will get rate 
 ## Configuration
 
 Below are a list of variables, what they mean and example values
+
+### Core Configuration
 
 | Name                        | Type     | Required | Description                                                                                                                                                                   |
 |-----------------------------|----------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -31,6 +33,37 @@ Below are a list of variables, what they mean and example values
 | GCR_PULL_REQUEST_LABELS     | `String` | No       | The labels to apply to the Pull Request, Takes a csv, eg: `tech-debt,automated`, defaults to no labels                                                                        |
 | GCR_PULL_REQUEST_TITLE      | `String` | No       | The title to apply to the Pull Request, defaults to `Automated PR: Cookstyle Changes`                                                                                         |
 | GITHUB_API_ROOT             | `String` | No       | Where the api root is for github, defaults to api.github.com (Useful for enterprise users)                                                                                    |
+
+### Caching Configuration
+
+| Name                    | Type      | Required | Description                                                                                                      |
+|-------------------------|-----------|----------|------------------------------------------------------------------------------------------------------------------|
+| GCR_USE_CACHE           | `Boolean` | No       | Enable/disable caching system (default: enabled, set to `0` to disable)                                          |
+| GCR_CACHE_MAX_AGE       | `Integer` | No       | Maximum age of cache entries in days before they're considered stale (default: 7)                                |
+| GCR_FORCE_REFRESH       | `Boolean` | No       | Force refresh of all repositories regardless of cache status (default: disabled, set to `1` to enable)           |
+| GCR_FORCE_REFRESH_REPOS | `String`  | No       | Comma-separated list of specific repositories to force refresh regardless of cache status                        |
+
+### Repository Filtering
+
+| Name              | Type     | Required | Description                                                                                                      |
+|-------------------|----------|----------|------------------------------------------------------------------------------------------------------------------|
+| GCR_FILTER_REPOS  | `String` | No       | Comma-separated list of specific repositories to process (will only process these repos)                         |
+| GCR_INCLUDE_REPOS | `String` | No       | Comma-separated list of repositories to include in processing (in addition to any found via topic search)         |
+| GCR_EXCLUDE_REPOS | `String` | No       | Comma-separated list of repositories to exclude from processing                                                  |
+
+### Performance Configuration
+
+| Name              | Type      | Required | Description                                                                                                      |
+|-------------------|-----------|----------|------------------------------------------------------------------------------------------------------------------|
+| GCR_THREAD_COUNT  | `Integer` | No       | Number of threads to use for parallel processing (default: number of CPU cores)                                  |
+| GCR_RETRY_COUNT   | `Integer` | No       | Number of retry attempts for repository processing before giving up (default: 3)                                 |
+| GCR_DEBUG_MODE    | `Boolean` | No       | Enable verbose debug logging (default: disabled, set to `1` to enable)                                           |
+
+### Pull Request Configuration
+
+| Name                     | Type      | Required | Description                                                                                                      |
+|--------------------------|-----------|----------|------------------------------------------------------------------------------------------------------------------|
+| GCR_CREATE_MANUAL_FIX_PRS | `Boolean` | No       | Create PRs for issues that require manual fixes (default: disabled, set to `1` to enable)                         |
 
 ## Git Authentication
 
@@ -51,3 +84,88 @@ While all updates should result in a release this is not always the case, someti
 ## Cookstyle version
 
 Cookstyle will be baked into the image, it is baked into the image as part of chef workstation, the chef workstation version will be the latest version available at runtime.
+
+## Features
+
+### Intelligent Caching
+
+The application implements a robust caching system that tracks:
+
+- Repository state via commit SHAs
+- Time-based cache expiration (configurable)
+- Detailed result caching
+- Performance statistics
+
+This significantly improves performance for repeated runs by only processing repositories that have changed since the last run.
+
+### Multi-threaded Processing
+
+Repositories are processed in parallel using a configurable thread pool, dramatically improving performance for large repository sets.
+
+### Advanced Repository Filtering
+
+The application supports flexible repository filtering options:
+
+- Process only specific repositories
+- Include additional repositories outside of topic search
+- Exclude specific repositories from processing
+
+### Comprehensive Error Handling
+
+- Automatic retry mechanism for transient failures
+- Process-level isolation to prevent cross-repository conflicts
+- Detailed logging for troubleshooting
+
+### Pull Request Management
+
+- Automatic branch creation and management
+- Detailed PR descriptions with cookstyle output
+- Changelog updates with configurable markers
+- Label support
+- Support for manual fix PRs with detailed instructions
+
+## Usage Examples
+
+### Basic Usage
+
+```bash
+docker run --rm \
+  -e GCR_DESTINATION_REPO_OWNER="your-org" \
+  -e GCR_DESTINATION_REPO_TOPICS="chef-cookbook" \
+  -e GCR_GIT_EMAIL="bot@example.com" \
+  -e GCR_GIT_NAME="Cookstyle Bot" \
+  -e GCR_MANAGE_CHANGELOG=1 \
+  -e GITHUB_TOKEN="your-github-token" \
+  -v /tmp/cookstyle-runner:/tmp/cookstyle-runner \
+  cookstyle-runner:latest
+```
+
+### Process Specific Repositories
+
+```bash
+docker run --rm \
+  -e GCR_DESTINATION_REPO_OWNER="your-org" \
+  -e GCR_DESTINATION_REPO_TOPICS="chef-cookbook" \
+  -e GCR_GIT_EMAIL="bot@example.com" \
+  -e GCR_GIT_NAME="Cookstyle Bot" \
+  -e GCR_MANAGE_CHANGELOG=1 \
+  -e GITHUB_TOKEN="your-github-token" \
+  -e GCR_FILTER_REPOS="repo1,repo2,repo3" \
+  -v /tmp/cookstyle-runner:/tmp/cookstyle-runner \
+  cookstyle-runner:latest
+```
+
+### Force Refresh All Repositories
+
+```bash
+docker run --rm \
+  -e GCR_DESTINATION_REPO_OWNER="your-org" \
+  -e GCR_DESTINATION_REPO_TOPICS="chef-cookbook" \
+  -e GCR_GIT_EMAIL="bot@example.com" \
+  -e GCR_GIT_NAME="Cookstyle Bot" \
+  -e GCR_MANAGE_CHANGELOG=1 \
+  -e GITHUB_TOKEN="your-github-token" \
+  -e GCR_FORCE_REFRESH=1 \
+  -v /tmp/cookstyle-runner:/tmp/cookstyle-runner \
+  cookstyle-runner:latest
+```
