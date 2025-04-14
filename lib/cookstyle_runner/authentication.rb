@@ -7,22 +7,39 @@ require 'octokit'
 module CookstyleRunner
   # Helper module for GitHub App authentication
   module Authentication
-    # Centralized Octokit client provider for all GitHub API operations.
-    # Uses GITHUB_TOKEN if present, otherwise falls back to App authentication.
-    # Usage:
-    #   client = CookstyleRunner::Authentication.client
-    #
-    # This ensures all API calls use a consistent, secure authentication flow.
+    # Returns a memoized Octokit client (PAT or App auth)
+    # Use this for all GitHub API calls
+    # @return [Octokit::Client] Octokit client instance
     def self.client
-      github_token = ENV['GITHUB_TOKEN']
-      if github_token && !github_token.empty?
-        client = Octokit::Client.new(
-          access_token: github_token,
-          auto_paginate: true
-        )
-        client.api_endpoint = 'https://api.github.com'
-        return client
-      end
+      @client ||= use_pat? ? build_pat_client : build_app_client
+    end
+
+    # Determine if a Personal Access Token should be used
+    # @return [Boolean] True if PAT should be used
+    def self.use_pat?
+      ENV['GITHUB_TOKEN'] && !ENV['GITHUB_TOKEN'].empty?
+    end
+
+    # Returns the API endpoint to use for GitHub API calls
+    # @return [String] API endpoint URL
+    def self.api_endpoint
+      ENV['GITHUB_API_ENDPOINT'] || 'https://api.github.com'
+    end
+
+    # Build an Octokit client using a Personal Access Token
+    # @return [Octokit::Client] Octokit client instance
+    def self.build_pat_client
+      client = Octokit::Client.new(
+        access_token: ENV['GITHUB_TOKEN'],
+        auto_paginate: true
+      )
+      client.api_endpoint = api_endpoint
+      client
+    end
+
+    # Build an Octokit client using GitHub App authentication
+    # @return [Octokit::Client] Octokit client instance
+    def self.build_app_client
       app_id = ENV['GITHUB_APP_ID']
       installation_id = ENV['GITHUB_APP_INSTALLATION_ID']
       private_key = ENV['GITHUB_APP_PRIVATE_KEY']
@@ -31,7 +48,7 @@ module CookstyleRunner
         access_token: token,
         auto_paginate: true
       )
-      client.api_endpoint = 'https://api.github.com'
+      client.api_endpoint = api_endpoint
       client
     end
 

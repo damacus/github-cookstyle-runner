@@ -32,7 +32,7 @@ module CookstyleRunner
       @config = config
       @logger = logger
       # Initialize GitHub client using our GitHub API module
-      @github_client = CookstyleRunner::Authentication.client
+      @github_client = CookstyleRunner::GitHubAPI.create_client
     end
 
     # Process repository with cookstyle fixes
@@ -40,13 +40,10 @@ module CookstyleRunner
     # @param repo_dir [String] Repository directory
     # @param cookstyle_output [String] Output from cookstyle run
     # @param manual_fix [Boolean] Whether manual fixes are required (can't be auto-fixed)
-    # @return [Array<Boolean, Hash>] Success status and PR/Issue deta.ils
+    # @return [Array<Boolean, Hash>] Success status and PR/Issue details
     def create_pull_request(repo_name, repo_dir, cookstyle_output, manual_fix: false)
       # Ensure the repository directory exists
-      unless Dir.exist?(repo_dir)
-        logger.error("Repository directory does not exist: #{repo_dir}")
-        return [false, nil]
-      end
+      return [false, nil] unless Dir.exist?(repo_dir)
 
       # Create an issue if manual fixes are required
       return create_issue_for_manual_fixes(repo_name, cookstyle_output) if manual_fix

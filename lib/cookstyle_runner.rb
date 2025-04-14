@@ -76,7 +76,7 @@ module CookstyleRunner
 
     def run
       # Use the GitHubAPI module to fetch repositories
-      repositories = CookstyleRunner::GitHubAPI.fetch_repositories(
+      repositories = GitHubAPI.fetch_repositories(
         @pr_manager.github_client,
         @config[:owner],
         @config[:topics],
@@ -248,7 +248,10 @@ module CookstyleRunner
     end
 
     def github_client
-      @github_client ||= CookstyleRunner::Authentication.client
+      @github_client ||= Octokit::Client.new(
+        access_token: ENV['GITHUB_TOKEN'],
+        auto_paginate: true
+      )
     end
 
     def fetch_repositories
@@ -471,6 +474,7 @@ module CookstyleRunner
       end
     end
   end
+  # rubocop:enable Metrics/ClassLength
 
   # Run the application if this file is executed directly
   if __FILE__ == $PROGRAM_NAME
