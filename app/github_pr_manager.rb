@@ -46,6 +46,12 @@ class GitHubPRManager
   # @param manual_fix [Boolean] Whether this is a PR for manual fixes (no changes committed)
   # @return [Array<Boolean, Hash>] Array containing [success_boolean, pr_details_hash]
   def create_pull_request(repo_name, repo_dir, cookstyle_output, manual_fix = false)
+    # Ensure the repository directory exists
+    unless Dir.exist?(repo_dir)
+      logger.error("Repository directory does not exist: #{repo_dir}")
+      return [false, nil]
+    end
+    
     # Ensure we're in the repository directory
     Dir.chdir(repo_dir) do
       # For regular PRs, check if there are changes to commit
@@ -137,10 +143,11 @@ class GitHubPRManager
         )
       end
       
-      # Still need to checkout locally for file operations
+      # Set up the local branch in the thread-specific directory
+      # These commands need to be run in the repository directory, which is handled by the caller
+      # Each thread has its own working directory, so these operations are thread-safe
       system('git fetch origin')
-      system("git checkout #{branch_name}")
-      system("git reset --hard origin/#{branch_name}")
+      system("git checkout -B #{branch_name} origin/#{branch_name} || git checkout -b #{branch_name} origin/#{default_branch}")
       
       # Configure git user
       system("git config user.name \"#{config[:git_name]}\"")
@@ -216,10 +223,15 @@ class GitHubPRManager
     system("git commit -m \"#{commit_message}\"")
 
     # Push to remote using token authentication
-    # Use the token in the URL to avoid authentication prompts
+    # Use a thread-specific remote name to avoid conflicts between threads
+    thread_id = Thread.current.object_id
+    remote_name = "origin_#{thread_id}"
     repo_url = "https://#{@github_token}@github.com/#{config[:owner]}/#{repo_name}.git"
-    system("git remote set-url origin #{repo_url}")
-    system("git push -u origin #{config[:branch_name]} -f")
+    
+    # Remove the remote if it exists, then add it with the token
+    system("git remote remove #{remote_name} 2>/dev/null || true")
+    system("git remote add #{remote_name} #{repo_url}")
+    system("git push -u #{remote_name} #{config[:branch_name]} -f")
 
     $?.success?
   rescue StandardError => e
@@ -238,10 +250,15 @@ class GitHubPRManager
     system("git commit --allow-empty -m \"#{commit_message}\"")
     
     # Push to remote using token authentication
-    # Use the token in the URL to avoid authentication prompts
+    # Use a thread-specific remote name to avoid conflicts between threads
+    thread_id = Thread.current.object_id
+    remote_name = "origin_#{thread_id}"
     repo_url = "https://#{@github_token}@github.com/#{config[:owner]}/#{repo_name}.git"
-    system("git remote set-url origin #{repo_url}")
-    system("git push -u origin #{config[:branch_name]} -f")
+    
+    # Remove the remote if it exists, then add it with the token
+    system("git remote remove #{remote_name} 2>/dev/null || true")
+    system("git remote add #{remote_name} #{repo_url}")
+    system("git push -u #{remote_name} #{config[:branch_name]} -f")
     
     $?.success?
   rescue StandardError => e

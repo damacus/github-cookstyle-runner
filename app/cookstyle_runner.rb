@@ -468,15 +468,22 @@ class CookstyleRunner
   # Run repository processing in a separate process to avoid directory conflicts
   def run_in_subprocess(repo_url, repo_dir, repo_name)
     # Create unique temporary files for this repository
-    cookstyle_output_file = "/tmp/cookstyle_output_#{repo_name}_#{Time.now.to_i}.txt"
-    cookstyle_fixes_file = "/tmp/cookstyle_fixes_#{repo_name}_#{Time.now.to_i}.txt"
-    changes_file = "/tmp/changes_#{repo_name}_#{Time.now.to_i}.txt"
-
+    thread_id = Thread.current.object_id
+    cookstyle_output_file = "/tmp/cookstyle_output_#{repo_name}_#{thread_id}.txt"
+    cookstyle_fixes_file = "/tmp/cookstyle_fixes_#{repo_name}_#{thread_id}.txt"
+    changes_file = "/tmp/changes_#{repo_name}_#{thread_id}.txt"
+    
+    # Create or clean the repository directory
+    FileUtils.mkdir_p(repo_dir) unless Dir.exist?(repo_dir)
+    
     # Use Open3 to capture output from the subprocess
     stdout, stderr, status = Open3.capture3(
-      "cd #{@config[:cache_dir]} && " +
-      # Update the repository
-      "(cd #{repo_dir} && git fetch origin && git reset --hard origin/#{@config[:default_branch]} && git clean -fdx) && " +
+      # Clone the repository if it doesn't exist or update it if it does
+      "if [ ! -d '#{repo_dir}/.git' ]; then " +
+      "  git clone #{repo_url} #{repo_dir} 2>/dev/null; " +
+      "else " +
+      "  (cd #{repo_dir} && git fetch origin && git reset --hard origin/#{@config[:default_branch]} && git clean -fdx); " +
+      "fi && " +
       "cd #{repo_dir} && " +
       # First run cookstyle without auto-correction to check for issues
       "cookstyle_result=$(cookstyle -D 2>&1); cookstyle_status=$?; " +
