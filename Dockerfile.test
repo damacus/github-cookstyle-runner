@@ -1,0 +1,34 @@
+# Dockerfile.test
+FROM ruby:3.2-slim
+
+LABEL maintainer="Damacus <me@damacus.io>"
+LABEL description="Test environment for github-cookstyle-runner"
+
+# Install base dependencies + curl for downloading shellspec
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    jq \
+    build-essential \
+    ca-certificates \
+    bash \
+ && rm -rf /var/lib/apt/lists/*
+
+# Copy Gemfile and install cookstyle
+COPY Gemfile* /usr/src/app/
+WORKDIR /usr/src/app
+RUN bundle install --jobs $(nproc) --retry 3
+
+# Install ShellSpec
+RUN echo "==> Installing ShellSpec..." && \
+    curl -fsSL https://git.io/shellspec | sh -s -- --yes --prefix /usr/local && \
+    echo "==> ShellSpec installation complete." && \
+    # Verify installation
+    shellspec --version
+
+# Copy the application script and test files
+COPY app /app
+COPY test /test
+
+# Ensure entrypoint is executable
+RUN chmod +x /app/entrypoint.sh

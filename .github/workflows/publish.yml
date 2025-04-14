@@ -1,22 +1,30 @@
 ---
-name: Publish to Registry
+name: Docker Publish
 on:
   push:
-    branches:
-      - master
-      - main
+    branches: [main]
+  release:
+    types: [published]
+
 jobs:
-  update:
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Get release version
-        id: get_version
-        run: echo RELEASE_VERSION=$(echo ${GITHUB_REF:10}) >> $GITHUB_ENV
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker tags
+        id: tags
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "DOCKER_TAGS=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          else
+            echo "DOCKER_TAGS=latest" >> $GITHUB_ENV
+          fi
+
       - name: Publish to Registry
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
-          name: xorima/github-cookstyle-runner
+          name: damacus/github-cookstyle-runner
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: "latest"
+          tags: ${{ env.DOCKER_TAGS }}

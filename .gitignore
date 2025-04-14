@@ -2,3 +2,5 @@
 /tmp
 /destination-repos
 *.tmp
+.env
+spec/fixtures/dummy_private_key.pem

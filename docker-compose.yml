@@ -1,0 +1,36 @@
+services:
+  cookstyle-runner:
+    # Build the image using the Dockerfile in the current directory
+    build: .
+    # Mount the current directory into the container's /app directory
+    # This ensures the app runs with the latest code and can write to cache/tmp
+    volumes:
+      - .:/app
+      # Persist bundler cache between runs
+      - bundle_cache:/usr/local/bundle
+      # Persist Cookstyle cache (if configured)
+      - cookstyle_cache:/app/.cache # Assuming GCR_CACHE_DIR is default or /app/.cache
+
+    # Define environment variables
+    # GITHUB_TOKEN will be read from the .env file automatically
+    environment:
+      - GCR_DESTINATION_REPO_OWNER=sous-chefs
+      - GCR_MANAGE_CHANGELOG=1
+      - GCR_BRANCH_NAME="automated/cookstyle-fixes"
+      - GCR_DESTINATION_REPO_TOPICS="chef-cookbook"
+      - GCR_DEBUG_MODE=0 # Default to disabled
+      - GCR_USE_CACHE=1 # Default to enabled cache
+      - GCR_CACHE_DIR=/app/.cache # Cache inside container/mounted volume
+      - GCR_THREAD_COUNT=4 # Default number of threads
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+
+    # Override the Dockerfile ENTRYPOINT and run the application
+    # Load the main library file and execute the Application class's run method
+    # Ensure bundler paths are set correctly
+    command: "-e 'CookstyleRunner::Application.run'"
+    # entrypoint: ["/bin/bash"]
+
+# Define named volumes for caching
+volumes:
+  bundle_cache:
+  cookstyle_cache:

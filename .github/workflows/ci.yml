@@ -4,64 +4,57 @@ name: ci
 on:
   pull_request:
   push:
-    branches:
-      - master
-      - main
+    branches: [main]
 
 jobs:
   yamllint:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Run yaml Lint
         uses: actionshub/yamllint@main
 
-  mdl:
+  markdownlint:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
-      - name: Run Markdown Lint
-        uses: actionshub/markdownlint@main
-
-  psscriptanalyzer:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Install PSScriptAnalyzer
-        shell: pwsh
-        run: Install-Module PSScriptAnalyzer -force
-      - name: Run PS Script Analyzer
-        shell: pwsh
-        run: |
-         Import-Module PSScriptAnalyzer
-         Invoke-ScriptAnalyzer . -Recurse -ExcludeRule 'PSUseShouldProcessForStateChangingFunctions'
-
-  pester:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Install Pester
-        shell: pwsh
-        run: Install-Module Pester -force
-      - name: Run PS Pester
-        shell: pwsh
-        run: |
-         Import-Module Pester
-         Invoke-Pester
-
-  publishtoregistry:
-    needs: [pester, psscriptanalyzer, mdl, yamllint]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Publish to Registry
-        uses: elgohr/Publish-Docker-Github-Action@v5
+        uses: actions/checkout@v4
+      - name: Run Markdown Lint (markdownlint-cli2)
+        uses: DavidAnson/markdownlint-cli2-action@v14
         with:
-          name: xorima/github-cookstyle-runner
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: "dev"
+          globs: '**/*.md'
+
+  rubocop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+      - name: Run Rubocop
+        run: bundle exec rubocop
+
+  publish_beta:
+    needs: [yamllint, markdownlint, rubocop]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: damacus/github-cookstyle-runner:beta

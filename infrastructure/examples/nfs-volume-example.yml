@@ -2,7 +2,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: github-cookstyle-runner-sous-chefs
+  name: github-cookstyle-runner-sous-chefs-nfs
 spec:
   schedule: "0 0 * * *"
   jobTemplate:
@@ -10,15 +10,15 @@ spec:
       template:
         spec:
           volumes:
-            # Mount a regular emptyDir volume (disk-backed) for temporary files
-            - name: cachedir
-              emptyDir:
-                sizeLimit: 500Mi
+            # Mount an NFS volume for the cache directory
+            - name: cachedir-nfs
+              persistentVolumeClaim:
+                claimName: cookstyle-cache-pvc
           containers:
             - name: github-cookstyle-runner
               image: damacus/github-cookstyle-runner:1.3.3
               volumeMounts:
-                - name: cachedir
+                - name: cachedir-nfs
                   mountPath: /tmp/cookstyle-runner
               env:
                 - name: GITHUB_TOKEN
@@ -52,3 +52,33 @@ spec:
                 - name: GCR_MANAGE_CHANGELOG
                   value: "1"
           restartPolicy: Never
+---
+# PVC for the NFS volume
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cookstyle-cache-pvc
+spec:
+  accessModes:
+    - ReadWriteMany  # NFS supports multiple readers/writers
+  resources:
+    requests:
+      storage: 5Gi  # Request 5GB of storage
+  storageClassName: nfs-client  # Must match your cluster's NFS storage class
+---
+# Example PV configuration (usually created by cluster admin or dynamically provisioned)
+# Uncomment and customize if you need to manually create the PV
+# apiVersion: v1
+# kind: PersistentVolume
+# metadata:
+#   name: cookstyle-cache-pv
+# spec:
+#   capacity:
+#     storage: 5Gi
+#   accessModes:
+#     - ReadWriteMany
+#   persistentVolumeReclaimPolicy: Retain
+#   storageClassName: nfs-client
+#   nfs:
+#     server: nfs-server.example.com  # Replace with your NFS server
+#     path: "/exports/cookstyle-cache"  # Replace with your export path
