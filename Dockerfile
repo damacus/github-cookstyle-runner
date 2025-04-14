@@ -7,11 +7,9 @@ LABEL org.label-schema.description="A cookstyle runner system for Github Reposit
 LABEL org.label-schema.url="https://github.com/damacus/github-cookstyle-runner"
 LABEL org.label-schema.vcs-url="https://github.com/damacus/github-cookstyle-runner"
 
-# Install dependencies: git for cloning, curl/jq for GitHub API, build-essential for gems
+# Install dependencies: git for cloning, build-essential for gems
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
-    curl \
-    jq \
     build-essential \
  && rm -rf /var/lib/apt/lists/*
 
@@ -20,6 +18,10 @@ COPY Gemfile* /usr/src/app/
 WORKDIR /usr/src/app
 RUN bundle install --jobs $(nproc) --retry 3
 
+# Copy application code
 COPY app /app
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Make Ruby scripts executable
+RUN find /app -name "*.rb" -exec chmod +x {} \;
+
+ENTRYPOINT ["/app/cookstyle_runner.rb"]

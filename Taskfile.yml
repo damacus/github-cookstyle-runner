@@ -1,24 +1,110 @@
 version: '3'
 
 tasks:
-  build-test:
-    desc: Build the test Docker image
-    cmds:
-      - docker build -t cookstyle-runner-test -f Dockerfile.test .
-
-  test:
-    desc: Run ShellSpec tests inside the Docker container
-    deps: [build]
-    cmds:
-      - docker run --rm -v "$(pwd):/usr/src/app" -w /usr/src/app cookstyle-runner-test bash -c "./test/run_tests.sh test/spec"
-
   build:
     desc: Build the Docker image
     cmds:
       - docker build -t cookstyle-runner:local .
 
-  integration-test:
-    desc: Run integration tests
+  run:
+    desc: Run the Docker container with environment variables
     deps: [build]
     cmds:
-      - docker run --rm -v "$(pwd):/usr/src/app" -w /usr/src/app --env-file .env cookstyle-runner:local bash -c "./test/run_tests.sh test/integration"
+      - |
+        # Source credentials from 1Password
+        if ! op --version &>/dev/null; then
+          echo "Error: 1Password CLI not installed. Please install it first."
+          exit 1
+        fi
+
+        # Create temporary env file with actual token
+        TEMP_ENV=$(mktemp)
+        eval "echo \"$(cat .env)\"" > "$TEMP_ENV"
+
+        # Create cache directory
+        mkdir -p /tmp/cookstyle-runner
+
+        echo "Starting cookstyle runner with GitHub credentials..."
+        docker run --rm \
+          --env-file "$TEMP_ENV" \
+          -e GCR_DEBUG_MODE=1 \
+          -e GCR_THREAD_COUNT=8 \
+          -e GCR_USE_CACHE=1 \
+          -e GCR_CACHE_MAX_AGE=604800 \
+          -v /tmp/cookstyle-runner:/tmp/cookstyle-runner \
+          cookstyle-runner:local
+
+        # Clean up
+        rm "$TEMP_ENV"
+        echo "Run complete. Check GitHub for any created PRs."
+
+  test:
+    desc: Run unit tests for Ruby code
+    cmds:
+      - bundle exec rspec
+
+  lint:
+    desc: Run Rubocop on Ruby code
+    cmds:
+      - bundle exec rubocop
+
+  run-no-cache:
+    desc: Run the cookstyle runner without cache
+    deps: [build]
+    cmds:
+      - |
+        # Source credentials from 1Password
+        if ! op --version &>/dev/null; then
+          echo "Error: 1Password CLI not installed. Please install it first."
+          exit 1
+        fi
+
+        # Create temporary env file with actual token
+        TEMP_ENV=$(mktemp)
+        eval "echo \"$(cat .env)\"" > "$TEMP_ENV"
+
+        # Create cache directory
+        mkdir -p /tmp/cookstyle-runner
+
+        echo "Starting cookstyle runner with GitHub credentials (no cache)..."
+        docker run --rm \
+          --env-file "$TEMP_ENV" \
+          -e GCR_DEBUG_MODE=1 \
+          -e GCR_THREAD_COUNT=8 \
+          -e GCR_USE_CACHE=0 \
+          -v /tmp/cookstyle-runner:/tmp/cookstyle-runner \
+          cookstyle-runner:local
+
+        # Clean up
+        rm "$TEMP_ENV"
+        echo "Run complete. Check GitHub for any created PRs."
+
+  debug:
+    desc: Run the container interactively for debugging
+    deps: [build]
+    cmds:
+      - |
+        # Source credentials from 1Password
+        if ! op --version &>/dev/null; then
+          echo "Error: 1Password CLI not installed. Please install it first."
+          exit 1
+        fi
+
+        # Create temporary env file with actual token
+        TEMP_ENV=$(mktemp)
+        eval "echo \"$(cat .env)\"" > "$TEMP_ENV"
+
+        # Create cache directory
+        mkdir -p /tmp/cookstyle-runner
+
+        echo "Starting interactive debug container with GitHub credentials..."
+        docker run --rm -it \
+          --env-file "$TEMP_ENV" \
+          -v /tmp/cookstyle-runner:/tmp/cookstyle-runner \
+          -v "$(pwd)/app:/app" \
+          --entrypoint /bin/bash \
+          cookstyle-runner:local
+
+        # Clean up
+        rm "$TEMP_ENV"
+        echo "Debug session complete."
