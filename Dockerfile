@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/powershell:lts-ubuntu-18.04
+FROM mcr.microsoft.com/powershell:lts-ubuntu-18.04@sha256:b093384397cd45dbceb89bcaa65744ba0b3bdfce488bf89b339bb98f0563fd45
 
 LABEL maintainer="Xorima"
 LABEL org.label-schema.schema-version="1.0"
