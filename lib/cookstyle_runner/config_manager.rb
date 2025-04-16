@@ -9,7 +9,7 @@ module ConfigManager
   # Setup logger with appropriate configuration
   # @param debug_mode [Boolean] Whether to enable debug logging
   # @return [Logger] Configured logger instance
-  def self.setup_logger(debug_mode = false)
+  def self.setup_logger(debug_mode: false)
     logger = Logger.new($stdout)
     logger.level = debug_mode ? Logger::DEBUG : Logger::INFO
     logger.formatter = proc do |severity, datetime, _progname, msg|

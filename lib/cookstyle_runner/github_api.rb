@@ -156,7 +156,6 @@ module GitHubAPI
         client.add_labels_to_an_issue(repo_full_name, existing_pr.number, new_labels) if new_labels.any?
       end
 
-      pr
     else
       # Create a new PR
       logger.info("Creating new PR for #{repo_full_name}")
@@ -171,8 +170,8 @@ module GitHubAPI
       # Add labels if specified
       client.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels && !labels.empty?
 
-      pr
     end
+    pr
   rescue StandardError => e
     logger.error("Error creating/updating PR for #{repo_full_name}: #{e.message}")
     logger.debug(e.backtrace.join("\n"))

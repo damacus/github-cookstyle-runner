@@ -1,0 +1,4 @@
+# RuboCop configuration for github-cookstyle-runner
+# Allow modules up to 200 lines
+Metrics/ModuleLength:
+  Max: 200

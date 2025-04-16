@@ -12,25 +12,13 @@ module RepositoryManager
   # @param repo_dir [String] Repository directory
   # @param default_branch [String] Default branch name
   # @param logger [Logger] Logger instance
+  # @param github_token [String] GitHub token
+  # @param owner [String] Repository owner
   # @return [Boolean] True if successful
-  def self.clone_or_update_repo(repo_url, repo_dir, default_branch, logger)
-    if Dir.exist?(File.join(repo_dir, '.git'))
-      # Repository exists, update it
-      logger.debug("Updating repository in #{repo_dir}")
-      Dir.chdir(repo_dir) do
-        system("git fetch origin && git reset --hard origin/#{default_branch} && git clean -fdx")
-      end
-    else
-      # Repository doesn't exist, clone it
-      logger.debug("Cloning repository to #{repo_dir}")
-      FileUtils.mkdir_p(File.dirname(repo_dir)) unless Dir.exist?(File.dirname(repo_dir))
-      system("git clone #{repo_url} #{repo_dir} 2>/dev/null")
-    end
-
-    $?.success?
-  rescue StandardError => e
-    logger.error("Error cloning/updating repository: #{e.message}")
-    false
+  def self.clone_or_update_repo(repo_url, repo_dir, default_branch, logger, github_token: nil, owner: nil)
+    context = GitOperations::RepoContext.new(repo_name: File.basename(repo_url, '.git'), github_token: github_token,
+                                             owner: owner, logger: logger)
+    GitOperations.clone_or_update_repo(repo_url, repo_dir, default_branch, context)
   end
 
   # Extract repository name from URL

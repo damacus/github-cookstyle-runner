@@ -22,32 +22,32 @@ module CookstyleOperations
       stdout, _, status = Open3.capture3(
         "cd #{repo_dir} && " +
         # First run cookstyle without auto-correction to check for issues
-        'cookstyle_result=$(cookstyle -D 2>&1); cookstyle_status=$?; ' +
-        "echo \"Cookstyle exit status: $cookstyle_status\" > #{cookstyle_output_file}; " +
-        "echo \"$cookstyle_result\" >> #{cookstyle_output_file}; " +
-        'if [ $cookstyle_status -eq 0 ]; then ' +
-        "  echo 'No issues found'; " +
-        '  had_issues=false; ' +
-        'else ' +
-        '  echo "Cookstyle found issues:"; ' +
-        '  echo "$cookstyle_result"; ' +
+        'cookstyle_result=$(cookstyle -D 2>&1); cookstyle_status=$?; ' \
+        "echo \"Cookstyle exit status: $cookstyle_status\" > #{cookstyle_output_file}; " \
+        "echo \"$cookstyle_result\" >> #{cookstyle_output_file}; " \
+        'if [ $cookstyle_status -eq 0 ]; then ' \
+        "  echo 'No issues found'; " \
+        '  had_issues=false; ' \
+        'else ' \
+        '  echo "Cookstyle found issues:"; ' \
+        '  echo "$cookstyle_result"; ' \
         '  had_issues=true; ' +
         # Run cookstyle with auto-corrections
-        "  cookstyle -a > #{cookstyle_fixes_file} 2>&1; " +
+        "  cookstyle -a > #{cookstyle_fixes_file} 2>&1; " \
         "  cat #{cookstyle_fixes_file}; " +
         # Check for any changes (including permission changes) - use git diff to catch mode changes
-        "  git diff --name-status > #{changes_file}; " +
-        "  git status --porcelain >> #{changes_file}; " +
-        "  if [ -s #{changes_file} ]; then " +
-        '    echo "Changes detected after cookstyle auto-correction:"; ' +
-        "    cat #{changes_file}; " +
-        '    has_changes=true; ' +
-        '  else ' +
-        '    echo "No changes detected after cookstyle auto-correction"; ' +
-        '    has_changes=false; ' +
-        '  fi; ' +
-        'fi; ' +
-        'echo $had_issues; ' +
+        "  git diff --name-status > #{changes_file}; " \
+        "  git status --porcelain >> #{changes_file}; " \
+        "  if [ -s #{changes_file} ]; then " \
+        '    echo "Changes detected after cookstyle auto-correction:"; ' \
+        "    cat #{changes_file}; " \
+        '    has_changes=true; ' \
+        '  else ' \
+        '    echo "No changes detected after cookstyle auto-correction"; ' \
+        '    has_changes=false; ' \
+        '  fi; ' \
+        'fi; ' \
+        'echo $had_issues; ' \
         'echo $has_changes'
       )
 
@@ -75,7 +75,7 @@ module CookstyleOperations
   # Parse cookstyle output to determine if there are auto-fixable issues
   # @param cookstyle_output [String] Output from cookstyle run
   # @return [Boolean] True if there are auto-fixable issues
-  def self.has_auto_fixable_issues?(cookstyle_output)
+  def self.auto_fixable_issues?(cookstyle_output)
     # Look for patterns in the output that indicate auto-fixable issues
     cookstyle_output.include?('auto-correct') ||
       cookstyle_output.include?('auto-correction') ||
@@ -85,9 +85,9 @@ module CookstyleOperations
   # Parse cookstyle output to determine if there are manual fix issues
   # @param cookstyle_output [String] Output from cookstyle run
   # @return [Boolean] True if there are manual fix issues
-  def self.has_manual_fix_issues?(cookstyle_output)
+  def self.manual_fix_issues?(cookstyle_output)
     # If there are issues but no auto-fixable ones, they require manual fixes
-    cookstyle_output.include?('offenses detected') && !has_auto_fixable_issues?(cookstyle_output)
+    cookstyle_output.include?('offenses detected') && !auto_fixable_issues?(cookstyle_output)
   end
 
   # Format cookstyle output for PR description

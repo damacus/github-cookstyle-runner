@@ -206,12 +206,4 @@ class GitHubPRManager
     logger.error("Error creating pull request for #{repo_full_name}: #{e.message}")
     nil
   end
-
-  # These methods have been moved to the GitHubAPI module
-
-  # Get or create GitHub client
-  # @return [Octokit::Client] GitHub client
-  # Accessor for the GitHub client
-  # @return [Octokit::Client] GitHub client
-  attr_reader :github_client
 end

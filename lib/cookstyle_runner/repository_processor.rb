@@ -26,7 +26,7 @@ class RepositoryProcessor
   # @param total_repos [Integer] Total number of repositories to process
   # @return [Symbol] :success, :error, or :skipped
   def process_repository(repo_url, processed_count, total_repos)
-    repo_name, thread_dir, repo_dir = setup_working_directory(repo_url)
+    repo_name, _, repo_dir = setup_working_directory(repo_url)
     log_processing(repo_name, processed_count, total_repos)
     return :error unless clone_or_update_repo(repo_url, repo_dir)
 
@@ -57,7 +57,8 @@ class RepositoryProcessor
   def update_cache_if_needed(repo_name, result)
     return unless @config[:use_cache] && result[:status] == :success
 
-    @cache_manager.update(repo_name, result[:commit_sha], result[:had_issues], result[:output], result[:processing_time])
+    @cache_manager.update(repo_name, result[:commit_sha], result[:had_issues], result[:output],
+                          result[:processing_time])
   end
 
   def handle_processing_error(error, repo_name, repo_url, processed_count, total_repos)
@@ -66,36 +67,12 @@ class RepositoryProcessor
     retry_operation(repo_url, processed_count, total_repos) ? :success : :error
   end
 
-  private
-
   attr_reader :logger
 
   def clone_or_update_repo(repo_url, repo_dir)
-    repo_exists?(repo_dir) ? update_repo(repo_dir) : clone_repo(repo_url, repo_dir)
-    $CHILD_STATUS.success?
-  rescue StandardError => e
-    log_clone_update_error(e)
-    false
-  end
-
-  def repo_exists?(repo_dir)
-    Dir.exist?(File.join(repo_dir, '.git'))
-  end
-
-  def update_repo(repo_dir)
-    logger.info("Updating existing repository: #{repo_dir}")
-    Dir.chdir(repo_dir) do
-      system("git fetch origin && git reset --hard origin/#{@config[:default_branch]} && git clean -fdx")
-    end
-  end
-
-  def clone_repo(repo_url, repo_dir)
-    logger.info("Cloning repository: #{repo_url}")
-    system("git clone #{repo_url} #{repo_dir}")
-  end
-
-  def log_clone_update_error(error)
-    logger.error("Error cloning/updating repository: #{error.message}")
+    context = GitOperations::RepoContext.new(repo_name: File.basename(repo_url, '.git'),
+                                             github_token: @config[:github_token], owner: @config[:owner], logger: logger)
+    GitOperations.clone_or_update_repo(repo_url, repo_dir, @config[:default_branch], context)
   end
 
   def run_in_subprocess(repo_url, repo_dir, repo_name)
@@ -106,14 +83,14 @@ class RepositoryProcessor
 
     ensure_temp_dirs_exist(temp_files)
     shell_cmd = build_cookstyle_shell_command(repo_url, repo_dir, temp_files)
-    stdout, stderr, status = run_cookstyle_shell(shell_cmd)
+    stdout, stderr, shell_cmd_status = run_cookstyle_shell(shell_cmd)
     log_subprocess_output(stdout, stderr)
     had_issues, has_changes = parse_cookstyle_flags(stdout)
     outputs = parse_cookstyle_outputs(temp_files)
-    handle_cookstyle_pr_creation(had_issues, has_changes, status, repo_name, repo_dir, outputs)
+    handle_cookstyle_pr_creation(had_issues, has_changes, shell_cmd_status, repo_name, repo_dir, outputs)
     commit_sha = fetch_commit_sha(repo_dir)
     cleanup_temp_files(temp_files)
-    build_result_hash(status, commit_sha, had_issues, outputs, Time.now - start_time)
+    build_result_hash(shell_cmd_status.exitstatus, commit_sha, had_issues, outputs, Time.now - start_time)
   end
 
   def ensure_temp_dirs_exist(temp_files)
@@ -162,10 +139,9 @@ class RepositoryProcessor
     temp_files.each_value { |file| File.delete(file) if File.exist?(file) }
   end
 
-  def build_result_hash(status, commit_sha, had_issues, outputs, processing_time)
-    status_sym = status.exitstatus.zero? ? :success : :error
+  def build_result_hash(shell_cmd_exit_status, commit_sha, had_issues, outputs, processing_time)
     {
-      status: status_sym,
+      status: shell_cmd_exit_status.zero? ? :success : :error,
       commit_sha: commit_sha || '',
       had_issues: had_issues,
       output: format_combined_output(outputs),
@@ -186,8 +162,6 @@ class RepositoryProcessor
     MSG
   end
 
-  private
-
   def cookstyle_temp_files(repo_name, thread_id)
     {
       cookstyle_output: "/tmp/cookstyle_output_#{repo_name}_#{thread_id}.txt",
@@ -196,10 +170,10 @@ class RepositoryProcessor
     }
   end
 
-  def handle_cookstyle_pr_creation(had_issues, has_changes, status, repo_name, repo_dir, outputs)
+  def handle_cookstyle_pr_creation(had_issues, has_changes, shell_cmd_exit_status, repo_name, repo_dir, outputs)
     return unless had_issues
 
-    if auto_fix_applicable?(has_changes, status)
+    if auto_fix_applicable?(has_changes, shell_cmd_exit_status)
       pr_created, pr_details = @pr_manager.create_pull_request(repo_name, repo_dir, outputs)
       logger.info("Pull request #{pr_created ? 'created' : 'not created'} for #{repo_name}")
       assign_pr_result(pr_created, pr_details, repo_name, 'auto-fix')
@@ -210,8 +184,8 @@ class RepositoryProcessor
     handle_manual_fix_pr(repo_name, repo_dir, outputs)
   end
 
-  def auto_fix_applicable?(has_changes, status)
-    has_changes && status.exitstatus.zero?
+  def auto_fix_applicable?(has_changes, shell_cmd_exit_status)
+    has_changes && shell_cmd_exit_status.exitstatus.zero?
   end
 
   def manual_fix_applicable?(has_changes)
@@ -254,7 +228,7 @@ class RepositoryProcessor
 
   def build_cookstyle_shell_command(repo_url, repo_dir, temp_files)
     <<~SHELL
-      if [ ! -d '#{repo_dir}/.git' ]; then
+      if [[ ! -d '#{repo_dir}/.git' ]]; then
         git clone #{repo_url} #{repo_dir} 2>/dev/null;
       else
         (cd #{repo_dir} && git fetch origin && git reset --hard origin/#{@config[:default_branch]} && git clean -fdx);
@@ -312,3 +286,4 @@ class RepositoryProcessor
     %i[success skipped].include?(result)
   end
 end
+# rubocop:enable Metrics/ClassLength

@@ -8,6 +8,7 @@
 # This is the main entry point for the GitHub Cookstyle Runner application.
 # It orchestrates the entire workflow of finding repositories, running
 # cookstyle checks, applying fixes, and creating pull requests.
+
 #
 # Required environment variables:
 #   - GITHUB_TOKEN: Authentication token for GitHub API
@@ -23,6 +24,7 @@
 #   - GCR_DEBUG_MODE: Enable debug logging (default: 0)
 #
 
+require 'English'
 require 'logger'
 require 'fileutils'
 require 'octokit'
@@ -31,15 +33,15 @@ require 'open3'
 require 'parallel'
 
 # Load our library modules
-require_relative '../lib/git_operations'
-require_relative '../lib/github_api'
-require_relative '../lib/repository_manager'
-require_relative '../lib/cookstyle_operations'
-require_relative '../lib/config_manager'
+require_relative 'cookstyle_runner/git_operations'
+require_relative 'cookstyle_runner/github_api'
+require_relative 'cookstyle_runner/repository_manager'
+require_relative 'cookstyle_runner/cookstyle_operations'
+require_relative 'cookstyle_runner/config_manager'
 
 # Load our application classes
-require_relative 'cache_manager'
-require_relative 'github_pr_manager'
+require_relative 'cookstyle_runner/cache_manager'
+require_relative 'cookstyle_runner/github_pr_manager'
 
 # Main application class for GitHub Cookstyle Runner
 class CookstyleRunner
@@ -101,6 +103,14 @@ class CookstyleRunner
     processed_count = 0
     pr_count = 0
 
+    # Instantiate a single RepositoryProcessor for all threads
+    repo_processor = RepositoryProcessor.new(
+      config: @config,
+      logger: logger,
+      cache_manager: @cache_manager,
+      pr_manager: @pr_manager
+    )
+
     # Process repositories in parallel using the Parallel gem
     Parallel.each(repositories, in_threads: thread_count) do |repo_url|
       # Thread-safe counter increment
@@ -109,8 +119,8 @@ class CookstyleRunner
         processed_count
       end
 
-      # Process the repository
-      result = process_repository(repo_url, current_count, total_repos)
+      # Delegate all per-repository processing to RepositoryProcessor
+      result = repo_processor.process_repository(repo_url, current_count, total_repos)
 
       # Thread-safe update of counters
       mutex.synchronize do
@@ -138,56 +148,59 @@ class CookstyleRunner
       end
     end
 
-    # Report results
-    logger.info('--- Summary ---')
-    logger.info("Processed #{processed_count} repositories.")
-    logger.info("Found issues in #{issues_count} repositories.")
-    logger.info("Encountered errors in #{error_count} repositories.") if error_count > 0
-    logger.info("Skipped #{skipped_count} repositories.") if skipped_count > 0
+    summary = <<~SUMMARY
+      --- Summary ---
+      Processed #{processed_count} repositories.
+      Found issues in #{issues_count} repositories.
+      #{error_count.positive? ? "Encountered errors in #{error_count} repositories." : ''}
+      #{skipped_count.positive? ? "Skipped #{skipped_count} repositories." : ''}
+    SUMMARY
+    logger.info(summary.strip)
 
     # Print cache statistics if caching is enabled
     if @config[:use_cache]
       stats = @cache_manager.runtime_stats
-      logger.info('--- Cache Statistics ---')
-      logger.info("Cache hits: #{stats['cache_hits']}")
-      logger.info("Cache misses: #{stats['cache_misses']}")
-      logger.info("Cache hit rate: #{stats['cache_hit_rate']}%")
-      logger.info("Estimated time saved: #{stats['estimated_time_saved']} seconds")
-      logger.info("Total runtime: #{stats['runtime']} seconds")
+      logger.info(<<~STATS)
+        --- Cache Statistics ---
+        Cache hits: #{stats['cache_hits']}
+        Cache misses: #{stats['cache_misses']}
+        Cache hit rate: #{stats['cache_hit_rate']}%
+        Estimated time saved: #{stats['estimated_time_saved']} seconds
+        Total runtime: #{stats['runtime']} seconds
+      STATS
     end
 
-    if issues_count > 0
-      logger.warn("#{issues_count} repositories had cookstyle issues.")
-    else
-      logger.info('All repositories passed cookstyle checks!')
-    end
+    issues_count.positive? ? logger.warn("#{issues_count} repositories had cookstyle issues.") : logger.info('All repositories passed cookstyle checks!')
 
     # Report created PRs
     if @created_prs.any?
-      logger.info("--- Created Pull Requests (#{@created_prs.size}) ---")
+      pr_report = ["--- Created Pull Requests (#{@created_prs.size}) ---"]
       @created_prs.each do |pr|
-        logger.info("Repository: #{pr[:repo]}")
-        logger.info("PR ##{pr[:number]}: #{pr[:title]}")
-        logger.info("Type: #{pr[:type]}")
-        logger.info("URL: #{pr[:url]}")
-        logger.info('')
+        pr_report << <<~PR_ENTRY
+          Repository: #{pr[:repo]}
+          PR ##{pr[:number]}: #{pr[:title]}
+          Type: #{pr[:type]}
+          URL: #{pr[:url]}
+        PR_ENTRY
       end
+      logger.info(pr_report.join("\n").strip)
     else
       logger.info('No pull requests were created during this run.')
     end
 
     # Report PR errors if any
     if @pr_errors.any?
-      logger.info("--- Pull Request Creation Errors (#{@pr_errors.size}) ---")
+      pr_error_report = ["--- Pull Request Creation Errors (#{@pr_errors.size}) ---"]
       @pr_errors.each do |error|
-        logger.info("Repository: #{error[:repo]}")
-        logger.info("Error: #{error[:message]}")
-        logger.info("Type: #{error[:type]}")
-        logger.info('')
+        pr_error_report << <<~PR_ERROR_ENTRY
+          Repository: #{error[:repo]}
+          Error: #{error[:message]}
+          Type: #{error[:type]}
+        PR_ERROR_ENTRY
       end
+      logger.info(pr_error_report.join("\n").strip)
     end
 
-    # Return success code
     0
   end
 
@@ -239,40 +252,38 @@ class CookstyleRunner
     }
 
     # Log configuration
-    logger.info('--- Configuration ---')
-    logger.info("Destination Repo Owner: #{@config[:owner]}")
-    logger.info("Destination Repo Topics: #{@config[:topics].join(', ')}")
-    logger.info("Branch Name: #{@config[:branch_name]}")
-    logger.info("PR Title: #{@config[:pr_title]}")
-    logger.info("PR Labels: #{@config[:pr_labels].empty? ? 'None' : @config[:pr_labels].join(', ')}")
-    logger.info("Git Author: #{@config[:git_name]} <#{@config[:git_email]}>")
-    logger.info("Default Branch: #{@config[:default_branch]}")
-    logger.info("Cache Dir: #{@config[:cache_dir]}")
-    logger.info("Cache Enabled: #{@config[:use_cache] ? 'Yes' : 'No'}")
-    logger.info("Cache Max Age: #{@config[:cache_max_age] / (24 * 60 * 60)} days")
-    logger.info("Force Refresh: #{@config[:force_refresh] ? 'Yes' : 'No'}")
-    logger.info("Retry Count: #{@config[:retry_count]}")
+    config_lines = []
+    config_lines << <<~CONFIGURATION
+      --- Configuration ---
+      Destination Repo Owner: #{@config[:owner]}
+      Destination Repo Topics: #{@config[:topics].join(', ')}
+      Branch Name: #{@config[:branch_name]}
+      PR Title: #{@config[:pr_title]}
+      PR Labels: #{@config[:pr_labels].empty? ? 'None' : @config[:pr_labels].join(', ')}
+      Git Author: #{@config[:git_name]} <#{@config[:git_email]}>
+      Default Branch: #{@config[:default_branch]}
+      Cache Dir: #{@config[:cache_dir]}
+      Cache Enabled: #{@config[:use_cache] ? 'Yes' : 'No'}
+      Cache Max Age: #{@config[:cache_max_age] / (24 * 60 * 60)} days
+      Force Refresh: #{@config[:force_refresh] ? 'Yes' : 'No'}
+      Retry Count: #{@config[:retry_count]}
+      Changelog Location: #{@config[:changelog_location]}
+      Changelog Marker: #{@config[:changelog_marker]}
+      Manage Changelog: #{@config[:manage_changelog] ? 'Yes' : 'No'}
+      Excluding Repos: #{@config[:exclude_repos]}
+      Force Refresh Repos: #{@config[:force_refresh_repos]}
+      Include Only Repos: #{@config[:include_repos]}
+      Filter Repos: #{@config[:filter_repos]}
+      Create Manual Fix PRs: #{@config[:create_manual_fix_prs] ? 'Yes' : 'No'}
+      ---------------------
+    CONFIGURATION
 
-    if @config[:force_refresh_repos]&.any?
-      logger.info("Force Refresh Repos: #{@config[:force_refresh_repos].join(', ')}")
-    end
-
-    logger.info("Include Only Repos: #{@config[:include_repos].join(', ')}") if @config[:include_repos]&.any?
-
-    logger.info("Exclude Repos: #{@config[:exclude_repos].join(', ')}") if @config[:exclude_repos]&.any?
-
-    logger.info("Filter Repos: #{@config[:filter_repos].join(', ')}") if @config[:filter_repos]&.any?
-
-    logger.info("Manage Changelog: #{@config[:manage_changelog] ? 'Yes' : 'No'}")
-    logger.info("Changelog Location: #{@config[:changelog_location]}")
-    logger.info("Changelog Marker: #{@config[:changelog_marker]}")
-    logger.info('---------------------')
+    logger.info(config_lines.join("\n"))
   end
 
+  # Configure git for PR creation
   def setup_git_config
-    # Configure git for PR creation
-    system("git config --global user.name \"#{@config[:git_name]}\"")
-    system("git config --global user.email \"#{@config[:git_email]}\"")
+    GitOperations.setup_git_config(@config[:git_name], @config[:git_email], logger)
   end
 
   def setup_cache_directory
@@ -357,7 +368,7 @@ class CookstyleRunner
 
     # Check if we should force refresh this repository
     force_refresh = @config[:force_refresh] ||
-                    (@config[:force_refresh_repos] && @config[:force_refresh_repos].include?(repo_name))
+                    @config[:force_refresh_repos]&.include?(repo_name)
 
     # Check if repository exists locally
     unless Dir.exist?(repo_dir)
@@ -395,7 +406,7 @@ class CookstyleRunner
     RepositoryManager.cleanup_repo_dir(repo_dir)
 
     # Update cache with the result if successful
-    if @config[:use_cache] && result == 0
+    if @config[:use_cache] && result.zero?
       @cache_manager.update(repo_name, current_sha, had_issues, output, processing_time)
     end
 
@@ -417,7 +428,7 @@ class CookstyleRunner
   # @param total_repos [Integer] Total repositories count
   # @return [Boolean] True if retry was successful, false otherwise
   def retry_operation(repo_url, processed_count, total_repos)
-    return false unless @config[:retry_count] > 0
+    return false unless @config[:retry_count].positive?
 
     repo_name = File.basename(repo_url, '.git')
     logger.info("Retrying repository #{repo_name} (#{@config[:retry_count]} attempts remaining)")
@@ -462,206 +473,20 @@ class CookstyleRunner
     stdout.strip
   end
 
-  # Run repository processing in a separate process to avoid directory conflicts
-  def run_in_subprocess(repo_url, repo_dir, repo_name)
-    # Create unique temporary files for this repository
-    thread_id = Thread.current.object_id
-    cookstyle_output_file = "/tmp/cookstyle_output_#{repo_name}_#{thread_id}.txt"
-    cookstyle_fixes_file = "/tmp/cookstyle_fixes_#{repo_name}_#{thread_id}.txt"
-    changes_file = "/tmp/changes_#{repo_name}_#{thread_id}.txt"
-
-    # Create or clean the repository directory
-    FileUtils.mkdir_p(repo_dir) unless Dir.exist?(repo_dir)
-
-    # Use Open3 to capture output from the subprocess
-    stdout, stderr, status = Open3.capture3(
-      # Clone the repository if it doesn't exist or update it if it does
-      "if [ ! -d '#{repo_dir}/.git' ]; then " +
-      "  git clone #{repo_url} #{repo_dir} 2>/dev/null; " +
-      'else ' +
-      "  (cd #{repo_dir} && git fetch origin && git reset --hard origin/#{@config[:default_branch]} && git clean -fdx); " +
-      'fi && ' +
-      "cd #{repo_dir} && " +
-      # First run cookstyle without auto-correction to check for issues
-      'cookstyle_result=$(cookstyle -D 2>&1); cookstyle_status=$?; ' +
-      "echo \"Cookstyle exit status: $cookstyle_status\" > #{cookstyle_output_file}; " +
-      "echo \"$cookstyle_result\" >> #{cookstyle_output_file}; " +
-      'if [ $cookstyle_status -eq 0 ]; then ' +
-      "  echo 'No issues found'; " +
-      '  had_issues=false; ' +
-      'else ' +
-      '  echo "Cookstyle found issues:"; ' +
-      '  echo "$cookstyle_result"; ' +
-      '  had_issues=true; ' +
-      # Run cookstyle with auto-corrections
-      "  cookstyle -a > #{cookstyle_fixes_file} 2>&1; " +
-      "  cat #{cookstyle_fixes_file}; " +
-      # Check for any changes (including permission changes) - use git diff to catch mode changes
-      "  git diff --name-status > #{changes_file}; " +
-      "  git status --porcelain >> #{changes_file}; " +
-      "  if [ -s #{changes_file} ]; then " +
-      '    echo "Changes detected after cookstyle auto-correction:"; ' +
-      "    cat #{changes_file}; " +
-      '    has_changes=true; ' +
-      '  else ' +
-      '    echo "No changes detected after cookstyle auto-correction"; ' +
-      '    has_changes=false; ' +
-      '  fi; ' +
-      'fi; ' +
-      'echo $had_issues; ' + # Output whether the repository had issues
-      'echo $has_changes' # Output whether there were changes after auto-correction
-    )
-
-    # Log the output
-    logger.debug("Subprocess output: #{stdout}")
-    logger.debug("Subprocess errors: #{stderr}") unless stderr.empty?
-
-    # Check if the repository had issues by parsing the output
-    had_issues = stdout.include?('had_issues=true') || stdout.include?('Cookstyle found issues')
-
-    # Check if there were changes after auto-correction
-    has_changes = stdout.include?('has_changes=true') || stdout.include?('Changes detected after cookstyle auto-correction')
-
-    # Read the cookstyle output files if they exist
-    cookstyle_output = File.exist?(cookstyle_output_file) ? File.read(cookstyle_output_file) : ''
-    cookstyle_fixes = File.exist?(cookstyle_fixes_file) ? File.read(cookstyle_fixes_file) : ''
-    changes = File.exist?(changes_file) ? File.read(changes_file) : ''
-
-    # Combine all outputs for the PR description
-    combined_output = "Cookstyle Output:\n#{cookstyle_output}\n\nAuto-correction Output:\n#{cookstyle_fixes}\n\nChanges Made:\n#{changes}"
-
-    # If there were issues and changes, create a PR using our PR manager
-    if had_issues && has_changes && status.exitstatus == 0
-      # Create a pull request
-      pr_created, pr_details = @pr_manager.create_pull_request(repo_name, repo_dir, combined_output)
-      logger.info("Pull request #{pr_created ? 'created' : 'not created'} for #{repo_name}")
-
-      # Track the created PR or error
-      if pr_created && pr_details
-        # Thread-safe update of PR list
-        Thread.current[:pr_details] = {
-          repo: repo_name,
-          number: pr_details[:number],
-          url: pr_details[:html_url],
-          title: pr_details[:title],
-          type: 'auto-fix'
-        }
-      else
-        # Track the error
-        Thread.current[:pr_error] = {
-          repo: repo_name,
-          message: 'Failed to create auto-fix PR',
-          type: 'auto-fix'
-        }
-      end
-    elsif had_issues && !has_changes
-      # Some issues can't be auto-fixed, so we should create a PR with manual instructions
-      manual_fix_message = "Cookstyle found issues that require manual fixes:\n\n#{cookstyle_output}\n\nThese issues cannot be automatically fixed and require manual intervention."
-      logger.info("Repository #{repo_name} had cookstyle issues that require manual fixes")
-
-      # Create a PR with instructions for manual fixes
-      if @config[:create_manual_fix_prs]
-        pr_created, pr_details = @pr_manager.create_pull_request(repo_name, repo_dir, manual_fix_message, true)
-        logger.info("Manual fix PR #{pr_created ? 'created' : 'not created'} for #{repo_name}")
-
-        # Track the created PR or error
-        if pr_created && pr_details
-          # Thread-safe update of PR list
-          Thread.current[:pr_details] = {
-            repo: repo_name,
-            number: pr_details[:number],
-            url: pr_details[:html_url],
-            title: pr_details[:title],
-            type: 'manual-fix'
-          }
-        else
-          # Track the error
-          Thread.current[:pr_error] = {
-            repo: repo_name,
-            message: 'Failed to create manual-fix PR',
-            type: 'manual-fix'
-          }
-        end
-      end
-    end
-
-    # Clean up temporary files
-    [cookstyle_output_file, cookstyle_fixes_file, changes_file].each do |file|
-      File.delete(file) if File.exist?(file)
-    end
-
-    # Return the exit status, output, and whether the repository had issues
-    [status.exitstatus, stdout, had_issues]
-  end
-
-  def clone_or_update_repo(repo_url, repo_dir)
-    if Dir.exist?(File.join(repo_dir, '.git'))
-      logger.info("Updating existing repository: #{repo_dir}")
-      Dir.chdir(repo_dir) do
-        # Fetch latest changes and reset to origin/main
-        system("git fetch origin && git reset --hard origin/#{@config[:default_branch]} && git clean -fdx")
-      end
-    else
-      logger.info("Cloning repository: #{repo_url}")
-      system("git clone #{repo_url} #{repo_dir}")
-    end
-
-    $?.success?
-  rescue StandardError => e
-    logger.error("Error cloning/updating repository: #{e.message}")
-    false
-  end
-
   def create_cookstyle_branch(repo_name)
     logger.info("Creating branch #{@config[:branch_name]} for #{repo_name}")
     system("git checkout -b #{@config[:branch_name]}")
-    $?.success?
+    $CHILD_STATUS.success?
   rescue StandardError => e
     logger.error("Error creating branch: #{e.message}")
     false
   end
 
-  def run_cookstyle_check(repo_name)
-    logger.info("Running cookstyle on #{repo_name}...")
+  # Cookstyle checking is now handled by RepositoryProcessor.
+  # This method has been removed as part of codebase refactoring.
 
-    stdout, stderr, status = Open3.capture3('cookstyle')
-
-    if status.success?
-      logger.debug("Cookstyle output: #{stdout}")
-      true
-    else
-      logger.debug("Cookstyle errors: #{stderr}")
-      false
-    end
-  rescue StandardError => e
-    logger.error("Error running cookstyle check: #{e.message}")
-    false
-  end
-
-  def run_cookstyle_autocorrect(repo_name)
-    logger.info("Running cookstyle auto-correct on #{repo_name}...")
-
-    stdout, stderr, status = Open3.capture3('cookstyle -a')
-
-    if status.success?
-      # Check if any changes were made
-      stdout, _stderr, = Open3.capture3('git diff --name-only')
-      if stdout.strip.empty?
-        logger.info('No changes after auto-correction')
-        :no_changes
-      else
-        logger.info("Auto-correct applied successfully to #{repo_name}")
-        logger.debug("Changed files: #{stdout}")
-        :success
-      end
-    else
-      logger.error("Auto-correct failed: #{stderr}")
-      :failure
-    end
-  rescue StandardError => e
-    logger.error("Error running cookstyle auto-correct: #{e.message}")
-    :failure
-  end
+  # Cookstyle auto-correction is now handled by RepositoryProcessor.
+  # This method has been removed as part of codebase refactoring.
 
   def update_changelog
     changelog_file = @config[:changelog_location]
@@ -698,7 +523,7 @@ class CookstyleRunner
     # Push to remote
     system("git push -u origin #{@config[:branch_name]}")
 
-    $?.success?
+    $CHILD_STATUS.success?
   rescue StandardError => e
     logger.error("Error committing and pushing changes: #{e.message}")
     false

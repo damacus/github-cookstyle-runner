@@ -1,5 +1,9 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
+
+require 'json'
+require 'fileutils'
+require 'time'
+require_relative 'cache_stats'
 
 # =============================================================================
 # GitHub Cookstyle Runner - Cache Manager
@@ -8,12 +12,6 @@
 # This class manages the caching of repository states and Cookstyle results
 # to avoid reprocessing repositories that haven't changed.
 #
-
-require 'json'
-require 'fileutils'
-require 'time'
-require_relative 'cache_stats'
-
 class CacheManager
   attr_reader :cache_dir, :cache_file, :cache_data, :logger, :stats
 
@@ -31,7 +29,6 @@ class CacheManager
     # Initialize statistics helper
     @stats = CacheStats.new
 
-    # Load or initialize cache
     load_cache
   end
 
