@@ -1,32 +1,14 @@
 # TODO: Switch to GitHub App Authentication
 
+## Current Status (as of 2025-04-16)
+
+- **Significant refactoring completed.**
+  - The codebase is now much more maintainable, testable, and ready for the GitHub App authentication migration.
+  - All major architectural and code quality groundwork is complete.
+
 ## Overview
 
 Switch the authentication and API access in the GitHub Cookstyle Runner to use GitHub App authentication instead of a personal access token (PAT) or legacy OAuth. GitHub Apps provide more granular permissions, better rate limits, and are the recommended authentication method for GitHub integrations.
-
----
-
-## Phase 0: Analysis and Preparation
-
-### 0.1. Audit Current GitHub API Usage
-
-- Map all GitHub API endpoints currently in use:
-  ```bash
-  # Use grep to find all GitHub API calls
-  grep -r "api.github.com" --include="*.rb" /path/to/project
-  ```
-
-- Document current authentication mechanisms:
-  - Identify PAT usage in `pr_manager.rb` and other files
-  - Note any environment variables or config settings that store tokens
-
-### 0.2. Identify Required Permissions
-
-- For each API endpoint, identify the required scope:
-  - Contents: Read & Write (for repository access and commits)
-  - Pull Requests: Read & Write (for PR creation)
-  - Checks: Read (if using GitHub status checks)
-  - Metadata: Read (always required)
 
 ---
 
@@ -76,6 +58,7 @@ gem 'jwt', '~> 2.7'  # For creating JWT tokens
 ```
 
 Then run:
+
 ```bash
 bundle install
 ```
@@ -93,7 +76,7 @@ github:
 github:
   # Legacy token (kept temporarily during migration)
   access_token: "your-personal-access-token"
-  
+
   # GitHub App authentication (new)
   app:
     enabled: true  # Set to false to use PAT during testing/migration
@@ -130,12 +113,12 @@ require 'json'
 require 'time'
 require 'logger'
 
-class GitHubAppAuth
+class CookstyleRunner::Authentication
   TOKEN_ENDPOINT = 'https://api.github.com/app/installations/%s/access_tokens'
   TOKEN_TTL = 3600 # 1 hour in seconds
-  
+
   attr_reader :app_id, :installation_id, :private_key, :logger
-  
+
   def initialize(app_id:, installation_id:, private_key:, logger: nil)
     @app_id = app_id
     @installation_id = installation_id
@@ -144,30 +127,30 @@ class GitHubAppAuth
     @token_expires_at = Time.at(0)
     @token = nil
   end
-  
+
   def token
     if @token.nil? || Time.now >= @token_expires_at
       refresh_token
     end
     @token
   end
-  
+
   private
-  
+
   def refresh_token
     jwt_token = generate_jwt
     endpoint = format(TOKEN_ENDPOINT, installation_id)
-    
+
     uri = URI(endpoint)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
-    
+
     request = Net::HTTP::Post.new(uri)
     request['Accept'] = 'application/vnd.github.v3+json'
     request['Authorization'] = "Bearer #{jwt_token}"
-    
+
     response = http.request(request)
-    
+
     if response.code.to_i == 201
       data = JSON.parse(response.body)
       @token = data['token']
@@ -178,7 +161,7 @@ class GitHubAppAuth
       raise "Failed to get GitHub App installation token: #{response.code} #{response.body}"
     end
   end
-  
+
   def generate_jwt
     now = Time.now.to_i
     payload = {
@@ -189,10 +172,10 @@ class GitHubAppAuth
       # GitHub App identifier
       iss: app_id
     }
-    
+
     JWT.encode(payload, private_key, 'RS256')
   end
-  
+
   # Helper to load a private key from a file path
   def self.load_private_key_from_file(path)
     OpenSSL::PKey::RSA.new(File.read(path))
@@ -216,12 +199,12 @@ class GitHubClientFactory
       create_pat_client(config, logger)
     end
   end
-  
+
   private
-  
+
   def self.create_app_client(config, logger)
     app_config = config[:github][:app]
-    
+
     # Get private key either from path or direct config
     private_key = if app_config[:private_key]
                     app_config[:private_key]
@@ -230,19 +213,19 @@ class GitHubClientFactory
                   else
                     raise "GitHub App private key not provided"
                   end
-    
+
     # Create auth instance
-    auth = GitHubAppAuth.new(
+    auth = CookstyleRunner::Authentication.new(
       app_id: app_config[:app_id],
       installation_id: app_config[:installation_id],
       private_key: private_key,
       logger: logger
     )
-    
+
     # Create a client with a proc that provides a fresh token each time
     Octokit::Client.new(access_token: -> { auth.token })
   end
-  
+
   def self.create_pat_client(config, logger)
     Octokit::Client.new(access_token: config[:github][:access_token])
   end
@@ -266,7 +249,7 @@ class PRManager
     @logger = logger || Logger.new($stdout)
     @client = GitHubClientFactory.create_client(config, logger)
   end
-  
+
   # Rest of your PR manager code using @client
   # ...
 end
@@ -316,18 +299,18 @@ require 'minitest/autorun'
 require 'webmock/minitest'
 require_relative '../app/github_app_auth'
 
-class GitHubAppAuthTest < Minitest::Test
+class CookstyleRunner::AuthenticationTest < Minitest::Test
   def setup
     # Generate a test private key
     @private_key = OpenSSL::PKey::RSA.generate(2048)
     @app_id = '12345'
     @installation_id = '67890'
-    @auth = GitHubAppAuth.new(
+    @auth = CookstyleRunner::Authentication.new(
       app_id: @app_id,
       installation_id: @installation_id,
       private_key: @private_key.to_s
     )
-    
+
     # Set up WebMock for the token endpoint
     stub_request(:post, "https://api.github.com/app/installations/67890/access_tokens")
       .to_return(
@@ -339,12 +322,12 @@ class GitHubAppAuthTest < Minitest::Test
         })
       )
   end
-  
+
   def test_token_generation
     token = @auth.token
     assert_equal 'ghs_test_token', token
   end
-  
+
   # Add more tests for error cases, expiration, etc.
 end
 ```
@@ -371,13 +354,13 @@ class GitHubAppIntegrationTest < Minitest::Test
     @config = YAML.load_file('test/fixtures/test_config.yml')
     @runner = CookstyleRunner.new(@config)
   end
-  
+
   def test_repository_processing
     result = @runner.process_repository('org/test-repo')
     assert result[:status] == :success
     # More assertions based on expected behavior
   end
-  
+
   # Additional integration tests
 end
 ```
@@ -444,6 +427,7 @@ github:
     installation_id: "your-installation-id"
     private_key_path: "/path/to/private-key.pem"
 ```
+
 ```
 
 ### 7.2. Create GITHUB_APP_SETUP.md
@@ -478,7 +462,7 @@ After successful migration and testing:
 
 ### Multi-Tenant Support
 
-- Extend GitHubAppAuth to support multiple installations
+- Extend CookstyleRunner::Authentication to support multiple installations
 - Create a database model to store installation IDs per organization
 - Add UI for users to install the GitHub App to their own organizations
 

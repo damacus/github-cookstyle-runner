@@ -3,13 +3,18 @@
 
 require 'octokit'
 require 'logger'
+require_relative 'authentication'
 
 # Module for GitHub API operations
 module GitHubAPI
-  # Initialize a GitHub API client
-  # @param token [String] GitHub API token
+  # Create an Octokit client using GitHub App authentication
+  # Reads app credentials from environment variables
   # @return [Octokit::Client] GitHub API client
-  def self.create_client(token)
+  def self.create_app_client
+    app_id = ENV['GITHUB_APP_ID']
+    installation_id = ENV['GITHUB_APP_INSTALLATION_ID']
+    private_key = ENV['GITHUB_APP_PRIVATE_KEY']
+    token = Authentication.get_installation_token(app_id: app_id, installation_id: installation_id, private_key: private_key)
     client = Octokit::Client.new(
       access_token: token,
       auto_paginate: true

@@ -12,13 +12,14 @@ module RepositoryManager
   # @param repo_dir [String] Repository directory
   # @param default_branch [String] Default branch name
   # @param logger [Logger] Logger instance
-  # @param github_token [String] GitHub token
   # @param owner [String] Repository owner
+  # @param app_id [String] GitHub App ID
+  # @param installation_id [String] GitHub App installation ID
+  # @param private_key [String] PEM-encoded private key
   # @return [Boolean] True if successful
-  def self.clone_or_update_repo(repo_url, repo_dir, default_branch, logger, github_token: nil, owner: nil)
-    context = GitOperations::RepoContext.new(repo_name: File.basename(repo_url, '.git'), github_token: github_token,
-                                             owner: owner, logger: logger)
-    GitOperations.clone_or_update_repo(repo_url, repo_dir, default_branch, context)
+  def self.clone_or_update_repo(repo_url, repo_dir, default_branch, logger, owner:, app_id:, installation_id:, private_key:)
+    context = GitOperations::RepoContext.new(repo_name: File.basename(repo_url, '.git'), owner: owner, logger: logger)
+    GitOperations.clone_or_update_repo(context, default_branch, app_id: app_id, installation_id: installation_id, private_key: private_key)
   end
 
   # Extract repository name from URL

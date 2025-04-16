@@ -22,13 +22,25 @@ module ConfigManager
   # @param logger [Logger] Logger instance
   # @return [Hash] Configuration hash
   def self.load_config(logger)
-    # Required environment variables
-    github_token = ENV['GITHUB_TOKEN']
+    # Required environment variables for GitHub App authentication
+    app_id = ENV['GITHUB_APP_ID']
+    installation_id = ENV['GITHUB_APP_INSTALLATION_ID']
+    private_key = ENV['GITHUB_APP_PRIVATE_KEY']
     owner = ENV['GCR_DESTINATION_REPO_OWNER']
 
     # Validate required environment variables
-    if github_token.nil? || github_token.empty?
-      logger.error('GITHUB_TOKEN environment variable is required')
+    if app_id.nil? || app_id.empty?
+      logger.error('GITHUB_APP_ID environment variable is required')
+      exit 1
+    end
+
+    if installation_id.nil? || installation_id.empty?
+      logger.error('GITHUB_APP_INSTALLATION_ID environment variable is required')
+      exit 1
+    end
+
+    if private_key.nil? || private_key.empty?
+      logger.error('GITHUB_APP_PRIVATE_KEY environment variable is required')
       exit 1
     end
 

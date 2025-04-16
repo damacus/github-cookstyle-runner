@@ -3,19 +3,26 @@
 require 'logger'
 require 'fileutils'
 require 'git'
+require_relative 'authentication'
 
 # Module for handling Git operations
 module GitOperations
-  # Context object for git operations
-  # Holds repo_name, github_token, owner, logger
-  class RepoContext
-    attr_reader :repo_name, :github_token, :owner, :logger
+  # Default base directory for cloning repos
+  REPO_BASE_DIR = File.join(Dir.pwd, 'tmp', 'repositories')
 
-    def initialize(repo_name:, github_token:, owner:, logger:)
+  # Context object for git operations
+  # Holds repo_name, owner, logger, repo_url, repo_dir
+  class RepoContext
+    attr_reader :repo_name, :owner, :logger, :repo_url, :repo_dir, :github_token
+
+    def initialize(repo_name:, owner:, logger:, github_token:, base_dir: REPO_BASE_DIR)
       @repo_name = repo_name
-      @github_token = github_token
       @owner = owner
+      @repo_url = "https://github.com/#{owner}/#{repo_name}.git"
       @logger = logger
+      @repo_dir = File.join(base_dir, owner, repo_name)
+      @github_token = github_token
+      FileUtils.mkdir_p(@repo_dir) unless Dir.exist?(@repo_dir)
     end
   end
 
@@ -30,14 +37,21 @@ module GitOperations
   # @param context [RepoContext]
   # @param branch [String] Branch to update (default: 'main')
   # @return [Git::Base, nil] Opened Git repo object or nil on failure
-  def self.clone_or_update_repo(context, branch = 'main')
-    repo_url = "https://#{context.github_token}@github.com/#{context.owner}/#{context.repo_name}.git"
-    repo_exists?(context.repo_dir) ? update_repo(context, branch) : clone_repo(context, repo_url, branch)
+  def self.clone_or_update_repo(context, branch, app_id:, installation_id:, private_key:)
+    token = Authentication.get_installation_token(app_id: app_id,
+                                                 installation_id: installation_id,
+                                                 private_key: private_key)
+    authed_url = "https://x-access-token:#{token}@github.com/#{context.owner}/#{context.repo_name}.git"
+    repo_exists?(context) ? update_repo(context, branch) : clone_repo(context, authed_url, branch)
   rescue StandardError => e
     context.logger.error("Error ensuring repo latest state: #{e.message}")
     nil
   end
 
+  # Update the repository to the specified branch
+  # @param context [RepoContext]
+  # @param branch [String] Branch to update
+  # @return [Git::Base, nil] Opened Git repo object or nil on failure
   def self.update_repo(context, branch)
     repo = Git.open(context.repo_dir)
     repo.fetch('origin')
@@ -51,12 +65,12 @@ module GitOperations
     nil
   end
 
-  def self.clone_repo(context, repo_url, branch)
-    repo = Git.clone(repo_url, context.repo_dir)
+  def self.clone_repo(context, authed_url, branch)
+    repo = Git.clone(authed_url, context.repo_dir)
     begin
       repo.checkout(branch)
-    rescue Git::GitExecuteError
-      context.logger.warn("Branch #{branch} does not exist yet in #{context.repo_name}")
+    rescue Git::Error
+      context.logger.warn("Branch #{branch} does not exist yet in #{context.repo_name}, checked out default.")
     end
     context.logger.debug("Cloned repo #{context.repo_name} to #{context.repo_dir}")
     repo
@@ -69,13 +83,16 @@ module GitOperations
   def self.checkout_branch(context, branch)
     repo = Git.open(context.repo_dir)
     begin
-      repo.branch(branch).checkout
-    rescue Git::GitExecuteError
+      # Attempt to checkout existing local or remote-tracking branch
+      repo.checkout(branch)
+    rescue Git::Error
+      # If checkout fails (branch doesn't exist locally/remotely), create it
+      context.logger.info("Branch #{branch} not found, creating new branch.")
       repo.branch(branch).checkout
     end
     true
   rescue StandardError => e
-    context.logger.error("Git checkout failed: #{e.message}")
+    context.logger.error("Git checkout failed for branch #{branch}: #{e.message}")
     false
   end
 
@@ -95,92 +112,81 @@ module GitOperations
   # @return [Boolean]
   def self.changes_to_commit?(context)
     repo = Git.open(context.repo_dir)
-    !repo.status.changed.empty? || !repo.status.added.empty? || !repo.status.deleted.empty?
+    repo.status.changed.any? || !repo.status.added.empty? || !repo.status.deleted.empty?
   rescue StandardError => e
     context.logger.error("Failed to check for changes to commit: #{e.message}")
     false
   end
 
   # Commit and push changes to GitHub
-  # @param repo_name [String] Repository name
+  # @param context [RepoContext]
   # @param branch_name [String] Branch name
   # @param commit_message [String] Commit message
-  # @param github_token [String] GitHub token
-  # @param owner [String] Repository owner
-  # @param logger [Logger] Logger instance
   # @return [Boolean] True if successful
   def self.commit_and_push_changes(context, branch_name, commit_message)
-    add_and_commit_changes(commit_message, context.logger) || (return false)
-    setup_remote(context)
-    push_to_remote(context, branch_name)
+    repo = Git.open(context.repo_dir)
+    add_and_commit_changes(repo, context, commit_message) || (return false)
+    setup_remote(repo, context)
+    push_to_remote(repo, context, branch_name)
+  rescue StandardError => e
+    context.logger.error("Failed to commit and push changes: #{e.message}")
+    false
   end
 
   # Add and commit all changes
+  # @param repo [Git::Base] The git repository object
   # @param context [RepoContext]
   # @param commit_message [String]
   # @return [Boolean]
-  def self.add_and_commit_changes(context, commit_message)
-    repo = Git.open(context.repo_dir)
+  def self.add_and_commit_changes(repo, context, commit_message)
     repo.add(all: true)
     repo.commit(commit_message)
-    context.logger.debug("Committed changes in #{repo_dir} with message: #{commit_message}")
+    context.logger.debug("Committed changes in #{context.repo_dir} with message: #{commit_message}")
     true
   rescue StandardError => e
-    logger.error("Error committing changes in #{repo_dir}: #{e.message}")
+    context.logger.error("Error committing changes in #{context.repo_dir}: #{e.message}")
     false
   end
 
-  # Set up a remote with token authentication
+  # Configure remote repository URL
+  # @param repo [Git::Base] The git repository object
   # @param context [RepoContext]
-  # @return [String, nil] remote name or nil on failure
-  def self.setup_remote(context)
-    thread_id = Thread.current.object_id
-    remote_name = "origin_#{thread_id}"
-    repo_url = "https://#{context.github_token}@github.com/#{context.owner}/#{context.repo_name}.git"
-    repo = Git.open(context.repo_dir)
-    repo.remove_remote(remote_name) if repo.remotes.map(&:name).include?(remote_name)
-    repo.add_remote(remote_name, repo_url)
-    context.logger.debug("Set up remote '#{remote_name}' with URL '#{repo_url}' in #{context.repo_dir}")
-    remote_name
-  rescue StandardError => e
-    context.logger.error("Error setting up remote: #{e.message}")
-    nil
-  end
-
-  # Push to the specified remote and branch
-  # @param context [RepoContext]
-  # @param branch_name [String]
-  # @return [Boolean]
-  def self.push_to_remote(context, branch_name)
-    repo = Git.open(context.repo_dir)
-    repo.push(context.remote_name, branch_name, force: true)
-    context.logger.debug("Pushed branch '#{branch_name}' to remote '#{context.remote_name}' in #{context.repo_dir}")
-    true
-  rescue StandardError => e
-    context.logger.error("Error pushing to remote: #{e.message}")
-    false
-  end
-
-  # Create an empty commit for manual fix PRs (main orchestration)
-  # @param context [RepoContext]
-  # @param branch_name [String]
-  # @param commit_message [String]
-  # @return [Boolean]
-  def self.create_empty_commit(context, branch_name, commit_message)
-    repo = Git.open(context.repo_dir)
-    repo.commit(commit_message, allow_empty: true)
-    setup_remote(context)
-    push_to_remote(context, branch_name)
-  rescue StandardError => e
-    context.logger.error("Error creating empty commit for #{context.repo_name}: #{e.message}")
-    false
-  end
-
-  # Update changelog with cookstyle fixes
-  # @param context [RepoContext]
-  # @param changelog_file [String] Path to changelog file
-  # @param marker [String] Marker in changelog for adding entries
   # @return [Boolean] True if successful
+  def self.setup_remote(repo, context)
+    remote_name = 'origin'
+    remote_url = "https://x-access-token:#{context.github_token}@github.com/#{context.repo_name}.git"
+    existing_remote = repo.remotes.find { |r| r.name == remote_name }
+
+    if existing_remote
+      repo.remote(remote_name).remove
+      context.logger.debug("Removed existing remote '#{remote_name}'")
+    end
+
+    repo.add_remote(remote_name, remote_url)
+    context.logger.debug("Added remote '#{remote_name}' with URL ending in .../#{context.repo_name}.git")
+    repo.fetch(remote_name) # Fetch updates from the remote
+    context.logger.debug("Fetched from remote '#{remote_name}'")
+    true
+  rescue StandardError => e
+    context.logger.error("Error setting up remote for #{context.repo_name}: #{e.message}")
+    false
+  end
+
+  # Push changes to the remote repository
+  # @param repo [Git::Base] The git repository object
+  # @param context [RepoContext]
+  # @param branch_name [String] Branch name
+  # @return [Boolean] True if successful
+  def self.push_to_remote(repo, context, branch_name)
+    remote_name = 'origin'
+    repo.push(remote_name, branch_name, force: true)
+    context.logger.info("Pushed changes to #{remote_name}/#{branch_name} for #{context.repo_name}")
+    true
+  rescue StandardError => e
+    context.logger.error("Error pushing to #{remote_name}/#{branch_name} for #{context.repo_name}: #{e.message}")
+    false
+  end
+
   # Update changelog with cookstyle fixes
   # @param context [RepoContext]
   # @param changelog_file [String] Path to changelog file
