@@ -77,7 +77,6 @@ module CookstyleRunner
     def run
       # Use the GitHubAPI module to fetch repositories
       repositories = GitHubAPI.fetch_repositories(
-        @pr_manager.github_client,
         @config[:owner],
         @config[:topics],
         logger
@@ -115,7 +114,8 @@ module CookstyleRunner
         config: @config,
         logger: logger,
         cache_manager: @cache,
-        pr_manager: @pr_manager
+        pr_manager: @pr_manager,
+        context_manager: @context_manager
       )
 
       # Process repositories in parallel using the Parallel gem
@@ -222,7 +222,13 @@ module CookstyleRunner
     end
 
     def validate_environment
-      required_vars = %w[GITHUB_TOKEN GCR_DESTINATION_REPO_OWNER GCR_MANAGE_CHANGELOG]
+      required_vars = %w[GCR_DESTINATION_REPO_OWNER GCR_MANAGE_CHANGELOG]
+      if auth_method == :token
+        required_vars << 'GITHUB_TOKEN'
+      else
+        required_vars += %w[APP_ID INSTALLATION_ID PRIVATE_KEY]
+      end
+
       missing_vars = required_vars.select { |var| ENV[var].nil? || ENV[var].empty? }
 
       return if missing_vars.empty?

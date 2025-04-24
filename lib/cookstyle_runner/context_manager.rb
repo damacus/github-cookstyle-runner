@@ -58,10 +58,6 @@ module CookstyleRunner
         repo_name: repo_name,
         owner: @global_config[:owner],
         logger: @global_logger,
-        github_token: @global_config[:github_token],
-        app_id: @global_config[:app_id],
-        installation_id: @global_config[:installation_id],
-        private_key: @global_config[:private_key],
         repo_dir: repo_dir,
         repo_url: repo_url
       )

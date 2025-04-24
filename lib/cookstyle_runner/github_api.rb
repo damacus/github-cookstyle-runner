@@ -19,7 +19,7 @@ module CookstyleRunner
         topics.each { |topic| query += " topic:#{topic}" }
       end
       logger.debug("Search query: #{query}")
-      results = client.search_repositories(query)
+      results = CookstyleRunner::Authentication.client.search_repositories(query)
       logger.info("Found #{results.total_count} repositories")
       results.items.map(&:clone_url)
     rescue Octokit::Error => e

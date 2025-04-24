@@ -15,11 +15,13 @@ module CookstyleRunner
     # @param logger [Logger] Logger instance
     # @param cache_manager [CacheManager] Cache manager instance
     # @param pr_manager [GitHubPRManager] PR manager instance
-    def initialize(config:, logger:, cache_manager:, pr_manager:)
+    # @param context_manager [ContextManager] Context manager instance
+    def initialize(config:, logger:, cache_manager:, pr_manager:, context_manager:)
       @config = config
       @logger = logger
       @cache_manager = cache_manager
       @pr_manager = pr_manager
+      @context_manager = context_manager
     end
 
     # Process a single repository

@@ -13,43 +13,22 @@ module GitOperations
   # Context object for git operations
   # Holds repository information and authentication details
   class RepoContext
-    attr_reader :repo_name, :owner, :logger, :repo_url, :repo_dir, :github_token,
+    attr_reader :repo_name, :owner, :logger, :repo_url, :repo_dir,
                 :app_id, :installation_id, :private_key
 
     # Initialize a repository context with either token or GitHub App authentication
     # @param repo_name [String] Name of the repository
     # @param owner [String] Owner of the repository
     # @param logger [Logger] Logger instance
-    # @param github_token [String, nil] GitHub token (Optional - if using App auth)
-    # @param app_id [String, nil] GitHub App ID (Optional - if using token auth)
-    # @param installation_id [String, nil] GitHub App installation ID (Optional - if using token auth)
-    # @param private_key [String, nil] GitHub App private key (Optional - if using token auth)
     # @param base_dir [String] Base directory for repositories
-    def initialize(repo_name:, owner:, logger:, base_dir: REPO_BASE_DIR, repo_dir: nil, repo_url: nil,
-                   github_token: nil, app_id: nil, installation_id: nil, private_key: nil)
+    def initialize(repo_name:, owner:, logger:, base_dir: REPO_BASE_DIR, repo_dir: nil, repo_url: nil)
       @repo_name = repo_name
       @owner = owner
       @logger = logger
-      @github_token = github_token
-      @app_id = app_id
-      @installation_id = installation_id
-      @private_key = private_key
       @repo_url = repo_url || "https://github.com/#{owner}/#{repo_name}.git"
       @repo_dir = repo_dir || File.join(base_dir, owner, repo_name)
 
       FileUtils.mkdir_p(@repo_dir) unless Dir.exist?(@repo_dir)
-    end
-
-    # Determine which authentication method to use
-    # @return [Symbol] :token or :app
-    def auth_method
-      if github_token && !github_token.empty?
-        :token
-      elsif app_id && installation_id && private_key
-        :app
-      else
-        raise ArgumentError, 'Either github_token or app_id/installation_id/private_key must be provided'
-      end
     end
   end
 
@@ -81,7 +60,7 @@ module GitOperations
   # @return [Git::Base, nil] Opened Git repo object or nil on failure
   def self.clone_or_update_repo(context, branch)
     # Get authenticated URL for cloning/fetching (may raise authentication error)
-    authed_url = get_authenticated_url(context)
+    authed_url = authenticated_url(context)
 
     # Clone or update based on whether repo already exists
     repo_exists?(context) ? update_repo(context, branch) : clone_repo(context, authed_url, branch)
@@ -94,11 +73,11 @@ module GitOperations
   # Get authenticated URL for git operations based on auth method in context
   # @param context [RepoContext] Repository context
   # @return [String] Authenticated URL
-  def self.get_authenticated_url(context)
-    case context.auth_method
-    when :token
+  def self.authenticated_url(context)
+    context.logger.debug("Using PAT authentication for #{context.repo_name}") if Authentication.use_pat?
+    if Authentication.use_pat?
       "https://#{context.github_token}:x-oauth-basic@github.com/#{context.owner}/#{context.repo_name}.git"
-    when :app
+    else
       token = CookstyleRunner::Authentication.get_installation_token(
         app_id: context.app_id,
         installation_id: context.installation_id,
@@ -113,6 +92,7 @@ module GitOperations
   # @param branch [String] Branch to update
   # @return [Git::Base, nil] Opened Git repo object or nil on failure
   def self.update_repo(context, branch)
+    context.logger.debug("Updating repository #{context.repo_name} on branch #{branch}")
     repo = Git.open(context.repo_dir)
     repo.fetch('origin')
     repo.checkout(branch)
@@ -126,6 +106,7 @@ module GitOperations
   end
 
   def self.clone_repo(context, authed_url, branch)
+    context.logger.debug("Cloning repository #{context.repo_name} from #{authed_url} to #{context.repo_dir}")
     repo = Git.clone(authed_url, context.repo_dir)
     begin
       repo.checkout(branch)

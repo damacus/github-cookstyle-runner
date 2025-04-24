@@ -19,6 +19,7 @@ require 'open3'
 require_relative './git_operations'
 require_relative './github_api'
 require_relative './cookstyle_operations'
+require_relative './authentication'
 
 # Manages GitHub pull request operations
 module CookstyleRunner
@@ -31,8 +32,8 @@ module CookstyleRunner
     def initialize(config, logger)
       @config = config
       @logger = logger
-      # Initialize GitHub client using our GitHub API module
-      @github_client = CookstyleRunner::GitHubAPI.create_client
+      # Use the centralized client from the Authentication module
+      @github_client = CookstyleRunner::Authentication.client
     end
 
     # Process repository with cookstyle fixes
