@@ -21,196 +21,189 @@ module CookstyleRunner
       @logger = logger
       @cache_manager = cache_manager
       @pr_manager = pr_manager
-      @context_manager = context_manager
+      @context_manager = context_manager # Retained for potential future use
     end
 
     # Process a single repository
     # @param repo_url [String] Repository URL
     # @param processed_count [Integer] Number of repositories processed so far
     # @param total_repos [Integer] Total number of repositories to process
-    # @return [Symbol] :success, :error, or :skipped
+    # @return [Hash] A hash containing processing results:
+    #   - :status [Symbol] :no_issues, :issues_found, :skipped, or :error
+    #   - :repo_name [String] The name of the repository processed
+    #   - :pr_details [Hash, nil] Details of created PR, if any
+    #   - :pr_error [Hash, nil] Details of PR creation error, if any
+    #   - :commit_sha [String] Final commit SHA after processing
+    #   - :had_issues [Boolean] Whether Cookstyle found any offenses
+    #   - :total_offenses [Integer] Count of all offenses found
+    #   - :output [Hash] Parsed JSON output from Cookstyle
+    #   - :processing_time [Float] Time taken for Cookstyle run
+    #   - :error_message [String, nil] Error message if status is :error
     def process_repository(repo_url, processed_count, total_repos)
-      repo_name, _, repo_dir = setup_working_directory(repo_url)
+      repo_name, repo_dir = setup_working_directory(repo_url)
       log_processing(repo_name, processed_count, total_repos)
-
-      # Get a repository context from the context manager
       context = ContextManager.instance.get_repo_context(repo_url, repo_dir)
-      return :error unless GitOperations.clone_or_update_repo(context, @config[:default_branch])
 
-      return :skipped if should_skip_repository?(repo_name)
+      unless GitOperations.clone_or_update_repo(context, @config[:default_branch])
+        return { status: :error, repo_name: repo_name, error_message: 'Failed to clone/update repository' }
+      end
 
-      result = run_in_subprocess(repo_url, repo_dir, repo_name)
-      update_cache_if_needed(repo_name, result)
-      result[:status]
+      return { status: :skipped, repo_name: repo_name } if should_skip_repository?(repo_name)
+
+      # Run cookstyle and get the result hash
+      result_hash = run_in_subprocess(context, repo_url, repo_dir, repo_name)
+
+      update_cache_if_needed(repo_name, result_hash)
+
+      # Return the full result hash, adding repo_name
+      result_hash.merge(repo_name: repo_name)
     rescue StandardError => e
-      handle_processing_error(e, repo_name, repo_url, processed_count, total_repos)
+      logger.error("Error processing repository #{repo_name}: #{e.message}")
+      logger.debug(e.backtrace.join("\n"))
+      # Return error status and repo name
+      { status: :error, repo_name: repo_name, error_message: e.message }
     end
 
     private
 
+    # --- Setup and Logging ---
     def setup_working_directory(repo_url)
       repo_name = File.basename(repo_url, '.git')
-      thread_id = Thread.current.object_id
-      thread_dir = File.join(@config[:cache_dir], "thread_#{thread_id}")
-      repo_dir = File.join(thread_dir, repo_name)
-      FileUtils.mkdir_p(thread_dir) unless Dir.exist?(thread_dir)
-      [repo_name, thread_dir, repo_dir]
+      # Calculate the intended repo directory path
+      repo_dir = File.join(@config[:cache_dir], repo_name)
+      # Ensure only the base cache directory exists
+      FileUtils.mkdir_p(@config[:cache_dir])
+      # Return repo_name and the calculated repo_dir path
+      [repo_name, repo_dir]
     end
 
     def log_processing(repo_name, processed_count, total_repos)
       logger.info("[#{processed_count}/#{total_repos}] Processing: #{repo_name}")
     end
 
+    # --- Caching ---
     def update_cache_if_needed(repo_name, result)
-      return unless @config[:use_cache] && result[:status] == :success
+      # Only cache successful runs (no_issues or issues_found)
+      return unless @config[:use_cache] && %i[no_issues issues_found].include?(result[:status])
 
       @cache_manager.update(repo_name, result[:commit_sha], result[:had_issues], result[:output],
                             result[:processing_time])
     end
 
-    def handle_processing_error(error, repo_name, repo_url, processed_count, total_repos)
-      logger.error("Error processing repository #{repo_name}: #{error.message}")
-      logger.debug(error.backtrace.join("\n"))
-      retry_operation(repo_url, processed_count, total_repos) ? :success : :error
-    end
+    attr_reader :logger, :config # Make config accessible
 
-    attr_reader :logger
-
-
-    # Run Cookstyle checks and auto-correction in a subprocess
-    # @param repo_url [String] Repository URL
+    # --- Core Cookstyle Execution ---
+    # Run Cookstyle checks and auto-correction
+    # @param context [Context] Context instance
     # @param repo_dir [String] Directory containing repository
     # @param repo_name [String] Repository name
-    # @return [Hash] Result of Cookstyle execution
-    def run_in_subprocess(repo_url, repo_dir, repo_name)
+    # @return [Hash] Result of Cookstyle execution, including status and PR info
+    def run_in_subprocess(context, repo_dir, repo_name)
       start_time = Time.now
-      initial_commit_sha = GitOperations.get_latest_commit_sha(repo_dir)
-      @logger.debug("Initial commit SHA for #{repo_name}: #{initial_commit_sha}")
+      logger.debug("Starting Cookstyle run for #{repo_name} in #{repo_dir}")
 
       # --- Run Cookstyle using CookstyleOperations ---
-      parsed_json, num_auto_correctable, num_manual_correctable, pr_description, issue_description = CookstyleOperations.run_cookstyle(repo_dir, @logger)
+      cookstyle_result = CookstyleOperations.run_cookstyle(
+        context, logger # Pass the context object and logger
+      )
 
-      final_commit_sha = GitOperations.get_latest_commit_sha(repo_dir)
-      @logger.debug("Final commit SHA for #{repo_name}: #{final_commit_sha}")
+      # Get commit SHA *after* potential commit in run_cookstyle
+      final_commit_sha_after_run = GitOperations.get_latest_commit_sha(context)
+      logger.debug("Final commit SHA after run for #{repo_name}: #{final_commit_sha_after_run}")
 
       # Determine outcomes
-      git_changes_made = initial_commit_sha != final_commit_sha
-      manual_attention_needed = num_manual_correctable.positive?
-      total_offenses = num_auto_correctable + num_manual_correctable
-      exit_status = total_offenses.positive? ? 1 : 0 # Simulate exit status
+      total_offenses = cookstyle_result[:num_auto_correctable] + cookstyle_result[:num_manual_correctable]
 
-      @logger.info("Cookstyle run finished for #{repo_name}. Auto-correctable: #{num_auto_correctable}, Manual: #{num_manual_correctable}, Git changes: #{git_changes_made}")
+      logger.info("Cookstyle run finished for #{repo_name}. Auto-correctable: #{cookstyle_result[:num_auto_correctable]}, Manual: #{cookstyle_result[:num_manual_correctable]}, Git changes committed: #{cookstyle_result[:git_changes_made]}")
 
-      # --- Handle PR or Issue Creation ---
-      handle_cookstyle_pr_creation(
+      # --- Handle PR or Issue Creation --- # Pass repo_dir from context
+      pr_result = handle_cookstyle_pr_creation(
         repo_name: repo_name,
-        repo_dir: repo_dir,
-        num_auto_correctable: num_auto_correctable,
-        num_manual_correctable: num_manual_correctable,
-        pr_description: pr_description,
-        issue_description: issue_description,
-        git_changes_made: git_changes_made
+        repo_dir: context.repo_dir, # Get repo_dir from context
+        num_auto_correctable: cookstyle_result[:num_auto_correctable],
+        num_manual_correctable: cookstyle_result[:num_manual_correctable],
+        pr_description: cookstyle_result[:pr_description],       # Use description from run_cookstyle
+        issue_description: cookstyle_result[:issue_description], # Use description from run_cookstyle
+        git_changes_made: cookstyle_result[:git_changes_made]    # Use flag from run_cookstyle
       )
-      # ---------------------------------
 
-      # --- Build Result ---
-      build_result_hash(
-        exit_status, # Simulate exit status
-        final_commit_sha,
-        total_offenses, # Pass total offenses count
-        parsed_json, # Pass the full parsed JSON
-        Time.now - start_time
-      )
-      # -------------------
+      # Combine status, cookstyle data, and PR result
+      {
+        status: total_offenses.zero? ? :no_issues : :issues_found,
+        commit_sha: final_commit_sha_after_run,
+        had_issues: total_offenses.positive?,
+        total_offenses: total_offenses,
+        output: cookstyle_result[:output],
+        processing_time: Time.now - start_time
+      }.merge(pr_result)
     end
 
     # --- Helper methods for run_in_subprocess ---
-    def handle_cookstyle_pr_creation(repo_name:, repo_dir:, num_auto_correctable:, num_manual_correctable:, pr_description:, issue_description:, git_changes_made:)
-      return unless num_auto_correctable.positive? || num_manual_correctable.positive?
+    # Handles the creation of Pull Requests or Issues based on Cookstyle results
+    # Returns a hash containing :pr_details (for PR/Issue) or :pr_error if creation failed, or empty hash otherwise.
+    def handle_cookstyle_pr_creation(repo_name:, repo_dir:, num_auto_correctable:, num_manual_correctable:,
+                                     pr_description:, issue_description:, git_changes_made:)
+      # No action needed if no offenses or changes
+      return {} unless correctable?
 
+      # Attempt auto-fix PR if applicable
       if auto_fix_applicable?(num_auto_correctable, git_changes_made)
-        pr_created, pr_details = @pr_manager.create_pull_request(repo_name, repo_dir, pr_description)
-        logger.info("Pull request #{pr_created ? 'created' : 'not created'} for #{repo_name}")
-        assign_pr_result(pr_created, pr_details, repo_name, 'auto-fix')
-        return
-      end
-      return unless manual_fix_applicable?(num_manual_correctable)
+        logger.info("Attempting to create auto-fix PR for #{repo_name}")
+        # Pass the context object now required by create_pull_request
+        pr_created, pr_details = @pr_manager.create_pull_request(repo_name, repo_dir, pr_description, context)
+        logger.info("Auto-fix PR creation result for #{repo_name}: #{pr_created ? 'Success' : 'Failed/Skipped'}")
+        return assign_pr_result(pr_created, pr_details, repo_name, 'pull_request')
 
-      handle_manual_fix_pr(repo_name, repo_dir, issue_description)
+      # Attempt manual-fix Issue if applicable (and auto-fix didn't apply)
+      elsif num_manual_correctable.positive? && config[:create_manual_fix_issues]
+        logger.info("Attempting to create manual-fix issue for #{repo_name}")
+        issue_created, issue_details = @pr_manager.create_issue_for_manual_fixes(repo_name, issue_description)
+        logger.info("Manual-fix issue creation result for #{repo_name}: #{issue_created ? 'Success' : 'Failed'}")
+        # Use assign_pr_result helper, type will be 'issue' from issue_details
+        return assign_pr_result(issue_created, issue_details, repo_name, 'issue')
+      end
+
+      # No applicable PR/Issue scenario was met
+      logger.info("No PR or Issue created for #{repo_name} (Auto: #{num_auto_correctable}, Manual: #{num_manual_correctable}, Changes: #{git_changes_made}, Create Issues: #{config[:create_manual_fix_issues]})")
+      {} # Return empty hash if no action taken
+    end
+
+    def correctable?(num_auto_correctable, num_manual_correctable)
+      if num_auto_correctable.positive? || num_manual_correctable.positive?
+        logger.debug(
+          "Auto: #{num_auto_correctable}, " \
+          "Manual: #{num_manual_correctable}, " \
+          "Changes: #{git_changes_made}, " \
+          "Create Issues: #{config[:create_manual_fix_issues]}"
+        )
+        true
+      else
+        logger.info("No offenses found for #{repo_name}, skipping PR/Issue creation.")
+        false
+      end
     end
 
     def auto_fix_applicable?(num_auto_correctable, git_changes_made)
       num_auto_correctable.positive? && git_changes_made
     end
 
-    def manual_fix_applicable?(num_manual_correctable)
-      num_manual_correctable.positive? && @config[:create_manual_fix_prs]
-    end
-
-    def handle_manual_fix_pr(repo_name, repo_dir, issue_description)
-      manual_fix_message = <<~MSG
-        Cookstyle found issues that require manual fixes:
-
-        #{issue_description}
-
-        These issues cannot be automatically fixed and require manual intervention.
-      MSG
-      logger.info("Repository #{repo_name} had cookstyle issues that require manual fixes")
-      pr_created, pr_details = @pr_manager.create_pull_request(repo_name, repo_dir, manual_fix_message, true)
-      logger.info("Manual fix PR #{pr_created ? 'created' : 'not created'} for #{repo_name}")
-      assign_pr_result(pr_created, pr_details, repo_name, 'manual-fix')
-    end
-
-    def assign_pr_result(pr_created, pr_details, repo_name, type)
-      if pr_created && pr_details
-        Thread.current[:pr_details] = {
-          repo: repo_name,
-          number: pr_details[:number],
-          url: pr_details[:html_url],
-          title: pr_details[:title],
-          type: type
-        }
+    # Helper to assign the result hash for PR/Issue creation attempts
+    def assign_pr_result(created, details, repo_name, type)
+      if created && details
+        logger.info("Successfully created #{details[:type]} ##{details[:number]} for #{repo_name}: #{details[:html_url]}")
+        { pr_details: details } # Use generic key :pr_details for both PRs and Issues
       else
-        Thread.current[:pr_error] = {
-          repo: repo_name,
-          message: "Failed to create #{type} PR",
-          type: type
-        }
+        logger.error("Failed to create #{type} for #{repo_name}")
+        { pr_error: { repo_name: repo_name, type: type, message: "Failed to create #{type}" } }
       end
     end
 
-    def build_result_hash(exit_status, commit_sha, total_offenses, parsed_json, processing_time)
-      {
-        status: exit_status.zero? ? :success : :error,
-        commit_sha: commit_sha || '',
-        had_issues: total_offenses.positive?,
-        output: parsed_json,
-        processing_time: processing_time
-      }
-    end
-
+    # --- Filtering and Skipping ---
+    # Check if a repository should be skipped based on inclusion/exclusion lists
+    # @param repo_name [String] Repository name
+    # @return [Boolean] True if the repository should be skipped
     def should_skip_repository?(repo_name)
-      RepositoryManager.should_skip_repository?(repo_name, @config[:include_repos], @config[:exclude_repos])
-    end
-
-    def retry_operation(repo_url, processed_count, total_repos)
-      return false unless @config[:retry_count].positive?
-
-      repo_name = File.basename(repo_url, '.git')
-      logger.info("Retrying repository #{repo_name} (#{@config[:retry_count]} attempts remaining)")
-      perform_retry(repo_url, processed_count, total_repos, repo_name)
-    end
-
-    def perform_retry(repo_url, processed_count, total_repos, repo_name)
-      retry_config = @config.dup
-      retry_config[:retry_count] -= 1
-      original_config = @config
-      @config = retry_config
-      @cache_manager.clear_repo(repo_name) if @config[:use_cache]
-      sleep(1)
-      result = process_repository(repo_url, processed_count, total_repos)
-      @config = original_config
-      %i[success skipped].include?(result)
+      RepositoryManager.should_skip_repository?(repo_name, config[:include_repos], config[:exclude_repos]) # Use attr_reader
     end
   end
   # rubocop:enable Metrics/ClassLength

@@ -17,7 +17,7 @@ module CookstyleRunner
     # Determine if a Personal Access Token should be used
     # @return [Boolean] True if PAT should be used
     def self.use_pat?
-      ENV['GITHUB_TOKEN'] && !ENV['GITHUB_TOKEN'].empty?
+      ENV.fetch('GITHUB_TOKEN', nil) && !ENV['GITHUB_TOKEN'].empty?
     end
 
     # Returns the API endpoint to use for GitHub API calls
@@ -30,7 +30,7 @@ module CookstyleRunner
     # @return [Octokit::Client] Octokit client instance
     def self.build_pat_client
       client = Octokit::Client.new(
-        access_token: ENV['GITHUB_TOKEN'],
+        access_token: ENV.fetch('GITHUB_TOKEN', nil),
         auto_paginate: true
       )
       client.api_endpoint = api_endpoint
@@ -40,9 +40,9 @@ module CookstyleRunner
     # Build an Octokit client using GitHub App authentication
     # @return [Octokit::Client] Octokit client instance
     def self.build_app_client
-      app_id = ENV['GITHUB_APP_ID']
-      installation_id = ENV['GITHUB_APP_INSTALLATION_ID']
-      private_key = ENV['GITHUB_APP_PRIVATE_KEY']
+      app_id = ENV.fetch('GITHUB_APP_ID', nil)
+      installation_id = ENV.fetch('GITHUB_APP_INSTALLATION_ID', nil)
+      private_key = ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil)
       token = get_installation_token(app_id: app_id, installation_id: installation_id, private_key: private_key)
       client = Octokit::Client.new(
         access_token: token,

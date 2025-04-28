@@ -16,10 +16,10 @@ require 'logger'
 require 'fileutils'
 require 'open3'
 
-require_relative './git_operations'
-require_relative './github_api'
-require_relative './cookstyle_operations'
-require_relative './authentication'
+require_relative 'git_operations'
+require_relative 'github_api'
+require_relative 'cookstyle_operations'
+require_relative 'authentication'
 
 # Manages GitHub pull request operations
 module CookstyleRunner
@@ -40,79 +40,86 @@ module CookstyleRunner
     # @param repo_name [String] Repository name
     # @param repo_dir [String] Repository directory
     # @param cookstyle_output [String] Output from cookstyle run
+    # @param context [RepoContext] The context object for the repository
     # @param manual_fix [Boolean] Whether manual fixes are required (can't be auto-fixed)
     # @return [Array<Boolean, Hash>] Success status and PR/Issue details
-    def create_pull_request(repo_name, repo_dir, cookstyle_output, manual_fix: false)
+    def create_pull_request(repo_name, repo_dir, cookstyle_output, context, manual_fix: false)
       # Ensure the repository directory exists
       return [false, nil] unless Dir.exist?(repo_dir)
 
       # Create an issue if manual fixes are required
+      # Note: create_issue_for_manual_fixes might also need context if it uses GitOperations
       return create_issue_for_manual_fixes(repo_name, cookstyle_output) if manual_fix
 
       # Process auto-fixable changes
       Dir.chdir(repo_dir) do
-        # Check if there are changes to commit
-        unless GitOperations.changes_to_commit?(logger)
-          logger.info("No changes to commit for #{repo_name}")
+        # Check if there are changes to commit - Pass context
+        unless GitOperations.changes_to_commit?(context)
+          @logger.info("No changes to commit for #{repo_name}")
           return [false, nil]
         end
 
-        # Create a new branch for the fixes
-        GitOperations.create_branch(
-          repo_context,
-          config[:branch_name],
-          config[:default_branch],
-          config[:git_name],
-          config[:git_email],
-          logger
-        )
-
-        # Update changelog if configured
-        if config[:manage_changelog]
-          GitOperations.update_changelog(repo_name, config[:changelog_location], config[:changelog_marker], logger)
+        # Create a new branch for the fixes - Pass context and config
+        # Assuming config is accessible via @config instance variable
+        unless GitOperations.create_branch(context, @config, @logger)
+          @logger.error("Failed to create branch for #{repo_name}, cannot proceed with PR.")
+          return [false, { error: 'Failed to create branch', type: 'pull_request' }]
         end
 
-        # Commit and push changes
-        commit_message = "#{config[:pr_title]}\n\nSigned-off-by: #{config[:git_name]} <#{config[:git_email]}>"
+        # Update changelog if enabled - Pass context and config
+        if @config[:manage_changelog]
+          # Format offense details for changelog (this might need context/config access too)
+          # Placeholder: Assuming cookstyle_output contains details needed
+          offense_details_for_cl = "* Automated Cookstyle fixes applied."
+          GitOperations.update_changelog(context, @config, offense_details_for_cl)
+        end
 
-        unless GitOperations.commit_and_push_changes(repo_name, config[:branch_name], commit_message, @github_token,
-                                                     config[:owner], logger)
-          logger.error("Failed to commit and push changes for #{repo_name}")
-          return [false, nil]
+        # Add and commit changes - Pass context
+        commit_message = "#{@config[:pr_title]}\n\nSigned-off-by: #{@config[:git_name]} <#{@config[:git_email]}>"
+        unless GitOperations.add_and_commit_changes(context, commit_message)
+          @logger.error("Failed to commit changes for #{repo_name}, cannot proceed with PR.")
+          return [false, { error: 'Failed to commit changes', type: 'pull_request' }]
+        end
+
+        # Push the branch - Pass context
+        unless GitOperations.push_branch(context, @config[:branch_name])
+          @logger.error("Failed to push branch for #{repo_name}, cannot proceed with PR.")
+          return [false, { error: 'Failed to push branch', type: 'pull_request' }]
         end
 
         # Create the PR on GitHub
-        repo_full_name = "#{config[:owner]}/#{repo_name}"
+        repo_full_name = "#{@config[:owner]}/#{repo_name}"
+        # Format PR body (Assuming cookstyle_output is sufficient)
         pr_body = CookstyleRunner::GitHubAPI.format_pr_body(cookstyle_output)
 
         pr = CookstyleRunner::GitHubAPI.create_or_update_pr(
-          github_client,
+          @github_client,
           repo_full_name,
-          config[:branch_name],
-          config[:default_branch],
-          config[:pr_title],
+          @config[:branch_name],
+          @config[:default_branch],
+          @config[:pr_title],
           pr_body,
-          config[:pr_labels],
-          logger
+          @config[:pr_labels],
+          @logger
         )
 
         if pr
-          logger.info("Successfully created PR ##{pr.number} for #{repo_name}: #{pr.html_url}")
+          @logger.info("Successfully created PR ##{pr.number} for #{repo_name}: #{pr.html_url}")
           return [true, {
             number: pr.number,
             html_url: pr.html_url,
-            title: config[:pr_title],
+            title: @config[:pr_title],
             type: 'pull_request'
           }]
         else
-          logger.error("Failed to create PR for #{repo_name}")
-          return [false, nil]
+          @logger.error("Failed to create PR for #{repo_name} via GitHub API")
+          return [false, { error: 'GitHub API PR creation failed', type: 'pull_request' }]
         end
       end
     rescue StandardError => e
-      logger.error("Error processing repository #{repo_name}: #{e.message}")
-      logger.debug(e.backtrace.join("\n"))
-      [false, nil]
+      @logger.error("Error during PR creation process for #{repo_name}: #{e.message}")
+      @logger.debug(e.backtrace.join("\n"))
+      [false, { error: e.message, type: 'pull_request' }]
     end
 
     # Create an issue for manual cookstyle fixes

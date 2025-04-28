@@ -53,14 +53,27 @@ module CookstyleRunner
     private
 
     # Create a repository context with appropriate authentication
+    # rubocop:disable Metrics/MethodLength
     def create_context(repo_name, repo_url, repo_dir)
+      auth_params = if CookstyleRunner::Authentication.use_pat?
+                      { github_token: ENV.fetch('GITHUB_TOKEN', nil) }
+                    else
+                      {
+                        app_id: ENV.fetch('GITHUB_APP_ID', nil),
+                        installation_id: ENV.fetch('GITHUB_APP_INSTALLATION_ID', nil),
+                        private_key: ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil)
+                      }
+                    end
+
       GitOperations::RepoContext.new(
         repo_name: repo_name,
         owner: @global_config[:owner],
         logger: @global_logger,
         repo_dir: repo_dir,
-        repo_url: repo_url
+        repo_url: repo_url,
+        **auth_params
       )
     end
+    # rubocop:enable Metrics/MethodLength
   end
 end

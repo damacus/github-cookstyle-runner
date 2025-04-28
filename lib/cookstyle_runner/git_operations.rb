@@ -14,21 +14,34 @@ module GitOperations
   # Holds repository information and authentication details
   class RepoContext
     attr_reader :repo_name, :owner, :logger, :repo_url, :repo_dir,
-                :app_id, :installation_id, :private_key
+                :github_token, :app_id, :installation_id, :private_key
 
     # Initialize a repository context with either token or GitHub App authentication
     # @param repo_name [String] Name of the repository
     # @param owner [String] Owner of the repository
     # @param logger [Logger] Logger instance
     # @param base_dir [String] Base directory for repositories
-    def initialize(repo_name:, owner:, logger:, base_dir: REPO_BASE_DIR, repo_dir: nil, repo_url: nil)
+    # @param repo_dir [String, nil] Repository directory
+    # @param repo_url [String, nil] Repository URL
+    # @param github_token [String, nil] GitHub PAT (if using token auth)
+    # @param app_id [String, nil] GitHub App ID (if using app auth)
+    # @param installation_id [Integer, nil] GitHub App Installation ID (if using app auth)
+    # @param private_key [String, nil] GitHub App Private Key (if using app auth)
+    def initialize(repo_name:, owner:, logger:, base_dir: REPO_BASE_DIR, repo_dir: nil, repo_url: nil,
+                   github_token: nil, app_id: nil, installation_id: nil, private_key: nil)
       @repo_name = repo_name
       @owner = owner
       @logger = logger
       @repo_url = repo_url || "https://github.com/#{owner}/#{repo_name}.git"
       @repo_dir = repo_dir || File.join(base_dir, owner, repo_name)
 
-      FileUtils.mkdir_p(@repo_dir) unless Dir.exist?(@repo_dir)
+      # Store authentication details
+      @github_token = github_token
+      @app_id = app_id
+      @installation_id = installation_id
+      @private_key = private_key
+
+      FileUtils.mkdir_p(@repo_dir)
     end
   end
 
@@ -36,22 +49,38 @@ module GitOperations
   # @param context [RepoContext]
   # @return [Boolean]
   def self.repo_exists?(context)
-    Dir.exist?(File.join(context.repo_dir, '.git'))
+    Dir.exist?(File.join(context.repo_dir)) &&
+      # check if folder is a git repository
+      begin
+        Git.open(context.repo_dir)
+        true
+      rescue StandardError
+        false
+      end
   end
 
   # Create a new branch for cookstyle fixes using GitHub API
   # @param context [RepoContext]
-  # @param branch_name [String] Branch name to create
-  # @param git_name [String] Git user name
-  # @param git_email [String] Git user email
+  # @param config [Hash] Configuration hash
   # @param logger [Logger] Logger instance
   # @return [Boolean] True if branch was created successfully
-  def self.create_branch(context, branch_name, git_name, git_email, logger)
+  def self.create_branch(context, config, logger)
     repo = Git.open(context.repo_dir)
-    setup_git_config(git_name, git_email, logger)
-    repo.branch(branch_name).checkout
-    logger.info("Created and checked out branch '#{branch_name}' locally for #{context.repo_name}")
+    setup_git_config(config[:git_name], config[:git_email], logger)
+    repo.branch(config[:branch_name]).checkout
+    logger.info("Created and checked out branch '#{config[:branch_name]}' locally for #{context.repo_name}")
     true
+  end
+
+  # Get the latest commit SHA for the repository
+  # @param context [RepoContext]
+  # @return [String, nil]
+  def self.get_latest_commit_sha(context)
+    repo = Git.open(context.repo_dir)
+    repo.object('HEAD').sha
+  rescue StandardError => e
+    context.logger.error("Failed to get latest commit SHA: #{e.message}")
+    nil
   end
 
   # Ensure the repository exists locally and is up-to-date
@@ -66,7 +95,7 @@ module GitOperations
     repo_exists?(context) ? update_repo(context, branch) : clone_repo(context, authed_url, branch)
   rescue StandardError => e
     context.logger.error("Error when ensuring repository is up to date: #{e.message}")
-    context.logger.debug(e.backtrace.join("\n")) if context.logger.debug?
+    context.logger.debug(e.backtrace.join("\n"))
     exit(1)
   end
 
@@ -74,8 +103,11 @@ module GitOperations
   # @param context [RepoContext] Repository context
   # @return [String] Authenticated URL
   def self.authenticated_url(context)
-    context.logger.debug("Using PAT authentication for #{context.repo_name}") if Authentication.use_pat?
-    if Authentication.use_pat?
+    if CookstyleRunner::Authentication.use_pat?
+      context.logger.debug("Using PAT authentication for #{context.repo_name}")
+    end
+
+    if CookstyleRunner::Authentication.use_pat?
       "https://#{context.github_token}:x-oauth-basic@github.com/#{context.owner}/#{context.repo_name}.git"
     else
       token = CookstyleRunner::Authentication.get_installation_token(
@@ -157,33 +189,32 @@ module GitOperations
     false
   end
 
-  # Commit and push changes to GitHub
+  # Add and commit local changes
   # @param context [RepoContext]
-  # @param branch_name [String] Branch name
   # @param commit_message [String] Commit message
   # @return [Boolean] True if successful
-  def self.commit_and_push_changes(context, branch_name, commit_message)
+  def self.add_and_commit_changes(context, commit_message)
     repo = Git.open(context.repo_dir)
-    add_and_commit_changes(repo, context, commit_message) || (return false)
-    setup_remote(repo, context)
-    push_to_remote(repo, context, branch_name)
+    repo.add(all: true)
+    repo.commit(commit_message)
+    context.logger.debug("Committed changes locally with message: #{commit_message}")
+    true
   rescue StandardError => e
-    context.logger.error("Failed to commit and push changes: #{e.message}")
+    context.logger.error("Failed to add and commit local changes: #{e.message}")
     false
   end
 
-  # Add and commit all changes
-  # @param repo [Git::Base] The git repository object
+  # Push the current branch to the remote repository
   # @param context [RepoContext]
-  # @param commit_message [String]
-  # @return [Boolean]
-  def self.add_and_commit_changes(repo, context, commit_message)
-    repo.add(all: true)
-    repo.commit(commit_message)
-    context.logger.debug("Committed changes in #{context.repo_dir} with message: #{commit_message}")
-    true
+  # @param branch_name [String] Branch name
+  # @return [Boolean] True if successful
+  def self.push_branch(context, branch_name)
+    repo = Git.open(context.repo_dir)
+    # Commit should happen before this
+    setup_remote(repo, context)
+    push_to_remote(repo, context, branch_name)
   rescue StandardError => e
-    context.logger.error("Error committing changes in #{context.repo_dir}: #{e.message}")
+    context.logger.error("Failed to push branch #{branch_name}: #{e.message}")
     false
   end
 
@@ -226,31 +257,45 @@ module GitOperations
 
   # Update changelog with cookstyle fixes
   # @param context [RepoContext]
-  # @param changelog_file [String] Path to changelog file
-  # @param marker [String] Marker in changelog for adding entries
+  # @param config [Hash] Configuration hash
+  # @param offense_details [String] Formatted string of offenses to add
   # @return [Boolean] True if successful
-  def self.update_changelog(context, changelog_file, marker)
-    return false unless File.exist?(changelog_file)
-
-    unless File.read(changelog_file).include?(marker)
-      context.logger.warn("Changelog marker '#{marker}' not found in #{changelog_file} for #{context.repo_name}")
+  def self.update_changelog(context, config, offense_details)
+    changelog_path = File.join(context.repo_dir, config[:changelog_location])
+    unless File.exist?(changelog_path)
+      context.logger.warn("Changelog file not found at #{changelog_path}, skipping update.")
       return false
     end
 
-    today = Time.now.utc.strftime('%Y-%m-%d')
+    content = File.readlines(changelog_path)
+    marker_index = content.find_index { |line| line.strip.start_with?(config[:changelog_marker].strip) }
 
-    write_changelog_entry(context, changelog_file, File.read(changelog_file), marker, today)
-  rescue StandardError => e
-    context.logger.error("Error updating changelog for #{context.repo_name}: #{e.message}")
-    false
-  end
+    unless marker_index
+      context.logger.warn("Changelog marker '#{config[:changelog_marker]}' not found in #{changelog_path}, skipping update.")
+      return false
+    end
 
-  # Helper: Write changelog entry
-  def self.write_changelog_entry(context, changelog_file, content, marker, today)
-    new_content = content.gsub(marker, "#{marker}\n- Cookstyle auto-corrections applied on #{today}")
-    File.write(changelog_file, new_content)
-    context.logger.info("Changelog updated successfully for #{context.repo_name}")
+    # Find the index of the next header (line starting with '## ') after the marker
+    next_header_index = content.find_index.with_index do |line, idx|
+      idx > marker_index && line.strip.start_with?('## ')
+    end
+
+    # Determine insertion point
+    # If no next header found, insert at the end. Otherwise, insert before the next header.
+    insertion_point = next_header_index || content.length
+
+    # Prepare entry with indentation and ensure newline
+    entry = "\n#{offense_details.strip}\n"
+
+    # Insert the offense details
+    content.insert(insertion_point, entry)
+
+    File.write(changelog_path, content.join)
+    context.logger.info("Updated changelog file: #{changelog_path}")
     true
+  rescue StandardError => e
+    context.logger.error("Failed to update changelog: #{e.message}")
+    false
   end
 
   # Configure git user.name and user.email globally

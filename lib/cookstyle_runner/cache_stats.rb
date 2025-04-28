@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'pp'
 module CookstyleRunner
   # =============================================================================
   # GitHub Cookstyle Runner - CacheStats
@@ -44,7 +45,7 @@ module CookstyleRunner
     def runtime_stats
       total_requests = @hits + @misses
       hit_rate = total_requests.positive? ? (@hits.to_f / total_requests * 100).round(2) : 0
-      {
+      stats = {
         'cache_hits' => @hits,
         'cache_misses' => @misses,
         'cache_updates' => @updates,
@@ -52,6 +53,7 @@ module CookstyleRunner
         'estimated_time_saved' => @time_saved.round(2),
         'runtime' => (Time.now.utc - @start_time).round(2)
       }
+      logger.info(pp(stats))
     end
   end
 end

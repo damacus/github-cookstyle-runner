@@ -24,13 +24,13 @@ module CookstyleRunner
     # @return [Hash] Configuration hash
     def self.load_config(logger)
       # Required environment variables for GitHub App authentication
-      app_id = ENV['GITHUB_APP_ID']
-      installation_id = ENV['GITHUB_APP_INSTALLATION_ID']
-      private_key = ENV['GITHUB_APP_PRIVATE_KEY']
-      owner = ENV['GCR_DESTINATION_REPO_OWNER']
+      app_id = ENV.fetch('GITHUB_APP_ID', nil)
+      installation_id = ENV.fetch('GITHUB_APP_INSTALLATION_ID', nil)
+      private_key = ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil)
+      owner = ENV.fetch('GCR_DESTINATION_REPO_OWNER', nil)
 
       # Validate required environment variables
-      github_token = ENV['GITHUB_TOKEN']
+      github_token = ENV.fetch('GITHUB_TOKEN', nil)
       if github_token.nil? || github_token.empty?
         # Only require app-based variables if token is missing
         if app_id.nil? || app_id.empty?
@@ -58,28 +58,27 @@ module CookstyleRunner
         topics: ENV['GCR_DESTINATION_REPO_TOPICS']&.split(',')&.map(&:strip),
         branch_name: ENV['GCR_BRANCH_NAME'] || 'cookstyle-fixes',
         pr_title: ENV['GCR_PULL_REQUEST_TITLE'] || 'Automated PR: Cookstyle Changes',
-        pr_labels: ENV['GCR_PR_LABELS']&.split(',')&.map(&:strip),
+        pr_labels: ENV['GCR_PR_LABELS']&.split(',')&.map(&:strip) || ['Skip: Announcements', 'Release: Patch', 'Cookstyle'],
         default_branch: ENV['GCR_DEFAULT_BRANCH'] || 'main',
         cache_dir: ENV['GCR_CACHE_DIR'] || '/tmp/cookstyle-runner',
         use_cache: ENV['GCR_USE_CACHE'] != '0',
-        cache_max_age: (ENV['GCR_CACHE_MAX_AGE'] || '7').to_i,
+        cache_max_age: (ENV['GCR_CACHE_MAX_AGE'] || 7).to_i,
         force_refresh: ENV['GCR_FORCE_REFRESH'] == '1',
         force_refresh_repos: ENV['GCR_FORCE_REFRESH_REPOS']&.split(',')&.map(&:strip),
+        filter_repos: ENV['GCR_FILTER_REPOS']&.split(',')&.map(&:strip)&.map { |r| r.gsub(/^"|"?$/, '') },
         include_repos: ENV['GCR_INCLUDE_REPOS']&.split(',')&.map(&:strip),
         exclude_repos: ENV['GCR_EXCLUDE_REPOS']&.split(',')&.map(&:strip),
-        retry_count: (ENV['GCR_RETRY_COUNT'] || '3').to_i,
-        thread_count: (ENV['GCR_THREAD_COUNT'] || '4').to_i,
+        retry_count: (ENV['GCR_RETRY_COUNT'] || 3).to_i,
+        thread_count: (ENV['GCR_THREAD_COUNT'] || 4).to_i,
         manage_changelog: ENV['GCR_MANAGE_CHANGELOG'] != '0',
         changelog_location: ENV['GCR_CHANGELOG_LOCATION'] || 'CHANGELOG.md',
         changelog_marker: ENV['GCR_CHANGELOG_MARKER'] || '## Unreleased',
-        create_manual_fix_prs: ENV['GCR_CREATE_MANUAL_FIX_PRS'] == '1',
+        create_manual_fix_issues: ENV['GCR_CREATE_MANUAL_FIX_ISSUES'] != '0',
         git_name: ENV['GCR_GIT_NAME'] || 'GitHub Cookstyle Runner',
         git_email: ENV['GCR_GIT_EMAIL'] || 'cookstyle-runner@example.com'
       }
 
-      # Log configuration
       log_config_summary(config, logger)
-
       config
     end
 
@@ -87,8 +86,7 @@ module CookstyleRunner
     # @param config [Hash] Configuration hash
     # @param logger [Logger] Logger instance
     def self.log_config_summary(config, logger)
-      # Convert cache age back to days for logging consistency
-      cache_age_days = config[:cache_max_age] / (24 * 60 * 60)
+      cache_age_days = config[:cache_max_age]
 
       log_message = <<~SUMMARY
         --- Configuration ---
@@ -123,44 +121,11 @@ module CookstyleRunner
     # @param logger [Logger] Logger instance
     # @return [Boolean] True if successful
     def self.setup_cache_directory(cache_dir, logger)
-      FileUtils.mkdir_p(cache_dir) unless Dir.exist?(cache_dir)
+      FileUtils.mkdir_p(cache_dir)
       true
     rescue StandardError => e
       logger.error("Error creating cache directory: #{e.message}")
       false
     end
-
-    # --- Private Class Methods ---
-    # Setup configuration (internal helper, not part of public API)
-    # @return [Hash] Configuration hash
-    def self.setup_configuration
-      # Set defaults for optional variables
-      @config = {
-        owner: ENV['GCR_DESTINATION_REPO_OWNER'],
-        topics: ENV['GCR_DESTINATION_REPO_TOPICS']&.split(',')&.map(&:strip) || ['chef-cookbook'],
-        branch_name: ENV['GCR_BRANCH_NAME'] || 'cookstyle-fixes',
-        pr_title: ENV['GCR_PULL_REQUEST_TITLE'] || 'Automated PR: Cookstyle Changes',
-        default_branch: ENV['GCR_DEFAULT_GIT_BRANCH'] || 'main',
-        manage_changelog: ENV['GCR_MANAGE_CHANGELOG'] == '1',
-        changelog_location: ENV['GCR_CHANGELOG_LOCATION'] || 'CHANGELOG.md',
-        changelog_marker: ENV['GCR_CHANGELOG_MARKER'] || '## Unreleased',
-        git_name: ENV['GCR_GIT_NAME'] || 'Cookstyle Bot',
-        git_email: ENV['GCR_GIT_EMAIL'] || 'cookstyle@example.com',
-        pr_labels: ENV['GCR_PULL_REQUEST_LABELS']&.split(',')&.map(&:strip) || [],
-        cache_dir: ENV['CACHE_DIR'] || '/tmp/cookstyle-runner',
-        thread_count: ENV['GCR_THREAD_COUNT']&.to_i || 5,
-        use_cache: ENV['GCR_USE_CACHE'] != '0',
-        cache_max_age: ENV['GCR_CACHE_MAX_AGE']&.to_i || (7 * 24 * 60 * 60), # 7 days in seconds
-        force_refresh: ENV['GCR_FORCE_REFRESH'] == '1',
-        force_refresh_repos: ENV['GCR_FORCE_REFRESH_REPOS']&.split(',')&.map(&:strip),
-        include_repos: ENV['GCR_INCLUDE_REPOS']&.split(',')&.map(&:strip),
-        exclude_repos: ENV['GCR_EXCLUDE_REPOS']&.split(',')&.map(&:strip),
-        retry_count: ENV['GCR_RETRY_COUNT']&.to_i || 3,
-        filter_repos: ENV['GCR_FILTER_REPOS']&.split(',')&.map(&:strip),
-        create_manual_fix_issues: ENV['GCR_CREATE_MANUAL_FIX_ISSUES'] == '1'
-      }
-    end
-
-    private_class_method :setup_configuration
   end
 end

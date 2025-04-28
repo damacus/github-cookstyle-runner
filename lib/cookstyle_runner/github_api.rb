@@ -15,9 +15,7 @@ module CookstyleRunner
     # @return [Array<String>] List of repository clone URLs
     def self.fetch_repositories(owner, topics = nil, logger)
       query = "org:#{owner}"
-      if topics && !topics.empty?
-        topics.each { |topic| query += " topic:#{topic}" }
-      end
+      topics.each { |topic| query += " topic:#{topic}" } if topics && !topics.empty?
       logger.debug("Search query: #{query}")
       results = CookstyleRunner::Authentication.client.search_repositories(query)
       logger.info("Found #{results.total_count} repositories")
@@ -181,7 +179,7 @@ module CookstyleRunner
     # @param labels [Array<String>] Issue labels
     # @param logger [Logger] Logger instance
     # @return [Sawyer::Resource, nil] Issue object or nil if failed
-    def self.create_issue(repo_full_name, title, body, labels, logger)
+    def self.create_issue(client, repo_full_name, title, body, labels, logger)
       issue = client.create_issue(repo_full_name, title, body, labels: labels)
       logger.info("Created issue ##{issue.number} for #{repo_full_name}")
       issue

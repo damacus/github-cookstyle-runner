@@ -5,67 +5,142 @@ require 'logger'
 require 'tty-command'
 require 'fileutils'
 require 'json'
+require_relative 'git_operations'
 
 # Module for cookstyle operations
 module CookstyleRunner
+  # Default return value for run_cookstyle in case of critical errors
+  DEFAULT_ERROR_RETURN = [{}, 0, 0, '', '', false].freeze
+
+  CookstyleReport = Struct.new(:num_auto, :num_manual, :pr_description, :issue_description)
+
+  # Encapsulates operations related to running Cookstyle, parsing its output,
+  # handling auto-correction, and generating descriptions for reports/PRs.
   module CookstyleOperations
-    # Runs cookstyle, parses output, optionally runs auto-correction, and formats descriptions.
-    # @param repo_dir [String] Repository directory
+    # Runs cookstyle, parses output, optionally runs auto-correction and commits, and formats descriptions.
+    # @param context [RepoContext] Git context
     # @param logger [Logger] Logger instance
-    # @return [Array<Hash, Integer, Integer, String, String>]
+    # @return [Array<Hash, Integer, Integer, String, String, Boolean>]
     #   - Parsed JSON output from the initial run
     #   - Number of auto-correctable offenses found
     #   - Number of manually correctable (uncorrectable) offenses found
     #   - Formatted PR description (if applicable)
     #   - Formatted Issue description (if applicable)
-    # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
-    def self.run_cookstyle(repo_dir, logger)
-      cmd = TTY::Command.new
-      parsed_json = {}
-      num_auto_correctable = 0
-      num_manual_correctable = 0
-      pr_description = ''
-      issue_description = ''
+    #   - Boolean indicating if changes were committed
+    #   - Returns default values ([{}, 0, 0, '', '', false]) on errors.
+    def self.run_cookstyle(context, logger)
+      cmd = TTY::Command.new(output: logger, pty: true)
 
       begin
-        # 1. Run cookstyle to get JSON output
-        result = cmd.run!('cookstyle --display-cop-names --format json', chdir: repo_dir, timeout: 300)
-        parsed_json = JSON.parse(result.out)
-
-        # 2. Count offenses
-        num_auto_correctable = count_correctable_offences(parsed_json)
-        num_manual_correctable = count_uncorrectable_offences(parsed_json)
-        (num_auto_correctable + num_manual_correctable).positive?
-
-        # 3. Format descriptions using the counts
-        pr_description = format_pr_summary(num_auto_correctable + num_manual_correctable, num_auto_correctable) + \
-                         format_pr_description(parsed_json, num_auto_correctable)
-
-        issue_description = format_issue_summary(num_auto_correctable + num_manual_correctable, num_manual_correctable) + \
-                            format_issue_description(parsed_json, num_manual_correctable)
-
-        # 4. Run auto-correction if correctable offenses exist
-        cmd.run!('cookstyle --auto-correct-all', chdir: repo_dir, timeout: 300) if num_auto_correctable.positive?
-
-        # Return the initial state counts and descriptions
-        [parsed_json, num_auto_correctable, num_manual_correctable, pr_description, issue_description]
-      rescue JSON::ParserError => e
-        logger.error("Failed to parse Cookstyle JSON output: #{e.message}")
-        logger.error("Raw output:\n#{result&.out}") # Use safe navigation for result
-        [parsed_json || {}, 0, 0, '', ''] # Return default empty/zero values
+        # Execute main logic; result needed only for parse error handling
+        logger.debug('Calling _execute_cookstyle_and_process...')
+        process_results = _execute_cookstyle_and_process(context, logger, cmd)
+        logger.debug("Received process_results in run_cookstyle: #{process_results.inspect}")
+        parsed_json, report = process_results
+        num_auto, num_manual, pr_desc, issue_desc = report.values_at(:num_auto, :num_manual, :pr_description, :issue_description)
+        changes_committed = _run_autocorrection(context, logger, cmd, num_auto)
+        [parsed_json, num_auto, num_manual, pr_desc, issue_desc, changes_committed]
       rescue TTY::Command::ExitError => e
-        logger.error("Cookstyle command failed: #{e.message}")
-        logger.error("STDOUT:\n#{e.out}") unless e.out.empty?
-        logger.error("STDERR:\n#{e.err}") unless e.err.empty?
-        # Still return counts and descriptions derived from potentially partial JSON
-        [parsed_json || {}, num_auto_correctable, num_manual_correctable, pr_description, issue_description]
+        _handle_command_exit_error(logger, e)
       rescue StandardError => e
-        logger.error("Unexpected error in run_cookstyle: #{e.message}")
-        logger.debug(e.backtrace.join("\n"))
-        [parsed_json || {}, 0, 0, '', ''] # Return default empty/zero values
+        _handle_unexpected_error(logger, e)
       end
     end
-    # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
+
+    # --- Private Helper Methods ---
+
+    # Executes the core cookstyle command, parses results, and handles autocorrect.
+    # Returns results array and the command result object.
+    # Raises errors to be caught by run_cookstyle.
+    private_class_method def self._execute_cookstyle_and_process(context, logger, cmd)
+      cookstyle_result = cmd.run!('cookstyle --display-cop-names --format json', chdir: context.repo_dir, timeout: 300)
+
+      if cookstyle_result.failure?
+        # Command failed, attempt secondary parse via handler
+        parsed_json_secondary, success = _handle_command_exit_error(logger, cookstyle_result)
+        return DEFAULT_ERROR_RETURN unless success
+
+        # Use the successfully parsed JSON from the handler
+        parsed_json = parsed_json_secondary
+      else
+        # Command succeeded, parse primary output
+        parsed_json = _parse_json_safely(logger, cookstyle_result.out)
+      end
+
+      # Calculate results using the determined parsed_json
+      cookstyle_report = _calculate_results(parsed_json)
+
+      # Return all relevant data
+      logger.debug("Returning from _execute_cookstyle_and_process with parsed_json: #{parsed_json.inspect}")
+      [parsed_json, cookstyle_report, cookstyle_result]
+    end
+
+    # Calculates offense counts and generates descriptions from parsed JSON.
+    # @param parsed_json [Hash] The parsed JSON output from Cookstyle.
+    # @return [Array] [num_auto, num_manual, pr_desc, issue_desc]
+    private_class_method def self._calculate_results(parsed_json)
+      num_auto = count_correctable_offences(parsed_json)
+      num_manual = count_uncorrectable_offences(parsed_json)
+      total = num_auto + num_manual
+
+      pr_summary = format_pr_summary(total, num_auto)
+      pr_details = format_pr_description(parsed_json, num_auto)
+      pr_description = "#{pr_summary}\n\n#{pr_details}".strip
+
+      issue_summary = format_issue_summary(total, num_manual)
+      issue_details = format_issue_description(parsed_json)
+      issue_description = "#{issue_summary}\n\n#{issue_details}".strip
+
+      {
+        num_auto: num_auto,
+        num_manual: num_manual,
+        pr_description: pr_description,
+        issue_description: issue_description
+      }
+    end
+
+    # Handles running auto-correction and committing changes.
+    # Returns true if changes were successfully committed, false otherwise.
+    private_class_method def self._run_autocorrection(context, logger, cmd, num_auto)
+      return false unless num_auto.positive?
+
+      begin
+        logger.info("Running cookstyle --autocorrect-all for #{context.repo_name}")
+        cmd.run!('cookstyle --autocorrect-all', chdir: context.repo_dir, timeout: 300)
+        _commit_autocorrections(context, logger)
+      rescue TTY::Command::ExitError => e
+        _log_autocorrect_command_error(logger, e)
+        false
+      rescue StandardError => e # Catch unexpected errors during autocorrect/commit
+        _log_unexpected_autocorrect_error(context.repo_name, logger, e)
+        false
+      end
+    end
+
+    # Commits changes after a successful auto-correction run.
+    private_class_method def self._commit_autocorrections(context, logger)
+      if GitOperations.changes_to_commit?(context)
+        logger.info("Detected changes after auto-correction for #{context.repo_name}, attempting commit.")
+        commit_message = 'Fix: Apply Cookstyle auto-corrections'
+        GitOperations.add_and_commit_changes(context, commit_message) # Returns true/false
+      else
+        logger.info("No effective changes detected after auto-correction for #{context.repo_name}.")
+        false # No changes committed
+      end
+    end
+
+    # Logs errors from the cookstyle auto-correct command.
+    private_class_method def self._log_autocorrect_command_error(logger, error)
+      logger.error("Cookstyle auto-correct command failed: #{error.message}")
+      logger.error("STDOUT:\n#{error.out}") unless error.out.empty?
+      logger.error("STDERR:\n#{error.err}") unless error.err.empty?
+    end
+
+    # Logs unexpected errors during the auto-correction/commit phase.
+    private_class_method def self._log_unexpected_autocorrect_error(repo_name, logger, error)
+      logger.error("Unexpected error during auto-correction/commit for #{repo_name}: #{error.message}")
+      logger.debug(error.backtrace.join("\n"))
+    end
 
     # Determines if any offenses are present in the parsed JSON.
     # @param parsed_json [Hash] Parsed JSON object from cookstyle run
@@ -98,7 +173,6 @@ module CookstyleRunner
       end
       count
     end
-    # rubocop:enableMetrics/MethodLength
 
     # Determines if manual attention is required based on offense flags.
     # @param has_offenses [Boolean] Whether any offenses were detected.
@@ -125,8 +199,7 @@ module CookstyleRunner
       if offense['corrected']
         [corrected_count + 1, uncorrected_details]
       else
-        # Extract only the first line of the message for brevity
-        message_line = offense['message']&.lines&.first&.strip || 'No message'
+        message_line = offense['message'] ? offense['message'].lines.map(&:strip).join(' ') : 'No message'
         [corrected_count, uncorrected_details << "* `#{file_path}`: #{offense['cop_name']} - #{message_line}"]
       end
     end
@@ -153,14 +226,23 @@ module CookstyleRunner
     def self.format_pr_description(parsed_json, num_auto_correctable)
       return '' if num_auto_correctable.zero?
 
-      # for every offense, create a formatted description
-      message = "\n\n### Offences\n\n"
-      message += parsed_json['files']&.map do |file|
-        file['offenses']&.map do |offense|
-          "* #{file['path']}: #{offense['message']}"
-        end
-      end&.flatten&.join("\n")
-      message
+      <<~OFFENCES.strip
+        ### Offences
+        #{format_offenses(parsed_json)}
+      OFFENCES
+    end
+
+    # Formats the offenses section of the PR description.
+    # @param parsed_json [Hash] Parsed JSON object from cookstyle run
+    # @return [String] Formatted output for PR description detailing offenses.
+    def self.format_offenses(parsed_json)
+      return '' unless parsed_json['files']
+
+      parsed_json['files'].flat_map do |file|
+        next unless file['offenses']
+
+        file['offenses'].map { |offense| "* #{file['path']}:#{offense['message']}" }
+      end.compact.flatten.join("\n")
     end
 
     # Formats the summary section of the Issue description.
@@ -177,21 +259,97 @@ module CookstyleRunner
       SUMMARY
     end
 
-    # Format cookstyle output for an Issue description (when only manual fixes are needed)
+    # Formats the offenses section of the Issue description.
     # @param parsed_json [Hash] Parsed JSON object from cookstyle run
-    # @return [String] Formatted output for issue description
-    def self.format_issue_description(parsed_json, num_manual_correctable)
-      return '' if num_manual_correctable.zero?
+    # @return [String] Formatted output for issue description detailing offenses.
+    def self.format_issue_description(parsed_json)
+      offenses = manual_offenses(parsed_json)
+      return '' if offenses.empty?
 
-      # for every offense that requires manual attention, create a formatted description
-      message = "\n\n### Manual Intervention Required\n\n"
-      manual_offenses = parsed_json['files']&.flat_map do |file|
-        file['offenses']&.select { |offense| !offense['correctable'] }&.map do |offense|
-          "* `#{file['path']}`: #{offense['cop_name']} - #{offense['message']&.lines&.first&.strip}"
-        end
-      end&.compact # Use flat_map and compact to handle nils
-      message += manual_offenses.join("\n") unless manual_offenses.nil? || manual_offenses.empty?
-      message
+      <<~STRING.strip
+        ### Manual Intervention Required
+        #{offenses.join("\n")}
+      STRING
+    end
+
+    # Returns an array of formatted offenses that require manual attention.
+    # @param parsed_json [Hash] Parsed JSON object from cookstyle run
+    # @return [Array<String>] Array of formatted offense strings.
+    def self.manual_offenses(parsed_json)
+      return [] unless parsed_json['files']
+
+      parsed_json['files'].flat_map do |file|
+        next unless file['offenses']
+
+        file['offenses']
+          .reject { |offense| offense['correctable'] }
+          .map { |offense| format_manual_offense(file, offense) }
+      end.compact.flatten
+    end
+
+    # Formats a single offense for the manual intervention section.
+    # @param file [Hash] File containing the offense.
+    # @param offense [Hash] The offense hash.
+    # @return [String] Formatted offense string.
+    def self.format_manual_offense(file, offense)
+      message = offense['message']
+      message_line = message ? message.lines.map(&:strip).join(' ') : 'No message'
+      "* `#{file['path']}`:#{offense['cop_name']} - #{message_line}"
+    end
+
+    # Handles JSON parsing errors from the initial cookstyle run.
+    private_class_method def self._handle_json_parse_error(logger, error, result)
+      logger.error("Failed to parse Cookstyle JSON output: #{error.message}")
+      logger.error("Raw output:\n#{result&.out}")
+      DEFAULT_ERROR_RETURN # Defaults on parse error
+    end
+
+    # Handles command exit errors from the initial cookstyle run, including secondary JSON parse attempt.
+    private_class_method def self._handle_command_exit_error(logger, error)
+      _log_command_error_details(logger, error)
+      _attempt_secondary_parse(logger, error.out)
+    end
+
+    # Logs the details of a TTY::Command::ExitError.
+    private_class_method def self._log_command_error_details(logger, error)
+      logger.error("Cookstyle command failed: #{error.message}")
+      logger.error("STDOUT:\n#{error.out}") unless error.out.empty?
+      logger.error("STDERR:\n#{error.err}") unless error.err.empty?
+    end
+
+    # Attempts to parse the output string as JSON after a command error.
+    # Calculates results if parse succeeds, otherwise returns defaults.
+    private_class_method def self._attempt_secondary_parse(logger, output_string)
+      parsed_json = _parse_json_safely(logger, output_string)
+
+      # Calculate results based on parsed_json (which is {} if parse failed or skipped)
+      if parsed_json.empty?
+        DEFAULT_ERROR_RETURN # Defaults on secondary parse error
+      else
+        num_auto, num_manual, pr_desc, issue_desc = _calculate_results(parsed_json)
+        # Don't run autocorrect here as the initial run failed
+        [parsed_json, num_auto, num_manual, pr_desc, issue_desc, false]
+      end
+    end
+
+    # Safely parses a JSON string, logging errors and returning {} on failure.
+    private_class_method def self._parse_json_safely(logger, json_string)
+      return {} unless json_string && !json_string.empty?
+
+      begin
+        JSON.parse(json_string)
+      rescue JSON::ParserError => e
+        logger.error("JSON parse failed: #{e.message}")
+        {}
+      end
+    end
+
+    # Handles unexpected standard errors during the cookstyle run.
+    private_class_method def self._handle_unexpected_error(logger, error)
+      logger.error("Unexpected error in run_cookstyle: #{error.message}")
+      logger.debug(error.backtrace.join("\n"))
+      # Return defaults for unexpected errors
+      DEFAULT_ERROR_RETURN
     end
   end
 end

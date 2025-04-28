@@ -14,26 +14,11 @@ module RepositoryManager
     File.basename(repo_url, '.git')
   end
 
-  # Create a thread-safe working directory for a repository
-  # @param cache_dir [String] Base cache directory
-  # @param repo_name [String] Repository name
-  # @return [String] Thread-safe repository directory path
-  def self.thread_safe_repo_dir(cache_dir, repo_name)
-    thread_id = Thread.current.object_id
-    thread_dir = File.join(cache_dir, "thread_#{thread_id}")
-    repo_dir = File.join(thread_dir, repo_name)
-
-    # Ensure thread directory exists
-    FileUtils.mkdir_p(thread_dir) unless Dir.exist?(thread_dir)
-
-    repo_dir
-  end
-
   # Clean up repository directory after processing
   # @param repo_dir [String] Repository directory
   # @return [Boolean] True if successful
   def self.cleanup_repo_dir(repo_dir)
-    FileUtils.rm_rf(repo_dir) if Dir.exist?(repo_dir)
+    FileUtils.rm_rf(repo_dir)
     true
   rescue StandardError => e
     # Just log the error but don't fail the operation
@@ -57,7 +42,8 @@ module RepositoryManager
     # Filter repositories by name
     filtered = repositories.select do |repo_url|
       repo_name = extract_repo_name(repo_url).downcase
-      filter_repos_lowercase.any? { |filter| repo_name.include?(filter) }
+      # Use exact match instead of include?
+      filter_repos_lowercase.any? { |filter| repo_name == filter }
     end
 
     logger.info("Found #{filtered.length} repositories matching filter criteria")

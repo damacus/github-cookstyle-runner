@@ -25,7 +25,7 @@ module CookstyleRunner
       @logger = logger
 
       # Create cache directory if it doesn't exist
-      FileUtils.mkdir_p(dir) unless Dir.exist?(dir)
+      FileUtils.mkdir_p(dir)
 
       # Initialize statistics helper
       @stats = CacheStats.new
@@ -40,25 +40,6 @@ module CookstyleRunner
       else
         initialize_cache
       end
-    end
-
-    private
-
-    def parse_cache_file
-      @data = JSON.parse(File.read(@file))
-      logger.debug("Loaded cache from #{@file}")
-    rescue JSON::ParserError => e
-      logger.warn("Failed to parse cache file: #{e.message}")
-      initialize_cache
-    end
-
-    def initialize_cache
-      @data = {
-        'repositories' => {},
-        'last_updated' => Time.now.utc.iso8601
-      }
-      logger.debug('Initialized new cache')
-      save
     end
 
     # Save cache to disk
@@ -124,21 +105,6 @@ module CookstyleRunner
       save
     end
 
-    # Get the latest commit SHA for a repository
-    # @param repo_dir [String] Repository directory
-    # @return [String, nil] Latest commit SHA or nil if not found
-    def self.get_latest_commit_sha(repo_dir)
-      return nil unless Dir.exist?(repo_dir)
-
-      # Get the latest commit SHA
-      stdout, _stderr, status = Open3.capture3("cd #{repo_dir} && git rev-parse HEAD")
-      return nil unless status.success?
-
-      stdout.strip
-    end
-
-    private_class_method :get_latest_commit_sha
-
     # Clear the cache for a specific repository
     # @param repo_name [String] Repository name
     def clear_repo(repo_name)
@@ -148,7 +114,7 @@ module CookstyleRunner
 
     # Clear the entire cache
     def clear_all
-      initialize
+      initialize_cache # Use initialize_cache to reset data
     end
 
     # Get cache statistics
@@ -174,6 +140,40 @@ module CookstyleRunner
       return 5.0 if times.empty? # Default if no data
 
       times.sum / times.size
+    end
+
+    private
+
+    def parse_cache_file
+      @data = JSON.parse(File.read(@file))
+      logger.debug("Loaded cache from #{@file}")
+    rescue JSON::ParserError => e
+      logger.warn("Failed to parse cache file: #{e.message}")
+      initialize_cache
+    end
+
+    def initialize_cache
+      @data = {
+        'repositories' => {},
+        'last_updated' => Time.now.utc.iso8601
+      }
+      logger.debug('Initialized new cache')
+      save
+    end
+
+    # Get the latest commit SHA for a repository
+    # @param repo_dir [String] Repository directory
+    # @return [String, nil] Latest commit SHA or nil if not found
+    # NOTE: Made this private as it's likely an internal detail
+    # If needed externally, it should probably live in GitOperations
+    private_class_method def self.get_latest_commit_sha(repo_dir)
+      return nil unless Dir.exist?(repo_dir)
+
+      # Get the latest commit SHA
+      stdout, _stderr, status = Open3.capture3("cd #{repo_dir} && git rev-parse HEAD")
+      return nil unless status.success?
+
+      stdout.strip
     end
   end
 end

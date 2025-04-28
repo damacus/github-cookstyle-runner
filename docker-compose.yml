@@ -18,11 +18,12 @@ services:
       - GCR_MANAGE_CHANGELOG=1
       - GCR_BRANCH_NAME="automated/cookstyle-fixes"
       - GCR_DESTINATION_REPO_TOPICS="chef-cookbook"
-      - GCR_DEBUG_MODE=0 # Default to disabled
+      - GCR_LOG_LEVEL=DEBUG # Enable debug logging
       - GCR_USE_CACHE=1 # Default to enabled cache
       - GCR_CACHE_DIR=/app/.cache # Cache inside container/mounted volume
-      - GCR_THREAD_COUNT=4 # Default number of threads
+      - GCR_THREAD_COUNT=1 # Default number of threads
       - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GCR_FILTER_REPOS="elasticsearch,aws,docker,nginx"
 
     # Override the Dockerfile ENTRYPOINT and run the application
     # Load the main library file and execute the Application class's run method

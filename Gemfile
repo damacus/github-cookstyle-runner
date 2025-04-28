@@ -10,6 +10,7 @@ gem 'jwt', '~> 2.7' # For GitHub App JWT generation
 gem 'octokit', '~> 6.1' # GitHub API client
 gem 'ostruct'
 gem 'parallel', '~> 1.26' # Parallel processing
+gem 'pp'
 gem 'tty-command' # For running shell commands
 
 group :development, :test do
