@@ -37,9 +37,8 @@ module CookstyleRunner
         process_results = _execute_cookstyle_and_process(context, logger, cmd)
         logger.debug("Received process_results in run_cookstyle: #{process_results.inspect}")
         parsed_json, report = process_results
-        num_auto, num_manual, pr_desc, issue_desc = report.values_at(:num_auto, :num_manual, :pr_description, :issue_description)
-        changes_committed = _run_autocorrection(context, logger, cmd, num_auto)
-        [parsed_json, num_auto, num_manual, pr_desc, issue_desc, changes_committed]
+        changes_committed = _run_autocorrection(context, logger, cmd, report.num_auto)
+        [parsed_json, report.num_auto, report.num_manual, report.pr_description, report.issue_description, changes_committed]
       rescue TTY::Command::ExitError => e
         _handle_command_exit_error(logger, e)
       rescue StandardError => e
@@ -72,7 +71,7 @@ module CookstyleRunner
 
       # Return all relevant data
       logger.debug("Returning from _execute_cookstyle_and_process with parsed_json: #{parsed_json.inspect}")
-      [parsed_json, cookstyle_report, cookstyle_result]
+      [parsed_json, cookstyle_report]
     end
 
     # Calculates offense counts and generates descriptions from parsed JSON.
@@ -91,12 +90,7 @@ module CookstyleRunner
       issue_details = format_issue_description(parsed_json)
       issue_description = "#{issue_summary}\n\n#{issue_details}".strip
 
-      {
-        num_auto: num_auto,
-        num_manual: num_manual,
-        pr_description: pr_description,
-        issue_description: issue_description
-      }
+      CookstyleReport.new(num_auto, num_manual, pr_description, issue_description)
     end
 
     # Handles running auto-correction and committing changes.

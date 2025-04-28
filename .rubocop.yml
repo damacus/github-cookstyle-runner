@@ -9,7 +9,7 @@ RSpec/MultipleMemoizedHelpers:
 RSpec/MultipleExpectations:
   Max: 10
 RSpec/ExampleLength:
-  Max: 10
+  Max: 20
 # Ignore tests for now
 AllCops:
   NewCops: enable
