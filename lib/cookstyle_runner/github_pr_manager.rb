@@ -44,9 +44,6 @@ module CookstyleRunner
     # @param manual_fix [Boolean] Whether manual fixes are required (can't be auto-fixed)
     # @return [Array<Boolean, Hash>] Success status and PR/Issue details
     def create_pull_request(repo_name, repo_dir, cookstyle_output, context, manual_fix: false)
-      # Ensure the repository directory exists
-      return [false, nil] unless Dir.exist?(repo_dir)
-
       # Create an issue if manual fixes are required
       # Note: create_issue_for_manual_fixes might also need context if it uses GitOperations
       return create_issue_for_manual_fixes(repo_name, cookstyle_output) if manual_fix

@@ -41,6 +41,7 @@ require_relative 'cookstyle_runner/context_manager'
 require_relative 'cookstyle_runner/cache'
 require_relative 'cookstyle_runner/github_pr_manager'
 require_relative 'cookstyle_runner/repository_processor'
+require_relative 'cookstyle_runner/reporter'
 
 # Main application class for GitHub Cookstyle Runner
 module CookstyleRunner
@@ -67,38 +68,39 @@ module CookstyleRunner
       results = _process_repositories_in_parallel(repositories)
 
       # Process the collected results sequentially after parallel execution
-      processed_count, issues_found_count, skipped_count, error_count = CookstyleRunner::Reporter.aggregate_results(results)
+      reporter = CookstyleRunner::Reporter::Reporter.new(@logger)
+processed_count, issues_found_count, skipped_count, error_count = reporter.aggregate_results(results)
 
-      # --- Calculations for summary reporting ---
-      @created_artifacts = []
-      @artifact_creation_errors = []
-      issues_created_count = @created_artifacts.count { |a| a[:type] == 'issue' }
-      prs_created_count = @created_artifacts.count { |a| a[:type] == 'pull' }
-      issue_errors_count = @artifact_creation_errors.count { |e| e[:type] == 'issue' }
-      pr_errors_count = @artifact_creation_errors.count { |e| e[:type] == 'pull' }
-      # ------------------------------------------------------- #
+# --- Calculations for summary reporting ---
+@created_artifacts = []
+@artifact_creation_errors = []
+issues_created_count = @created_artifacts.count { |a| a[:type] == 'issue' }
+prs_created_count = @created_artifacts.count { |a| a[:type] == 'pull' }
+issue_errors_count = @artifact_creation_errors.count { |e| e[:type] == 'issue' }
+pr_errors_count = @artifact_creation_errors.count { |e| e[:type] == 'pull' }
+# ------------------------------------------------------- #
 
-      # Report summary
-      CookstyleRunner::Reporter.summary(
-        total_repos: repositories.length,
-        processed_count: processed_count,
-        issues_found: issues_found_count,
-        issues_created: issues_created_count,
-        skipped_count: skipped_count,
-        error_count: error_count,
-        prs_created: prs_created_count,
-        issue_errors: issue_errors_count,
-        pr_errors: pr_errors_count
-      )
+# Report summary
+reporter.summary(
+  total_repos: repositories.length,
+  processed_count: processed_count,
+  issues_found: issues_found_count,
+  issues_created: issues_created_count,
+  skipped_count: skipped_count,
+  error_count: error_count,
+  prs_created: prs_created_count,
+  issue_errors: issue_errors_count,
+  pr_errors: pr_errors_count
+)
 
-      CookstyleRunner::Cache.runtime_stats if @config[:use_cache]
-      # Report created artifacts
-      CookstyleRunner::Reporter.created_artifacts(created_artifacts: @created_artifacts)
-      # Report artifact creation errors
-      CookstyleRunner::Reporter.artifact_creation_errors(artifact_creation_errors: @artifact_creation_errors)
+CookstyleRunner::Cache.runtime_stats if @config[:use_cache]
+# Report created artifacts
+reporter.created_artifacts(created_artifacts: @created_artifacts)
+# Report artifact creation errors
+reporter.artifact_creation_errors(artifact_creation_errors: @artifact_creation_errors)
 
-      # Return appropriate exit code (e.g., non-zero if errors occurred)
-      error_count.zero? && @artifact_creation_errors.empty? ? 0 : 1
+# Return appropriate exit code (e.g., non-zero if errors occurred)
+error_count.zero? && @artifact_creation_errors.empty? ? 0 : 1
     end
 
     private

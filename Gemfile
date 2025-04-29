@@ -12,6 +12,7 @@ gem 'ostruct'
 gem 'parallel', '~> 1.26' # Parallel processing
 gem 'pp'
 gem 'tty-command' # For running shell commands
+gem 'faraday-retry'
 
 group :development, :test do
   gem 'rspec', '~> 3.12'

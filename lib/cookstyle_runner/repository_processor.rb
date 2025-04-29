@@ -51,7 +51,7 @@ module CookstyleRunner
       return { status: :skipped, repo_name: repo_name } if should_skip_repository?(repo_name)
 
       # Run cookstyle and get the result hash
-      result_hash = run_in_subprocess(context, repo_url, repo_dir, repo_name)
+      result_hash = run_in_subprocess(context, repo_dir, repo_name)
 
       update_cache_if_needed(repo_name, result_hash)
 
@@ -101,17 +101,9 @@ module CookstyleRunner
     def run_in_subprocess(context, repo_dir, repo_name)
       start_time = Time.now
       logger.debug("Starting Cookstyle run for #{repo_name} in #{repo_dir}")
-
-      # --- Run Cookstyle using CookstyleOperations ---
-      cookstyle_result = CookstyleOperations.run_cookstyle(
-        context, logger # Pass the context object and logger
-      )
-
-      # Get commit SHA *after* potential commit in run_cookstyle
+      cookstyle_result = CookstyleOperations.run_cookstyle(context, logger)
       final_commit_sha_after_run = GitOperations.get_latest_commit_sha(context)
       logger.debug("Final commit SHA after run for #{repo_name}: #{final_commit_sha_after_run}")
-
-      # Determine outcomes
       total_offenses = cookstyle_result[:num_auto_correctable] + cookstyle_result[:num_manual_correctable]
 
       logger.info("Cookstyle run finished for #{repo_name}. Auto-correctable: #{cookstyle_result[:num_auto_correctable]}, Manual: #{cookstyle_result[:num_manual_correctable]}, Git changes committed: #{cookstyle_result[:git_changes_made]}")
@@ -141,6 +133,7 @@ module CookstyleRunner
     # --- Helper methods for run_in_subprocess ---
     # Handles the creation of Pull Requests or Issues based on Cookstyle results
     # Returns a hash containing :pr_details (for PR/Issue) or :pr_error if creation failed, or empty hash otherwise.
+    # TODO: This is a duplicate
     def handle_cookstyle_pr_creation(repo_name:, repo_dir:, num_auto_correctable:, num_manual_correctable:,
                                      pr_description:, issue_description:, git_changes_made:)
       # No action needed if no offenses or changes

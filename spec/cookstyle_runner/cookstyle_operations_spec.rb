@@ -321,7 +321,6 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
 
         # Ensure other handlers are NOT called
         allow(described_class).to receive(:_parse_json_safely).and_raise('Should not be called')
-        allow(described_class).to receive(:_handle_command_exit_error).and_raise('Should not be called')
         allow(described_class).to receive(:_handle_json_parse_error).and_raise('Should not be called')
         allow(described_class).to receive(:_calculate_results).and_raise('Should not be called')
 

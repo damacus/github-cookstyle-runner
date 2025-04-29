@@ -183,7 +183,7 @@ module GitOperations
   # @return [Boolean]
   def self.changes_to_commit?(context)
     repo = Git.open(context.repo_dir)
-    repo.status.changed.any? || !repo.status.added.empty? || !repo.status.deleted.empty?
+    repo.status.changed.any? || repo.status.added.any? || repo.status.deleted.any?
   rescue StandardError => e
     context.logger.error("Failed to check for changes to commit: #{e.message}")
     false

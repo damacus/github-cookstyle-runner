@@ -109,7 +109,7 @@ module CookstyleRunner
           title: title,
           body: body
         )
-        if labels && !labels.empty?
+        if labels && labels.any?
           existing_labels = client.labels_for_issue(repo_full_name, existing_pr.number).map(&:name)
           new_labels = labels - existing_labels
           client.add_labels_to_an_issue(repo_full_name, existing_pr.number, new_labels) if new_labels.any?
@@ -125,8 +125,7 @@ module CookstyleRunner
         )
 
         # Add labels if specified
-        client.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels && !labels.empty?
-
+        client.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels && labels.any?
       end
       pr
     rescue StandardError => e

@@ -2,8 +2,8 @@ module CookstyleRunner
   module Reporter
     # This class is responsible for reporting the results of the Cookstyle run.
     class Reporter
-      def initialize(cookstyle_runner)
-        @cookstyle_runner = cookstyle_runner
+      def initialize(logger)
+        @logger = logger
       end
 
       # Aggregates results from parallel processing
@@ -26,9 +26,9 @@ module CookstyleRunner
             skipped_count += 1
           when :error
             error_count += 1
-            logger.error("Error occurred processing repository: #{result[:repo_name]}. Message: #{result[:error_message]}")
+            @logger.error("Error occurred processing repository: #{result[:repo_name]}. Message: #{result[:error_message]}")
           else
-            logger.warn("Unknown status '#{result[:status]}' received for repository: #{result[:repo_name]}")
+            @logger.warn("Unknown status '#{result[:status]}' received for repository: #{result[:repo_name]}")
             error_count += 1 # Treat unknown status as an error
           end
 
@@ -54,8 +54,8 @@ module CookstyleRunner
       # @param issue_errors [Integer] Number of issue creation errors
       # @param pr_errors [Integer] Number of pull request creation errors
       # @return [String] Summary report
-      def summary(total_repos:, processed_count:, issues_count:, skipped_count:, error_count:,
-                  issues_created:, prs_created:, issue_errors:, pr_errors:)
+      def summary(total_repos:, processed_count:, issues_count: 0, skipped_count: 0, error_count: 0,
+                  issues_created: 0, prs_created: 0, issue_errors: 0, pr_errors: 0)
         summary = <<~SUMMARY
           --- Summary ---
           Total repositories considered: #{total_repos}
@@ -70,7 +70,7 @@ module CookstyleRunner
           Issue Creation Errors: #{issue_errors}
           PR Creation Errors: #{pr_errors}
         SUMMARY
-        logger.info(summary.strip)
+        @logger.info(summary.strip)
         summary
       end
       # rubocop:enable Metrics/MethodLength, Metrics/ParameterLists
@@ -89,9 +89,9 @@ module CookstyleRunner
         end
 
         if created_artifacts.any?
-          logger.info(artifact_report.join("\n").strip)
+          @logger.info(artifact_report.join("\n").strip)
         else
-          logger.info('No artifacts were created during this run.')
+          @logger.info('No artifacts were created during this run.')
         end
       end
       # rubocop:enable Metrics/MethodLength
@@ -107,9 +107,9 @@ module CookstyleRunner
           ARTIFACT_ERROR_ENTRY
         end
         if artifact_creation_errors.any?
-          logger.info(artifact_error_report.join("\n").strip)
+          @logger.info(artifact_error_report.join("\n").strip)
         else
-          logger.info('No artifact creation errors were reported.')
+          @logger.info('No artifact creation errors were reported.')
         end
       end
       # rubocop:enable Metrics/MethodLength

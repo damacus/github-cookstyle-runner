@@ -30,48 +30,50 @@ module CookstyleRunner
     #   - Returns default values ([{}, 0, 0, '', '', false]) on errors.
     def self.run_cookstyle(context, logger)
       cmd = TTY::Command.new(output: logger, pty: true)
+      changes_committed = false
 
       begin
-        # Execute main logic; result needed only for parse error handling
-        logger.debug('Calling _execute_cookstyle_and_process...')
-        process_results = _execute_cookstyle_and_process(context, logger, cmd)
-        logger.debug("Received process_results in run_cookstyle: #{process_results.inspect}")
-        parsed_json, report = process_results
-        changes_committed = _run_autocorrection(context, logger, cmd, report.num_auto)
+        # Run cookstyle in report mode (no --autocorrect-all) offenses for PR and issue generation
+        parsed_json, report, changes_committed = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
+
+        # If the report returns a positive number of auto-correctable offenses
+        # Run cookstyle in autocorrect mode, then return whether we committed the changes
+        _, _, changes_committed = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: true) if report.num_auto.positive?
+
         [parsed_json, report.num_auto, report.num_manual, report.pr_description, report.issue_description, changes_committed]
-      rescue TTY::Command::ExitError => e
-        _handle_command_exit_error(logger, e)
-      rescue StandardError => e
-        _handle_unexpected_error(logger, e)
+      rescue TTY::Command::ExitError, StandardError => e
+        logger.error("Cookstyle command failed: #{e.message}")
+        DEFAULT_ERROR_RETURN
       end
     end
 
     # --- Private Helper Methods ---
-
     # Executes the core cookstyle command, parses results, and handles autocorrect.
     # Returns results array and the command result object.
     # Raises errors to be caught by run_cookstyle.
-    private_class_method def self._execute_cookstyle_and_process(context, logger, cmd)
-      cookstyle_result = cmd.run!('cookstyle --display-cop-names --format json', chdir: context.repo_dir, timeout: 300)
+    private_class_method def self._execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
+      cookstyle_result = cmd.run!(
+        "cookstyle --display-cop-names #{'--autocorrect-all' if autocorrect} --format json",
+        chdir: context.repo_dir,
+        timeout: 300
+      )
+
+      changes_committed = _commit_autocorrections(context, logger)
 
       if cookstyle_result.failure?
-        # Command failed, attempt secondary parse via handler
-        parsed_json_secondary, success = _handle_command_exit_error(logger, cookstyle_result)
-        return DEFAULT_ERROR_RETURN unless success
-
-        # Use the successfully parsed JSON from the handler
-        parsed_json = parsed_json_secondary
+        # parsed_json, success = _handle_cookstyle_command_exit_error(logger, cookstyle_result)
+        return DEFAULT_ERROR_RETURN
       else
         # Command succeeded, parse primary output
         parsed_json = _parse_json_safely(logger, cookstyle_result.out)
       end
 
-      # Calculate results using the determined parsed_json
-      cookstyle_report = _calculate_results(parsed_json)
+      # Calculate results using the parsed_json
+      report = _calculate_results(parsed_json)
 
       # Return all relevant data
       logger.debug("Returning from _execute_cookstyle_and_process with parsed_json: #{parsed_json.inspect}")
-      [parsed_json, cookstyle_report]
+      [parsed_json, report, changes_committed]
     end
 
     # Calculates offense counts and generates descriptions from parsed JSON.
@@ -93,24 +95,6 @@ module CookstyleRunner
       CookstyleReport.new(num_auto, num_manual, pr_description, issue_description)
     end
 
-    # Handles running auto-correction and committing changes.
-    # Returns true if changes were successfully committed, false otherwise.
-    private_class_method def self._run_autocorrection(context, logger, cmd, num_auto)
-      return false unless num_auto.positive?
-
-      begin
-        logger.info("Running cookstyle --autocorrect-all for #{context.repo_name}")
-        cmd.run!('cookstyle --autocorrect-all', chdir: context.repo_dir, timeout: 300)
-        _commit_autocorrections(context, logger)
-      rescue TTY::Command::ExitError => e
-        _log_autocorrect_command_error(logger, e)
-        false
-      rescue StandardError => e # Catch unexpected errors during autocorrect/commit
-        _log_unexpected_autocorrect_error(context.repo_name, logger, e)
-        false
-      end
-    end
-
     # Commits changes after a successful auto-correction run.
     private_class_method def self._commit_autocorrections(context, logger)
       if GitOperations.changes_to_commit?(context)
@@ -118,8 +102,8 @@ module CookstyleRunner
         commit_message = 'Fix: Apply Cookstyle auto-corrections'
         GitOperations.add_and_commit_changes(context, commit_message) # Returns true/false
       else
-        logger.info("No effective changes detected after auto-correction for #{context.repo_name}.")
-        false # No changes committed
+        logger.info("No changes detected after auto-correction for #{context.repo_name}.")
+        false
       end
     end
 
@@ -296,34 +280,6 @@ module CookstyleRunner
       logger.error("Failed to parse Cookstyle JSON output: #{error.message}")
       logger.error("Raw output:\n#{result&.out}")
       DEFAULT_ERROR_RETURN # Defaults on parse error
-    end
-
-    # Handles command exit errors from the initial cookstyle run, including secondary JSON parse attempt.
-    private_class_method def self._handle_command_exit_error(logger, error)
-      _log_command_error_details(logger, error)
-      _attempt_secondary_parse(logger, error.out)
-    end
-
-    # Logs the details of a TTY::Command::ExitError.
-    private_class_method def self._log_command_error_details(logger, error)
-      logger.error("Cookstyle command failed: #{error.message}")
-      logger.error("STDOUT:\n#{error.out}") unless error.out.empty?
-      logger.error("STDERR:\n#{error.err}") unless error.err.empty?
-    end
-
-    # Attempts to parse the output string as JSON after a command error.
-    # Calculates results if parse succeeds, otherwise returns defaults.
-    private_class_method def self._attempt_secondary_parse(logger, output_string)
-      parsed_json = _parse_json_safely(logger, output_string)
-
-      # Calculate results based on parsed_json (which is {} if parse failed or skipped)
-      if parsed_json.empty?
-        DEFAULT_ERROR_RETURN # Defaults on secondary parse error
-      else
-        num_auto, num_manual, pr_desc, issue_desc = _calculate_results(parsed_json)
-        # Don't run autocorrect here as the initial run failed
-        [parsed_json, num_auto, num_manual, pr_desc, issue_desc, false]
-      end
     end
 
     # Safely parses a JSON string, logging errors and returning {} on failure.
