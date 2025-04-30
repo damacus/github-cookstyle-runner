@@ -5,7 +5,7 @@ require 'spec_helper'
 require 'cookstyle_runner/config_manager'
 require 'logger'
 
-RSpec.describe ConfigManager do
+RSpec.describe CookstyleRunner::ConfigManager do
   let(:logger) { instance_double(Logger, error: nil, info: nil, debug: nil) }
   let(:required_env) do
     {
@@ -19,25 +19,25 @@ RSpec.describe ConfigManager do
   describe '.load_config' do
     context 'when required environment variables are missing' do
       it 'logs an error and exits if GITHUB_APP_ID is missing' do
-        stub_const('ENV', required_env.reject { |k, _| k == 'GITHUB_APP_ID' })
-        expect(logger).to receive(:error).with('GITHUB_APP_ID environment variable is required')
+        stub_const('ENV', required_env.except('GITHUB_APP_ID'))
+        expect(logger).to receive(:error).with('GITHUB_APP_ID environment variable is required when GITHUB_TOKEN is not set')
         expect { described_class.load_config(logger) }.to raise_error(SystemExit)
       end
 
       it 'logs an error and exits if GITHUB_APP_INSTALLATION_ID is missing' do
-        stub_const('ENV', required_env.reject { |k, _| k == 'GITHUB_APP_INSTALLATION_ID' })
-        expect(logger).to receive(:error).with('GITHUB_APP_INSTALLATION_ID environment variable is required')
+        stub_const('ENV', required_env.except('GITHUB_APP_INSTALLATION_ID'))
+        expect(logger).to receive(:error).with('GITHUB_APP_INSTALLATION_ID environment variable is required when GITHUB_TOKEN is not set')
         expect { described_class.load_config(logger) }.to raise_error(SystemExit)
       end
 
       it 'logs an error and exits if GITHUB_APP_PRIVATE_KEY is missing' do
-        stub_const('ENV', required_env.reject { |k, _| k == 'GITHUB_APP_PRIVATE_KEY' })
-        expect(logger).to receive(:error).with('GITHUB_APP_PRIVATE_KEY environment variable is required')
+        stub_const('ENV', required_env.except('GITHUB_APP_PRIVATE_KEY'))
+        expect(logger).to receive(:error).with('GITHUB_APP_PRIVATE_KEY environment variable is required when GITHUB_TOKEN is not set')
         expect { described_class.load_config(logger) }.to raise_error(SystemExit)
       end
 
       it 'logs an error and exits if GCR_DESTINATION_REPO_OWNER is missing' do
-        stub_const('ENV', required_env.reject { |k, _| k == 'GCR_DESTINATION_REPO_OWNER' })
+        stub_const('ENV', required_env.except('GCR_DESTINATION_REPO_OWNER'))
         expect(logger).to receive(:error).with('GCR_DESTINATION_REPO_OWNER environment variable is required')
         expect { described_class.load_config(logger) }.to raise_error(SystemExit)
       end
@@ -64,7 +64,7 @@ RSpec.describe ConfigManager do
         expect(config[:use_cache]).to be true
         expect(config[:cache_max_age]).to eq(7)
         expect(config[:force_refresh]).to be false
-        expect(config[:pr_labels]).to be_nil
+        expect(config[:pr_labels]).to eq(['Skip: Announcements', 'Release: Patch', 'Cookstyle'])
         expect(config[:topics]).to be_nil
         expect(config[:force_refresh_repos]).to be_nil
         expect(config[:include_repos]).to be_nil

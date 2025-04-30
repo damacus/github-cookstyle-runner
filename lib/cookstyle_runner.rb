@@ -31,6 +31,7 @@ require 'octokit'
 require 'json'
 require 'open3'
 require 'parallel'
+require 'pp'
 
 require_relative 'cookstyle_runner/git_operations'
 require_relative 'cookstyle_runner/github_api'
@@ -68,39 +69,45 @@ module CookstyleRunner
       results = _process_repositories_in_parallel(repositories)
 
       # Process the collected results sequentially after parallel execution
-      reporter = CookstyleRunner::Reporter::Reporter.new(@logger)
-processed_count, issues_found_count, skipped_count, error_count = reporter.aggregate_results(results)
+      reporter = CookstyleRunner::Reporter.new(@logger)
+      processed_count, issues_found_count, skipped_count, error_count = reporter.aggregate_results(results)
 
-# --- Calculations for summary reporting ---
-@created_artifacts = []
-@artifact_creation_errors = []
-issues_created_count = @created_artifacts.count { |a| a[:type] == 'issue' }
-prs_created_count = @created_artifacts.count { |a| a[:type] == 'pull' }
-issue_errors_count = @artifact_creation_errors.count { |e| e[:type] == 'issue' }
-pr_errors_count = @artifact_creation_errors.count { |e| e[:type] == 'pull' }
-# ------------------------------------------------------- #
+      # --- Calculations for summary reporting ---
+      @created_artifacts = []
+      @artifact_creation_errors = []
+      issues_created_count = @created_artifacts.count { |a| a[:type] == 'issue' }
+      prs_created_count = @created_artifacts.count { |a| a[:type] == 'pull' }
+      issue_errors_count = @artifact_creation_errors.count { |e| e[:type] == 'issue' }
+      pr_errors_count = @artifact_creation_errors.count { |e| e[:type] == 'pull' }
+      # ------------------------------------------------------- #
 
-# Report summary
-reporter.summary(
-  total_repos: repositories.length,
-  processed_count: processed_count,
-  issues_found: issues_found_count,
-  issues_created: issues_created_count,
-  skipped_count: skipped_count,
-  error_count: error_count,
-  prs_created: prs_created_count,
-  issue_errors: issue_errors_count,
-  pr_errors: pr_errors_count
-)
+      # Report summary
+      reporter.summary(
+        total_repos: repositories.length,
+        processed_count: processed_count,
+        issues_count: issues_found_count,
+        issues_created: issues_created_count,
+        skipped_count: skipped_count,
+        error_count: error_count,
+        prs_created: prs_created_count,
+        issue_errors: issue_errors_count,
+        pr_errors: pr_errors_count
+      )
 
-CookstyleRunner::Cache.runtime_stats if @config[:use_cache]
-# Report created artifacts
-reporter.created_artifacts(created_artifacts: @created_artifacts)
-# Report artifact creation errors
-reporter.artifact_creation_errors(artifact_creation_errors: @artifact_creation_errors)
+      # Log cache runtime statistics if cache is enabled
+      if @config[:use_cache] && @cache_manager&.stats
+        # Call instance method on the stats object within cache_manager
+        stats_hash = @cache_manager.stats.runtime_stats
+        @logger.info("Cache Stats:\n#{PP.pp(stats_hash, +'')}")
+      end
 
-# Return appropriate exit code (e.g., non-zero if errors occurred)
-error_count.zero? && @artifact_creation_errors.empty? ? 0 : 1
+      # Report created artifacts
+      reporter.created_artifacts(created_artifacts: @created_artifacts)
+      # Report artifact creation errors
+      reporter.artifact_creation_error(@artifact_creation_errors)
+
+      # Return appropriate exit code (e.g., non-zero if errors occurred)
+      error_count.zero? && @artifact_creation_errors.empty? ? 0 : 1
     end
 
     private
@@ -134,15 +141,6 @@ error_count.zero? && @artifact_creation_errors.empty? ? 0 : 1
     def _setup_pr_manager
       @pr_manager = GitHubPRManager.new(@config, @logger)
     end
-
-    # # Provides an authenticated Octokit client instance
-    # TODO: should not need this
-    # def github_client
-    #   @github_client ||= Octokit::Client.new(
-    #     access_token: ENV.fetch('GITHUB_TOKEN', nil),
-    #     auto_paginate: true
-    #   )
-    # end
 
     # Fetches repositories from GitHub and applies filtering based on config
     # @return [Array<String>, nil] List of repository URLs or nil if none found/matched

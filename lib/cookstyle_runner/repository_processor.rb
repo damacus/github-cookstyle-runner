@@ -9,6 +9,7 @@ module CookstyleRunner
   # - Handling retries and error reporting
   # - Interacting with cache and PR managers
   # rubocop:disable Metrics/ClassLength
+
   class RepositoryProcessor
     # Initialize the repository processor
     # @param config [Hash] Configuration hash
@@ -101,22 +102,33 @@ module CookstyleRunner
     def run_in_subprocess(context, repo_dir, repo_name)
       start_time = Time.now
       logger.debug("Starting Cookstyle run for #{repo_name} in #{repo_dir}")
-      cookstyle_result = CookstyleOperations.run_cookstyle(context, logger)
+
+      # CookstyleOperations.run_cookstyle returns an ARRAY:
+      # [parsed_json, num_auto, num_manual, pr_desc, issue_desc, changes_committed]
+      # OR the DEFAULT_ERROR_RETURN
+      parsed_json, report = CookstyleOperations.run_cookstyle(context, logger)
+
+      # Check if CookstyleOperations returned the default error signature
+      if report.error
+        logger.error("CookstyleOperations reported an error for #{repo_name}, returning error status.")
+        return { status: :error, repo_name: repo_name, error_message: 'Cookstyle execution failed' }
+      end
+
       final_commit_sha_after_run = GitOperations.get_latest_commit_sha(context)
       logger.debug("Final commit SHA after run for #{repo_name}: #{final_commit_sha_after_run}")
-      total_offenses = cookstyle_result[:num_auto_correctable] + cookstyle_result[:num_manual_correctable]
+      total_offenses = report.num_auto + report.num_manual
 
-      logger.info("Cookstyle run finished for #{repo_name}. Auto-correctable: #{cookstyle_result[:num_auto_correctable]}, Manual: #{cookstyle_result[:num_manual_correctable]}, Git changes committed: #{cookstyle_result[:git_changes_made]}")
+      logger.info("Cookstyle run finished for #{repo_name}. Auto-correctable: #{report.num_auto}, Manual: #{report.num_manual}, Git changes committed: #{report.changes_committed}")
 
       # --- Handle PR or Issue Creation --- # Pass repo_dir from context
       pr_result = handle_cookstyle_pr_creation(
         repo_name: repo_name,
         repo_dir: context.repo_dir, # Get repo_dir from context
-        num_auto_correctable: cookstyle_result[:num_auto_correctable],
-        num_manual_correctable: cookstyle_result[:num_manual_correctable],
-        pr_description: cookstyle_result[:pr_description],       # Use description from run_cookstyle
-        issue_description: cookstyle_result[:issue_description], # Use description from run_cookstyle
-        git_changes_made: cookstyle_result[:git_changes_made]    # Use flag from run_cookstyle
+        num_auto_correctable: report.num_auto, # Use variable
+        num_manual_correctable: report.num_manual, # Use variable
+        pr_description: report.pr_description,       # Use variable
+        issue_description: report.issue_description, # Use variable
+        git_changes_made: report.changes_committed    # Use variable
       )
 
       # Combine status, cookstyle data, and PR result
@@ -125,15 +137,18 @@ module CookstyleRunner
         commit_sha: final_commit_sha_after_run,
         had_issues: total_offenses.positive?,
         total_offenses: total_offenses,
-        output: cookstyle_result[:output],
+        output: parsed_json, # Use variable for parsed JSON output
         processing_time: Time.now - start_time
       }.merge(pr_result)
+    rescue StandardError => e # Catch errors specifically within run_in_subprocess
+      logger.error("Internal error during subprocess processing for #{repo_name}: #{e.message}")
+      logger.debug(e.backtrace.join("\n"))
+      { status: :error, repo_name: repo_name, error_message: "Internal processing error: #{e.message}" }
     end
 
     # --- Helper methods for run_in_subprocess ---
     # Handles the creation of Pull Requests or Issues based on Cookstyle results
     # Returns a hash containing :pr_details (for PR/Issue) or :pr_error if creation failed, or empty hash otherwise.
-    # TODO: This is a duplicate
     def handle_cookstyle_pr_creation(repo_name:, repo_dir:, num_auto_correctable:, num_manual_correctable:,
                                      pr_description:, issue_description:, git_changes_made:)
       # No action needed if no offenses or changes

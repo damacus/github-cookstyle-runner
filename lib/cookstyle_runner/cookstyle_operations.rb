@@ -9,10 +9,21 @@ require_relative 'git_operations'
 
 # Module for cookstyle operations
 module CookstyleRunner
-  # Default return value for run_cookstyle in case of critical errors
-  DEFAULT_ERROR_RETURN = [{}, 0, 0, '', '', false].freeze
+  # Class for Cookstyle report
+  class Report
+    attr_reader :num_auto, :num_manual, :pr_description, :issue_description, :changes_committed, :error
 
-  CookstyleReport = Struct.new(:num_auto, :num_manual, :pr_description, :issue_description)
+    def initialize(num_auto: 0, num_manual: 0, pr_description: '', issue_description: '', changes_committed: false, error: false)
+      @num_auto = num_auto
+      @num_manual = num_manual
+      @pr_description = pr_description
+      @issue_description = issue_description
+      @changes_committed = changes_committed
+      @error = error
+    end
+  end
+  # Default return value for run_cookstyle in case of critical errors
+  DEFAULT_ERROR_RETURN = Report.new(error: true).freeze
 
   # Encapsulates operations related to running Cookstyle, parsing its output,
   # handling auto-correction, and generating descriptions for reports/PRs.
@@ -33,16 +44,37 @@ module CookstyleRunner
       changes_committed = false
 
       begin
-        # Run cookstyle in report mode (no --autocorrect-all) offenses for PR and issue generation
-        parsed_json, report, changes_committed = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
+        # Run 1: Report mode
+        parsed_json, report, _ = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
 
-        # If the report returns a positive number of auto-correctable offenses
-        # Run cookstyle in autocorrect mode, then return whether we committed the changes
-        _, _, changes_committed = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: true) if report.num_auto.positive?
+        # Check if the first run succeeded and returned a valid report object with auto-correctable offenses
+        if report.is_a?(CookstyleRunner::Report) && report.num_auto.positive?
+          logger.debug("Initial run found #{report.num_auto} auto-correctable offenses. Running autocorrect.")
+          # Run 2: Autocorrect mode
+          # We only care about whether changes were committed in this *specific* run.
+          _, _, changes_committed_autocorrect_run = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: true)
+          # Update the overall changes_committed status if the autocorrect run committed changes
+          changes_committed = true if changes_committed_autocorrect_run
+        elsif !report.is_a?(CookstyleRunner::Report)
+          logger.debug("Initial run did not return a valid report object. Type: #{report.class}. Skipping autocorrect.")
+        else
+          logger.debug("Initial run found no auto-correctable offenses (num_auto: #{report.num_auto}). Skipping autocorrect.")
+        end
 
-        [parsed_json, report.num_auto, report.num_manual, report.pr_description, report.issue_description, changes_committed]
+        # Construct the return value safely, checking if report is valid
+        if report.is_a?(CookstyleRunner::Report)
+          logger.debug("run_cookstyle returning successfully with report.")
+          [parsed_json, report]
+        else
+          # If the initial report was not valid (e.g., DEFAULT_ERROR_RETURN was returned),
+          # return the default error structure. The changes_committed status is likely false anyway.
+          logger.error("run_cookstyle returning DEFAULT_ERROR_RETURN because 'report' object was not a CookstyleReport. Type: #{report.class}")
+          DEFAULT_ERROR_RETURN
+        end
       rescue TTY::Command::ExitError, StandardError => e
-        logger.error("Cookstyle command failed: #{e.message}")
+        # Log the underlying error from the command or processing
+        logger.error("*** Caught exception in run_cookstyle: #{e.message} ***")
+        logger.debug(e.backtrace.join("\n")) # Optional: Add backtrace for detailed debugging
         DEFAULT_ERROR_RETURN
       end
     end
@@ -52,33 +84,54 @@ module CookstyleRunner
     # Returns results array and the command result object.
     # Raises errors to be caught by run_cookstyle.
     private_class_method def self._execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
-      cookstyle_result = cmd.run!(
+      logger.debug("Executing Cookstyle: autocorrect=#{autocorrect}")
+
+      cookstyle_result = cmd.run(
         "cookstyle --display-cop-names #{'--autocorrect-all' if autocorrect} --format json",
         chdir: context.repo_dir,
         timeout: 300
       )
 
-      changes_committed = _commit_autocorrections(context, logger)
+      # Attempt to commit changes *after* cookstyle run, regardless of exit status (if autocorrect was on)
+      # This assumes cookstyle modified files even if it exited with 1
+      changes_committed = _commit_autocorrections(context, logger) if autocorrect
 
-      if cookstyle_result.failure?
-        # parsed_json, success = _handle_cookstyle_command_exit_error(logger, cookstyle_result)
-        return DEFAULT_ERROR_RETURN
-      else
-        # Command succeeded, parse primary output
-        parsed_json = _parse_json_safely(logger, cookstyle_result.out)
+      # Check for unexpected failure (exit status neither 0 nor 1)
+      if cookstyle_result.failure? && ![0, 1].include?(cookstyle_result.exit_status)
+        logger.error("PATH A: Cookstyle command failed unexpectedly.")
+        logger.error("Exit Status: #{cookstyle_result.exit_status}")
+        logger.error("Stderr: #{cookstyle_result.err}".strip)
+        logger.error("Stdout: #{cookstyle_result.out}".strip)
+        return DEFAULT_ERROR_RETURN # Return default error for unexpected command failure
       end
 
-      # Calculate results using the parsed_json
-      report = _calculate_results(parsed_json)
+      logger.debug("Cookstyle command finished. Exit Status: #{cookstyle_result.exit_status}")
+      logger.debug("Cookstyle stdout (first 500 chars):\n#{cookstyle_result.out.slice(0, 500)}")
+      logger.debug("Cookstyle stderr:\n#{cookstyle_result.err}")
+
+      # Proceed to parse JSON if exit status was 0 or 1
+      parsed_json = _parse_json_safely(logger, cookstyle_result.out)
+
+      # Check if parsing failed or resulted in empty data
+      if parsed_json.nil? || parsed_json.empty?
+        logger.error("PATH B: Cookstyle command ran (exit status #{cookstyle_result.exit_status}) but produced no parsable JSON output or empty data.")
+        logger.debug("Raw Stdout: #{cookstyle_result.out}")
+        logger.debug("Raw Stderr: #{cookstyle_result.err}")
+        return DEFAULT_ERROR_RETURN # Return default error if JSON is bad/empty
+      end
+
+      # Calculate results using the valid parsed_json
+      logger.debug("JSON parsed successfully. Calculating results.")
+      report = _calculate_results(parsed_json, changes_committed)
 
       # Return all relevant data
       logger.debug("Returning from _execute_cookstyle_and_process with parsed_json: #{parsed_json.inspect}")
-      [parsed_json, report, changes_committed]
+      [parsed_json, report]
     end
 
     # Calculates offense counts and generates descriptions from parsed JSON.
     # @param parsed_json [Hash] The parsed JSON output from Cookstyle.
-    # @return [Array] [num_auto, num_manual, pr_desc, issue_desc]
+    # @return [Array] [num_auto, num_manual, pr_desc, issue_desc, changes_committed]
     private_class_method def self._calculate_results(parsed_json)
       num_auto = count_correctable_offences(parsed_json)
       num_manual = count_uncorrectable_offences(parsed_json)
@@ -92,7 +145,7 @@ module CookstyleRunner
       issue_details = format_issue_description(parsed_json)
       issue_description = "#{issue_summary}\n\n#{issue_details}".strip
 
-      CookstyleReport.new(num_auto, num_manual, pr_description, issue_description)
+      Report.new(num_auto, num_manual, pr_description, issue_description)
     end
 
     # Commits changes after a successful auto-correction run.

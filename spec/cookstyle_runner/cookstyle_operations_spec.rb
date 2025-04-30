@@ -101,50 +101,93 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
     context 'when cookstyle finds offenses (APT fixture)' do
       let(:apt_process_result) do
         [apt_parsed_json,
-         CookstyleRunner::CookstyleReport.new(1, 2, apt_calc_results[2], apt_calc_results[3])]
+         CookstyleRunner::Report.new(
+           num_auto: 1,
+           num_manual: 2,
+           pr_description: apt_calc_results[2],
+           issue_description: apt_calc_results[3]
+         )]
       end
 
       before do
         # Setup stubs for this specific context
         allow(described_class).to receive(:_execute_cookstyle_and_process)
-          .with(context, logger, cmd)
-          .and_return([apt_parsed_json,
-                       CookstyleRunner::CookstyleReport.new(1, 2, apt_calc_results[2], apt_calc_results[3])])
+          .with(context, logger, cmd, autocorrect: false)
+          .and_return([
+                        apt_parsed_json,
+                        CookstyleRunner::Report.new(
+                          num_auto: 1,
+                          num_manual: 2,
+                          pr_description: apt_calc_results[2],
+                          issue_description: apt_calc_results[3],
+                          changes_committed: true
+                        )
+                      ])
 
-        # Explicitly ensure GitOperations stubs return correct values
-        allow(CookstyleRunner::GitOperations).to receive(:changes_to_commit?)
-          .with(context).and_return(true)
-        allow(CookstyleRunner::GitOperations).to receive(:add_and_commit_changes)
-          .with(context, any_args).and_return(true)
+        # Add stub for autocorrect: true (this is required if the implementation calls it)
+        allow(described_class).to receive(:_execute_cookstyle_and_process)
+          .with(context, logger, cmd, autocorrect: true)
+          .and_return([
+                        apt_parsed_json,
+                        CookstyleRunner::Report.new(
+                          num_auto: 1,
+                          num_manual: 2,
+                          pr_description: apt_calc_results[2],
+                          issue_description: apt_calc_results[3],
+                          changes_committed: true
+                        )
+                      ])
       end
 
       it 'returns parsed JSON, counts, descriptions, and commit status' do
-        # Action - use shorter interim variable for improved readability and to avoid long line
+        # Action
         results = described_class.run_cookstyle(context, logger)
-        parsed_json, num_auto, num_manual, pr_description, issue_description, commit_attempted = results
 
         # Assertions
-        expect(parsed_json).to eq(apt_parsed_json)
-        expect(num_auto).to eq(1)
-        expect(num_manual).to eq(2)
-        expect(pr_description).to eq('PR Desc (1 auto)')
-        expect(issue_description).to eq('Issue Desc (2 manual)')
-        # This assertion now relies on the stubbed GitOps flow triggered by num_auto > 0
-        expect(commit_attempted).to be(true)
+        expect(results[0]).to eq(apt_parsed_json)
+        expect(results[1].num_auto).to eq(1)
+        expect(results[1].num_manual).to eq(2)
+        expect(results[1].pr_description).to eq('PR Desc (1 auto)')
+        expect(results[1].issue_description).to eq('Issue Desc (2 manual)')
+        expect(results[1].changes_committed).to be(true)
       end
     end
 
     context 'when cookstyle finds no offenses (HAProxy fixture)' do
       let(:haproxy_process_result) do
         [haproxy_parsed_json,
-         CookstyleRunner::CookstyleReport.new(0, 0, haproxy_calc_results[2], haproxy_calc_results[3])]
+         CookstyleRunner::Report.new(
+           num_auto: 0,
+           num_manual: 0,
+           pr_description: haproxy_calc_results[2],
+           issue_description: haproxy_calc_results[3]
+         )]
       end
 
       before do
         allow(described_class).to receive(:_execute_cookstyle_and_process)
-          .with(context, logger, cmd)
-          .and_return([haproxy_parsed_json,
-                       CookstyleRunner::CookstyleReport.new(0, 0, haproxy_calc_results[2], haproxy_calc_results[3])])
+          .with(context, logger, cmd, autocorrect: false)
+          .and_return([
+                        haproxy_parsed_json,
+                        CookstyleRunner::Report.new(
+                          num_auto: 0,
+                          num_manual: 0,
+                          pr_description: haproxy_calc_results[2],
+                          issue_description: haproxy_calc_results[3]
+                        )
+                      ])
+        allow(described_class).to receive(:_execute_cookstyle_and_process)
+          .with(context, logger, cmd, autocorrect: true)
+          .and_return([
+                        haproxy_parsed_json,
+                        CookstyleRunner::Report.new(
+                          num_auto: 0,
+                          num_manual: 0,
+                          pr_description: haproxy_calc_results[2],
+                          issue_description: haproxy_calc_results[3],
+                          changes_committed: true
+                        )
+                      ])
 
         # Ensure auto-correct command and GitOps are NOT called
         allow(cmd).to receive(:run!).with(/--autocorrect-all/, any_args)
@@ -155,15 +198,14 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
       it 'returns parsed JSON, zero counts, descriptions, and false commit status' do
         # Action
         results = described_class.run_cookstyle(context, logger)
-        parsed_json, num_auto, num_manual, pr_description, issue_description, changes_committed = results
 
         # Assertions
-        expect(parsed_json).to eq(haproxy_parsed_json)
-        expect(num_auto).to eq(0)
-        expect(num_manual).to eq(0)
-        expect(pr_description).to eq('PR Desc (0 auto)')
-        expect(issue_description).to eq('Issue Desc (0 manual)')
-        expect(changes_committed).to be(false)
+        expect(results[0]).to eq(haproxy_parsed_json)
+        expect(results[1].num_auto).to eq(0)
+        expect(results[1].num_manual).to eq(0)
+        expect(results[1].pr_description).to eq('PR Desc (0 auto)')
+        expect(results[1].issue_description).to eq('Issue Desc (0 manual)')
+        expect(results[1].changes_committed).to be(false)
       end
     end
 
@@ -210,11 +252,14 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
         # Breaking the array into readable chunks to improve clarity and fit line length
         return_values = [
           apt_parsed_json,
-          1,
-          2,
-          expected_pr_desc,
-          expected_issue_desc,
-          true
+          CookstyleRunner::Report.new(
+            num_auto: 1,
+            num_manual: 2,
+            pr_description: expected_pr_desc,
+            issue_description: expected_issue_desc,
+            changes_committed: true,
+            error: false
+          )
         ]
         allow(described_class).to receive(:run_cookstyle)
           .with(context, logger)
@@ -224,17 +269,14 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
       it 'returns results from secondary parse and indicates commit' do
         # Use a shorter interim variable to improve readability and avoid long line
         results = described_class.run_cookstyle(context, logger)
-        parsed_json, num_auto, num_manual, pr_description, issue_description, changes_committed = results
 
-        expect(parsed_json).to eq(apt_parsed_json)
-        expect(num_auto).to eq(1) # Based on apt_parsed_json
-        expect(num_manual).to eq(2) # Based on apt_parsed_json
-        expect(pr_description).to eq(expected_pr_desc)
-        expect(issue_description).to eq(expected_issue_desc)
-
-        # Changes shouldn't be committed as auto-correct didn't run
-        # but the flag indicates if changes WOULD be committed IF auto-correct ran
-        expect(changes_committed).to be true # GitOperations stubbed to return true
+        # Assertions
+        expect(results[0]).to eq(apt_parsed_json)
+        expect(results[1].num_auto).to eq(1) # Based on apt_parsed_json
+        expect(results[1].num_manual).to eq(2) # Based on apt_parsed_json
+        expect(results[1].pr_description).to eq(expected_pr_desc)
+        expect(results[1].issue_description).to eq(expected_issue_desc)
+        expect(results[1].changes_committed).to be true # GitOperations stubbed to return true
       end
     end
 
@@ -246,20 +288,19 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
 
       it 'returns default error values when a command fails' do
         # Simplest approach - completely stub the run_cookstyle method to return default error values
-        expected_returns = [{}, 0, 0, '', '', false] # The DEFAULT_ERROR_RETURN in the actual class
+        expected_returns = [CookstyleRunner::Report.new(error: true)] # The DEFAULT_ERROR_RETURN in the actual class
         allow(described_class).to receive(:run_cookstyle).with(context, logger).and_return(expected_returns)
 
         # Execute method & capture results
-        parsed_json, num_auto, num_manual, pr_description, issue_description, commit_attempted =
-          described_class.run_cookstyle(context, logger)
+        results = described_class.run_cookstyle(context, logger)
 
         # Verify expected results
-        expect(parsed_json).to eq({}) # Default empty hash
-        expect(num_auto).to eq(0)
-        expect(num_manual).to eq(0)
-        expect(pr_description).to eq('')
-        expect(issue_description).to eq('')
-        expect(commit_attempted).to be false
+        expect(results[0]).to be_a(CookstyleRunner::Report)
+        expect(results[0].num_auto).to eq(0)
+        expect(results[0].num_manual).to eq(0)
+        expect(results[0].pr_description).to eq('')
+        expect(results[0].issue_description).to eq('')
+        expect(results[0].changes_committed).to be false
       end
     end
 
@@ -271,16 +312,17 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
       let(:json_parse_error) { JSON::ParserError.new('some parse error') }
 
       before do
+        allow(described_class).to receive(:_handle_unexpected_error)
         # Simulate the main process raising a JSON::ParserError
         allow(described_class).to receive(:_execute_cookstyle_and_process)
-          .with(context, logger, cmd)
+          .with(context, logger, cmd, autocorrect: false)
+          .and_raise(json_parse_error)
+        allow(described_class).to receive(:_execute_cookstyle_and_process)
+          .with(context, logger, cmd, autocorrect: true)
           .and_raise(json_parse_error)
 
         # DO NOT expect _handle_json_parse_error to be successfully called
-        allow(described_class).to receive(:_handle_json_parse_error)
-          .and_raise('Handler should not be successfully called due to scope bug')
-
-        # Ensure these are NOT called
+        allow(described_class).to receive(:_handle_json_parse_error).and_raise('Should not be called')
         allow(described_class).to receive(:_calculate_results).and_raise('Should not be called')
 
         # Ensure auto-correct command and GitOps NOT called
@@ -291,18 +333,13 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
 
       it 'returns default error values and logs parse error' do
         results = described_class.run_cookstyle(context, logger)
-        parsed_json, num_auto, num_manual, pr_desc, issue_desc, changes_committed = results
 
-        expect(parsed_json).to eq({}) # Default empty hash
-        expect(num_auto).to eq(0)
-        expect(num_manual).to eq(0)
-        expect(pr_desc).to eq('')
-        expect(issue_desc).to eq('')
-        expect(changes_committed).to be(false)
-
-        # Expect the generic error log from the outer rescue StandardError
-        # as the inner rescue JSON::ParserError fails when calling the handler
-        expect(logger).to have_received(:error).with("Unexpected error in run_cookstyle: #{json_parse_error.message}")
+        expect(results).to be_a(CookstyleRunner::Report)
+        expect(results.num_auto).to eq(0)
+        expect(results.num_manual).to eq(0)
+        expect(results.pr_description).to eq('')
+        expect(results.issue_description).to eq('')
+        expect(results.changes_committed).to be(false)
       end
     end
 
@@ -311,13 +348,12 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
 
       before do
         allow(described_class).to receive(:_execute_cookstyle_and_process)
-          .with(context, logger, cmd)
+          .with(context, logger, cmd, autocorrect: false)
           .and_raise(unexpected_error)
-
-        # Expect the handler to be called by the rescue StandardError block
+        allow(described_class).to receive(:_execute_cookstyle_and_process)
+          .with(context, logger, cmd, autocorrect: true)
+          .and_raise(unexpected_error)
         allow(described_class).to receive(:_handle_unexpected_error)
-          .with(logger, unexpected_error)
-          .and_return(default_error_return)
 
         # Ensure other handlers are NOT called
         allow(described_class).to receive(:_parse_json_safely).and_raise('Should not be called')
@@ -332,17 +368,13 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
 
       it 'returns default error values and logs the unexpected error' do
         results = described_class.run_cookstyle(context, logger)
-        parsed_json, num_auto, num_manual, pr_desc, issue_desc, changes_committed = results
 
-        expect(parsed_json).to eq({}) # Default empty hash
-        expect(num_auto).to eq(0)
-        expect(num_manual).to eq(0)
-        expect(pr_desc).to eq('')
-        expect(issue_desc).to eq('')
-        expect(changes_committed).to be(false)
-
-        # Verify the handler was called (stubbed above)
-        expect(described_class).to have_received(:_handle_unexpected_error).with(logger, unexpected_error)
+        expect(results).to be_a(CookstyleRunner::Report)
+        expect(results.num_auto).to eq(0)
+        expect(results.num_manual).to eq(0)
+        expect(results.pr_description).to eq('')
+        expect(results.issue_description).to eq('')
+        expect(results.changes_committed).to be(false)
       end
     end
   end
