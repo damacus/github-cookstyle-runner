@@ -1,0 +1,1696 @@
+{
+  "repositories": {
+    "nginx": {
+      "last_commit_sha": "27b6858ae1dea55ea46914aa61ceb6a501f97c3a",
+      "last_check_time": "2025-04-25T22:12:50Z",
+      "had_issues": false,
+      "last_result": {
+        "metadata": {
+          "rubocop_version": "1.75.3",
+          "ruby_engine": "ruby",
+          "ruby_version": "3.4.1",
+          "ruby_patchlevel": "0",
+          "ruby_platform": "arm64-darwin24"
+        },
+        "files": [
+          {
+            "path": "Berksfile",
+            "offenses": []
+          },
+          {
+            "path": "Dangerfile",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/resource.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/template.rb",
+            "offenses": []
+          },
+          {
+            "path": "metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/config.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/install.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/service.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/site.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/spec_helper.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/support/install.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/libraries/helpers_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/resources/config_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/resources/install_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/resources/service_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/resources/site_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/distro.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/distro_nginx-full.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/epel.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/invalid-conf.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/repo.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/test_site.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/default/controls/config_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/default/controls/service_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/default_install/controls/instal_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/epel/controls/epel_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/repo/controls/repo_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/repo_install/controls/install_spec.rb",
+            "offenses": []
+          }
+        ],
+        "summary": {
+          "offense_count": 0,
+          "target_file_count": 30,
+          "inspected_file_count": 30
+        }
+      },
+      "processing_time": 1.132883
+    },
+    "aws": {
+      "last_commit_sha": "70f7d49798a8ca1a082fdedfd7e61fa328d1903c",
+      "last_check_time": "2025-04-25T22:12:51Z",
+      "had_issues": true,
+      "last_result": {
+        "metadata": {
+          "rubocop_version": "1.75.3",
+          "ruby_engine": "ruby",
+          "ruby_version": "3.4.1",
+          "ruby_patchlevel": "0",
+          "ruby_platform": "arm64-darwin24"
+        },
+        "files": [
+          {
+            "path": "Berksfile",
+            "offenses": []
+          },
+          {
+            "path": "Dangerfile",
+            "offenses": []
+          },
+          {
+            "path": "libraries/dynamodb.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/ec2.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/iam.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/security_group.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/sts.rb",
+            "offenses": []
+          },
+          {
+            "path": "metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "providers/dynamodb_table.rb",
+            "offenses": []
+          },
+          {
+            "path": "recipes/default.rb",
+            "offenses": []
+          },
+          {
+            "path": "recipes/ec2_hints.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/autoscaling.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/cloudformation_stack.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/cloudwatch.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/dynamodb_table.rb",
+            "offenses": [
+              {
+                "severity": "fatal",
+                "message": "Lint/Syntax: unexpected token tRPAREN\n(Using Ruby 2.6 parser; configure using `TargetRubyVersion` parameter, under `AllCops`)",
+                "cop_name": "Lint/Syntax",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 26,
+                  "start_column": 34,
+                  "last_line": 26,
+                  "last_column": 34,
+                  "length": 1,
+                  "line": 26,
+                  "column": 34
+                }
+              }
+            ]
+          },
+          {
+            "path": "resources/ebs_volume.rb",
+            "offenses": [
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/NodeNormal: Do not use node.normal. Replace with default/override/force_default/force_override attribute levels. (https://docs.chef.io/workstation/cookstyle/chef_correctness_nodenormal)",
+                "cop_name": "Chef/Correctness/NodeNormal",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 52,
+                  "start_column": 9,
+                  "last_line": 52,
+                  "last_column": 19,
+                  "length": 11,
+                  "line": 52,
+                  "column": 9
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/CookbookUsesNodeSave: Don't use node.save to save partial node data to the Chef Infra Server mid-run unless it's absolutely necessary. Node.save can result in failed Chef Infra runs appearing in search and increases load on the Chef Infra Server. (https://docs.chef.io/workstation/cookstyle/chef_correctness_cookbookusesnodesave)",
+                "cop_name": "Chef/Correctness/CookbookUsesNodeSave",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 53,
+                  "start_column": 9,
+                  "last_line": 53,
+                  "last_column": 17,
+                  "length": 9,
+                  "line": 53,
+                  "column": 9
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/NodeNormal: Do not use node.normal. Replace with default/override/force_default/force_override attribute levels. (https://docs.chef.io/workstation/cookstyle/chef_correctness_nodenormal)",
+                "cop_name": "Chef/Correctness/NodeNormal",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 71,
+                  "start_column": 9,
+                  "last_line": 71,
+                  "last_column": 19,
+                  "length": 11,
+                  "line": 71,
+                  "column": 9
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/CookbookUsesNodeSave: Don't use node.save to save partial node data to the Chef Infra Server mid-run unless it's absolutely necessary. Node.save can result in failed Chef Infra runs appearing in search and increases load on the Chef Infra Server. (https://docs.chef.io/workstation/cookstyle/chef_correctness_cookbookusesnodesave)",
+                "cop_name": "Chef/Correctness/CookbookUsesNodeSave",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 72,
+                  "start_column": 9,
+                  "last_line": 72,
+                  "last_column": 17,
+                  "length": 9,
+                  "line": 72,
+                  "column": 9
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/NodeNormal: Do not use node.normal. Replace with default/override/force_default/force_override attribute levels. (https://docs.chef.io/workstation/cookstyle/chef_correctness_nodenormal)",
+                "cop_name": "Chef/Correctness/NodeNormal",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 98,
+                  "start_column": 7,
+                  "last_line": 98,
+                  "last_column": 17,
+                  "length": 11,
+                  "line": 98,
+                  "column": 7
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/CookbookUsesNodeSave: Don't use node.save to save partial node data to the Chef Infra Server mid-run unless it's absolutely necessary. Node.save can result in failed Chef Infra runs appearing in search and increases load on the Chef Infra Server. (https://docs.chef.io/workstation/cookstyle/chef_correctness_cookbookusesnodesave)",
+                "cop_name": "Chef/Correctness/CookbookUsesNodeSave",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 99,
+                  "start_column": 7,
+                  "last_line": 99,
+                  "last_column": 15,
+                  "length": 9,
+                  "line": 99,
+                  "column": 7
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/NodeNormal: Do not use node.normal. Replace with default/override/force_default/force_override attribute levels. (https://docs.chef.io/workstation/cookstyle/chef_correctness_nodenormal)",
+                "cop_name": "Chef/Correctness/NodeNormal",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 349,
+                  "start_column": 13,
+                  "last_line": 349,
+                  "last_column": 23,
+                  "length": 11,
+                  "line": 349,
+                  "column": 13
+                }
+              }
+            ]
+          },
+          {
+            "path": "resources/elastic_ip.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/elastic_lb.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/iam_group.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/iam_policy.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/iam_role.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/iam_user.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/instance_monitoring.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/instance_role.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/instance_term_protection.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/kinesis_stream.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/resource_tag.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/route53_record.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/route53_zone.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/s3_bucket.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/s3_file.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/secondary_ip.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/security_group.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/ssm_parameter_store.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/libraries/security_group_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/recipes/default_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/resources/security_group_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/spec_helper.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/autoscaling.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/cfn_stack.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/cloudwatch_alarm.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/dynamodb_table.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/ebs_volume.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/elastic_ip.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/elb.rb",
+            "offenses": [
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 5,
+                  "start_column": 3,
+                  "last_line": 5,
+                  "last_column": 24,
+                  "length": 22,
+                  "line": 5,
+                  "column": 3
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 22,
+                  "start_column": 3,
+                  "last_line": 22,
+                  "last_column": 24,
+                  "length": 22,
+                  "line": 22,
+                  "column": 3
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 30,
+                  "start_column": 3,
+                  "last_line": 30,
+                  "last_column": 24,
+                  "length": 22,
+                  "line": 30,
+                  "column": 3
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 38,
+                  "start_column": 3,
+                  "last_line": 38,
+                  "last_column": 24,
+                  "length": 22,
+                  "line": 38,
+                  "column": 3
+                }
+              }
+            ]
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/iam_group.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/iam_policy.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/iam_role.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/iam_user.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/instance_monitoring.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/instance_term_protection.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/kinesis_stream.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/resource_tag.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/route53.rb",
+            "offenses": [
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 2,
+                  "start_column": 3,
+                  "last_line": 2,
+                  "last_column": 24,
+                  "length": 22,
+                  "line": 2,
+                  "column": 3
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 10,
+                  "start_column": 3,
+                  "last_line": 10,
+                  "last_column": 33,
+                  "length": 31,
+                  "line": 10,
+                  "column": 3
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 40,
+                  "start_column": 3,
+                  "last_line": 40,
+                  "last_column": 33,
+                  "length": 31,
+                  "line": 40,
+                  "column": 3
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 51,
+                  "start_column": 3,
+                  "last_line": 51,
+                  "last_column": 24,
+                  "length": 22,
+                  "line": 51,
+                  "column": 3
+                }
+              }
+            ]
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/s3_file.rb",
+            "offenses": [
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 2,
+                  "start_column": 3,
+                  "last_line": 2,
+                  "last_column": 39,
+                  "length": 37,
+                  "line": 2,
+                  "column": 3
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 10,
+                  "start_column": 3,
+                  "last_line": 10,
+                  "last_column": 39,
+                  "length": 37,
+                  "line": 10,
+                  "column": 3
+                }
+              },
+              {
+                "severity": "refactor",
+                "message": "Chef/Correctness/ResourceSetsNameProperty: Resource sets the name property in the resource instead of using a name_property. (https://docs.chef.io/workstation/cookstyle/chef_correctness_resourcesetsnameproperty)",
+                "cop_name": "Chef/Correctness/ResourceSetsNameProperty",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 18,
+                  "start_column": 3,
+                  "last_line": 18,
+                  "last_column": 39,
+                  "length": 37,
+                  "line": 18,
+                  "column": 3
+                }
+              }
+            ]
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/secondary_ip.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/aws_test/recipes/ssm_parameter_store.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/dynamodb_table/rspec/Gemfile",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/dynamodb_table/rspec/dynamodb_table_update_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/s3_file/default_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/ssm_parameter_store/default_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/shared/rspec_helper.rb",
+            "offenses": []
+          }
+        ],
+        "summary": {
+          "offense_count": 19,
+          "target_file_count": 63,
+          "inspected_file_count": 63
+        }
+      },
+      "processing_time": 2.361941
+    },
+    "elasticsearch": {
+      "last_commit_sha": "32fd448b6b69aab3acb9f48e2a2ea42963df07c9",
+      "last_check_time": "2025-04-25T22:12:50Z",
+      "had_issues": false,
+      "last_result": {
+        "metadata": {
+          "rubocop_version": "1.75.3",
+          "ruby_engine": "ruby",
+          "ruby_version": "3.4.1",
+          "ruby_patchlevel": "0",
+          "ruby_platform": "arm64-darwin24"
+        },
+        "files": [
+          {
+            "path": "Berksfile",
+            "offenses": []
+          },
+          {
+            "path": "Dangerfile",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/versions.rb",
+            "offenses": []
+          },
+          {
+            "path": "metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/configure.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/install.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/install_package.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/install_repository.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/partial/_common.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/partial/_package.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/partial/_repository.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/plugin.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/service.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/user.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/install_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/plugin_proxy_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/spec_helper.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/user_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/recipes/default_with_plugins.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/recipes/doubleinstances.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/recipes/fix_cacerts.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/recipes/package.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/recipes/tarball.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/recipes/user.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/default/controls/extension_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/default/controls/service_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/default/controls/user_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/package/controls/package_test.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/repository/controls/default_spec.rb",
+            "offenses": []
+          }
+        ],
+        "summary": {
+          "offense_count": 0,
+          "target_file_count": 31,
+          "inspected_file_count": 31
+        }
+      },
+      "processing_time": 1.223374
+    },
+    "docker": {
+      "last_commit_sha": "c9677f75c1fd430e93da0cf8ed1f87aba2509ab0",
+      "last_check_time": "2025-04-25T22:12:51Z",
+      "had_issues": false,
+      "last_result": {
+        "metadata": {
+          "rubocop_version": "1.75.3",
+          "ruby_engine": "ruby",
+          "ruby_version": "3.4.1",
+          "ruby_patchlevel": "0",
+          "ruby_platform": "arm64-darwin24"
+        },
+        "files": [
+          {
+            "path": "Berksfile",
+            "offenses": []
+          },
+          {
+            "path": "Dangerfile",
+            "offenses": []
+          },
+          {
+            "path": "libraries/base.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers_coerce.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers_container.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers_json.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers_network.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers_service.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers_swarm.rb",
+            "offenses": []
+          },
+          {
+            "path": "metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/container.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/exec.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/image.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/image_prune.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/installation_package.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/installation_script.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/installation_tarball.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/network.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/partial/_base.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/partial/_logging.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/partial/_service_base.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/plugin.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/registry.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/service.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/service_base.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/service_manager_execute.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/service_manager_systemd.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/swarm_init.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/swarm_join.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/swarm_service.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/swarm_token.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/tag.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/volume.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/volume_prune.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/container_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/exec_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/image_prune_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/image_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/installation_package_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/installation_tarball_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/network_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/plugin_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/registry_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/service_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/docker_test/volume_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/helpers_container_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/helpers_network_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/libraries/container_networks_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/libraries/container_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/libraries/image_prune_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/libraries/registry_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/spec_helper.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/resources/swarm_init_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/resources/swarm_join_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/resources/swarm_service_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/auto.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/container.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/default.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/exec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/image.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/image_prune.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/install_and_stop.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/installation_package.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/installation_script.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/installation_tarball.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/network.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/plugin.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/registry.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/service.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/smoke.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/swarm.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/swarm_service.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/swarm_worker.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/timeout.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/volume.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/docker_test/recipes/volume_prune.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/install_and_stop/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/installation_package/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/installation_script_experimental/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/installation_script_main/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/installation_script_test/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/installation_tarball/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/network/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/resources/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/smoke/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/swarm/inspec/swarm_test.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/volume/inspec/assert_functioning_spec.rb",
+            "offenses": []
+          }
+        ],
+        "summary": {
+          "offense_count": 0,
+          "target_file_count": 88,
+          "inspected_file_count": 88
+        }
+      },
+      "processing_time": 1.61977
+    },
+    "apt": {
+      "last_commit_sha": "53519d0266dabd465e4b792e7f0d12537aec4807",
+      "last_check_time": "2025-04-25T22:10:16Z",
+      "had_issues": true,
+      "last_result": {
+        "metadata": {
+          "rubocop_version": "1.75.3",
+          "ruby_engine": "ruby",
+          "ruby_version": "3.4.1",
+          "ruby_patchlevel": "0",
+          "ruby_platform": "arm64-darwin24"
+        },
+        "files": [
+          {
+            "path": "Berksfile",
+            "offenses": []
+          },
+          {
+            "path": "Dangerfile",
+            "offenses": []
+          },
+          {
+            "path": "attributes/default.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers.rb",
+            "offenses": []
+          },
+          {
+            "path": "metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "recipes/cacher-client.rb",
+            "offenses": []
+          },
+          {
+            "path": "recipes/cacher-ng.rb",
+            "offenses": []
+          },
+          {
+            "path": "recipes/default.rb",
+            "offenses": []
+          },
+          {
+            "path": "recipes/unattended-upgrades.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/spec_helper.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/cacher-client_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/cacher-ng_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/default_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/unattended-upgrades_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/recipes/base.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/recipes/cacher.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/fixtures/cookbooks/test/recipes/unattended-upgrades.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/cacher/cacher-ng-client_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/compile-time/default_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/default/default_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/resources/resources_spec.rb",
+            "offenses": [
+              {
+                "severity": "refactor",
+                "message": "Chef/Deprecations/ResourceWithoutUnifiedTrue: Set `unified_mode true` in Chef Infra Client 15.3+ custom resources to ensure they work correctly in Chef Infra Client 18 (April 2022) when Unified Mode becomes the default. (https://docs.chef.io/workstation/cookstyle/chef_deprecations_resourcewithoutunifiedtrue)",
+                "cop_name": "Chef/Deprecations/ResourceWithoutUnifiedTrue",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 1,
+                  "start_column": 1,
+                  "last_line": 1,
+                  "last_column": 1,
+                  "length": 1,
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            ]
+          },
+          {
+            "path": "test/integration/resources/unattended_upgrades_spec.rb",
+            "offenses": [
+              {
+                "severity": "refactor",
+                "message": "Chef/Deprecations/ResourceWithoutUnifiedTrue: Set `unified_mode true` in Chef Infra Client 15.3+ custom resources to ensure they work correctly in Chef Infra Client 18 (April 2022) when Unified Mode becomes the default. (https://docs.chef.io/workstation/cookstyle/chef_deprecations_resourcewithoutunifiedtrue)",
+                "cop_name": "Chef/Deprecations/ResourceWithoutUnifiedTrue",
+                "corrected": false,
+                "correctable": false,
+                "location": {
+                  "start_line": 1,
+                  "start_column": 1,
+                  "last_line": 1,
+                  "last_column": 1,
+                  "length": 1,
+                  "line": 1,
+                  "column": 1
+                }
+              }
+            ]
+          }
+        ],
+        "summary": {
+          "offense_count": 2,
+          "target_file_count": 23,
+          "inspected_file_count": 23
+        }
+      },
+      "processing_time": 1.881969
+    },
+    "haproxy": {
+      "last_commit_sha": "2838d3b179bb6008464651e8df7e6aacf173679c",
+      "last_check_time": "2025-04-25T22:10:15Z",
+      "had_issues": false,
+      "last_result": {
+        "metadata": {
+          "rubocop_version": "1.75.3",
+          "ruby_engine": "ruby",
+          "ruby_version": "3.4.1",
+          "ruby_patchlevel": "0",
+          "ruby_platform": "arm64-darwin24"
+        },
+        "files": [
+          {
+            "path": "Berksfile",
+            "offenses": []
+          },
+          {
+            "path": "Dangerfile",
+            "offenses": []
+          },
+          {
+            "path": "libraries/helpers.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/resource.rb",
+            "offenses": []
+          },
+          {
+            "path": "libraries/template.rb",
+            "offenses": []
+          },
+          {
+            "path": "metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/acl.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/backend.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/cache.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/config_defaults.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/config_global.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/fastcgi.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/frontend.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/install.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/listen.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/mailer.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/partial/_config_file.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/partial/_extra_options.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/peer.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/resolver.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/service.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/use_backend.rb",
+            "offenses": []
+          },
+          {
+            "path": "resources/userlist.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/spec_helper.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/cache_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/defaults_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/fastcgi_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/frontend_backend_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/global_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/install_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/listen_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/mailer_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "spec/unit/recipes/peer_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/metadata.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/config_2.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/config_3.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/config_acl.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/config_array.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/config_backend_search.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/config_custom_template.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/config_fastcgi.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/config_resolver.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/config_ssl_redirect.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/package.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/source.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/source_24.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/source_26.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/source_28.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/source_29.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/source_lua.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/cookbooks/test/recipes/source_openssl.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/common/controls/common_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/config_2/controls/config_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/config_3/controls/config_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/config_acl/controls/config_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/config_array/controls/config_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/config_backend_search/controls/config_backend_search_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/config_custom_template/controls/template_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/config_fastcgi/controls/fast_cgi_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/config_resolver/controls/resolver_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/config_ssl_redirect/controls/ssl_redirect_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/package/controls/package_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/source-default/controls/source_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/source_2.4/controls/source_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/source_2.6/controls/source_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/source_2.8/controls/source_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/source_2.9/controls/source_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/source_lua/controls/lua_spec.rb",
+            "offenses": []
+          },
+          {
+            "path": "test/integration/source_openssl/controls/openssl_spec.rb",
+            "offenses": []
+          }
+        ],
+        "summary": {
+          "offense_count": 0,
+          "target_file_count": 69,
+          "inspected_file_count": 69
+        }
+      },
+      "processing_time": 1.11945
+    }
+  },
+  "last_updated": "2025-04-25T22:12:51Z"
+}
