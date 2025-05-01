@@ -21,8 +21,8 @@ require_relative 'github_api'
 require_relative 'cookstyle_operations'
 require_relative 'authentication'
 
-# Manages GitHub pull request operations
 module CookstyleRunner
+  # Manages GitHub pull request operations
   class GitHubPRManager
     attr_reader :logger, :config, :github_client
 
@@ -32,7 +32,6 @@ module CookstyleRunner
     def initialize(config, logger)
       @config = config
       @logger = logger
-      # Use the centralized client from the Authentication module
       @github_client = CookstyleRunner::Authentication.client
     end
 
@@ -43,12 +42,12 @@ module CookstyleRunner
     # @param context [RepoContext] The context object for the repository
     # @param manual_fix [Boolean] Whether manual fixes are required (can't be auto-fixed)
     # @return [Array<Boolean, Hash>] Success status and PR/Issue details
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
     def create_pull_request(repo_name, repo_dir, cookstyle_output, context, manual_fix: false)
       # Create an issue if manual fixes are required
-      # Note: create_issue_for_manual_fixes might also need context if it uses GitOperations
       return create_issue_for_manual_fixes(repo_name, cookstyle_output) if manual_fix
 
-      # Process auto-fixable changes
+      # rubocop:disable Metrics/BlockLength
       Dir.chdir(repo_dir) do
         # Check if there are changes to commit - Pass context
         unless GitOperations.changes_to_commit?(context)
@@ -67,7 +66,7 @@ module CookstyleRunner
         if @config[:manage_changelog]
           # Format offense details for changelog (this might need context/config access too)
           # Placeholder: Assuming cookstyle_output contains details needed
-          offense_details_for_cl = "* Automated Cookstyle fixes applied."
+          offense_details_for_cl = '* Automated Cookstyle fixes applied.'
           GitOperations.update_changelog(context, @config, offense_details_for_cl)
         end
 
@@ -113,16 +112,19 @@ module CookstyleRunner
           return [false, { error: 'GitHub API PR creation failed', type: 'pull_request' }]
         end
       end
+      # rubocop:enable Metrics/BlockLength
     rescue StandardError => e
       @logger.error("Error during PR creation process for #{repo_name}: #{e.message}")
       @logger.debug(e.backtrace.join("\n"))
       [false, { error: e.message, type: 'pull_request' }]
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
 
     # Create an issue for manual cookstyle fixes
     # @param repo_name [String] Repository name
     # @param cookstyle_output [String] Output from cookstyle run
     # @return [Array<Boolean, Hash>] Success status and issue details
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
     def create_issue_for_manual_fixes(repo_name, cookstyle_output)
       repo_full_name = "#{config[:owner]}/#{repo_name}"
       issue_title = 'Manual Fix Required: Cookstyle Issues'
@@ -158,5 +160,6 @@ module CookstyleRunner
       logger.debug(e.backtrace.join("\n"))
       [false, nil]
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
   end
 end

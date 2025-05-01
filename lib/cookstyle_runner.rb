@@ -47,6 +47,7 @@ require_relative 'cookstyle_runner/reporter'
 # Main application class for GitHub Cookstyle Runner
 module CookstyleRunner
   # Main application class for GitHub Cookstyle Runner
+  # rubocop:disable Metrics/ClassLength
   class Application
     attr_reader :logger, :config, :cache, :pr_manager, :context_manager
 
@@ -60,6 +61,7 @@ module CookstyleRunner
     end
 
     # Main entry point for the application
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
     def run
       # Fetch and filter repositories
       repositories = _fetch_and_filter_repositories
@@ -109,6 +111,7 @@ module CookstyleRunner
       # Return appropriate exit code (e.g., non-zero if errors occurred)
       error_count.zero? && @artifact_creation_errors.empty? ? 0 : 1
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
 
     private
 
@@ -144,6 +147,7 @@ module CookstyleRunner
 
     # Fetches repositories from GitHub and applies filtering based on config
     # @return [Array<String>, nil] List of repository URLs or nil if none found/matched
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
     def _fetch_and_filter_repositories
       # Use the GitHubAPI module to fetch repositories
       repositories = GitHubAPI.fetch_repositories(
@@ -174,8 +178,8 @@ module CookstyleRunner
       logger.info("Found #{repositories.length} repositories to process.")
       repositories # Return the final list
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
-    # rubocop:disable Metrics/MethodLength
     # Process repositories in parallel
     def _process_repositories_in_parallel(repositories)
       total_repos = repositories.length
@@ -201,8 +205,9 @@ module CookstyleRunner
         repo_processor.process_repository(repo_url, current_log_count, total_repos)
       end
     end
-    # rubocop:enable Metrics/MethodLength
   end
+  # rubocop:enable Metrics/ClassLength
+
   # Run the application if this file is executed directly
   if __FILE__ == $PROGRAM_NAME
     runner = CookstyleRunner::Application.new

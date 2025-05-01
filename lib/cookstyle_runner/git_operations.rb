@@ -27,6 +27,7 @@ module GitOperations
     # @param app_id [String, nil] GitHub App ID (if using app auth)
     # @param installation_id [Integer, nil] GitHub App Installation ID (if using app auth)
     # @param private_key [String, nil] GitHub App Private Key (if using app auth)
+    # rubocop:disable Metrics/ParameterLists
     def initialize(repo_name:, owner:, logger:, base_dir: REPO_BASE_DIR, repo_dir: nil, repo_url: nil,
                    github_token: nil, app_id: nil, installation_id: nil, private_key: nil)
       @repo_name = repo_name
@@ -43,6 +44,7 @@ module GitOperations
 
       FileUtils.mkdir_p(@repo_dir)
     end
+    # rubocop:enable Metrics/ParameterLists
   end
 
   # Check if a git repository exists in the directory
@@ -257,6 +259,7 @@ module GitOperations
   # @param config [Hash] Configuration hash
   # @param offense_details [String] Formatted string of offenses to add
   # @return [Boolean] True if successful
+  # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
   def self.update_changelog(context, config, offense_details)
     changelog_path = File.join(context.repo_dir, config[:changelog_location])
     unless File.exist?(changelog_path)
@@ -294,6 +297,7 @@ module GitOperations
     context.logger.error("Failed to update changelog: #{e.message}")
     false
   end
+  # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
 
   # Configure git user.name and user.email globally
   # @param user_name [String] Git user name

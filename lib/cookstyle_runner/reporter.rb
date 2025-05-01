@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module CookstyleRunner
   # This class is responsible for reporting the results of the Cookstyle run.
   class Reporter
@@ -8,6 +10,7 @@ module CookstyleRunner
     # Aggregates results from parallel processing
     # @param results [Array<Hash>] Array of result hashes from RepositoryProcessor
     # @return [Array<Integer>] counts for [processed, issues, skipped, errors]
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
     def aggregate_results(results)
       processed_count = 0
       issues_found_count = 0
@@ -39,9 +42,8 @@ module CookstyleRunner
       end
       [processed_count, issues_found_count, skipped_count, error_count]
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
 
-    # rubocop:disable Metrics/MethodLength, Metrics/ParameterLists
-    # Ignoring rubocop warnings for method length and parameter lists
     # Reports the summary of the application run
     # @param total_repos [Integer] Total repositories considered
     # @param processed_count [Integer] Number of repositories processed
@@ -53,6 +55,7 @@ module CookstyleRunner
     # @param issue_errors [Integer] Number of issue creation errors
     # @param pr_errors [Integer] Number of pull request creation errors
     # @return [String] Summary report
+    # rubocop:disable Metrics/ParameterLists
     def summary(total_repos:, processed_count:, issues_count: 0, skipped_count: 0, error_count: 0,
                 issues_created: 0, prs_created: 0, issue_errors: 0, pr_errors: 0)
       summary = <<~SUMMARY
@@ -72,9 +75,8 @@ module CookstyleRunner
       @logger.info(summary.strip)
       summary
     end
-    # rubocop:enable Metrics/MethodLength, Metrics/ParameterLists
+    # rubocop:enable Metrics/ParameterLists
 
-    # rubocop:disable Metrics/MethodLength
     def created_artifacts(created_artifacts:)
       artifact_report = ["--- Created Artifacts (#{created_artifacts.size}) ---"]
 
@@ -93,9 +95,7 @@ module CookstyleRunner
         @logger.info('No artifacts were created during this run.')
       end
     end
-    # rubocop:enable Metrics/MethodLength
 
-    # rubocop:disable Metrics/MethodLength
     def artifact_creation_error(artifact_creation_errors = [])
       artifact_error_report = ["--- Artifact Creation Errors (#{artifact_creation_errors.size}) ---"]
       artifact_creation_errors.each do |error|
@@ -111,6 +111,5 @@ module CookstyleRunner
         @logger.info('No artifact creation errors were reported.')
       end
     end
-    # rubocop:enable Metrics/MethodLength
   end
 end

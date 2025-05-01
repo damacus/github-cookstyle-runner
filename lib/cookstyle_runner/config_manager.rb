@@ -22,6 +22,7 @@ module CookstyleRunner
     # Load configuration from environment variables
     # @param logger [Logger] Logger instance
     # @return [Hash] Configuration hash
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
     def self.load_config(logger)
       # Required environment variables for GitHub App authentication
       app_id = ENV.fetch('GITHUB_APP_ID', nil)
@@ -65,7 +66,7 @@ module CookstyleRunner
         cache_max_age: (ENV['GCR_CACHE_MAX_AGE'] || 7).to_i,
         force_refresh: ENV['GCR_FORCE_REFRESH'] == '1',
         force_refresh_repos: ENV['GCR_FORCE_REFRESH_REPOS']&.split(',')&.map(&:strip),
-        filter_repos: ENV['GCR_FILTER_REPOS']&.split(',')&.map(&:strip)&.map { |r| r.gsub(/^"|"?$/, '') },
+        filter_repos: ENV['GCR_FILTER_REPOS'].split(',')&.map(&:strip)&.map { |r| r.gsub(/^"|"?$/, '') },
         include_repos: ENV['GCR_INCLUDE_REPOS']&.split(',')&.map(&:strip),
         exclude_repos: ENV['GCR_EXCLUDE_REPOS']&.split(',')&.map(&:strip),
         retry_count: (ENV['GCR_RETRY_COUNT'] || 3).to_i,
@@ -81,10 +82,12 @@ module CookstyleRunner
       log_config_summary(config, logger)
       config
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
     # Log configuration summary
     # @param config [Hash] Configuration hash
     # @param logger [Logger] Logger instance
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
     def self.log_config_summary(config, logger)
       cache_age_days = config[:cache_max_age]
 
@@ -115,6 +118,7 @@ module CookstyleRunner
 
       logger.info(log_message.strip)
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
     # Setup cache directory
     # @param cache_dir [String] Cache directory path

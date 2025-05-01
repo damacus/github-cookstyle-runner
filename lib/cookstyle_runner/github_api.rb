@@ -13,6 +13,7 @@ module CookstyleRunner
     # @param topics [Array<String>] Topics to filter by
     # @param logger [Logger] Logger instance
     # @return [Array<String>] List of repository clone URLs
+    # rubocop:disable Metrics/AbcSize
     def self.fetch_repositories(owner, topics = nil, logger)
       query = "org:#{owner}"
       topics.each { |topic| query += " topic:#{topic}" } if topics && !topics.empty?
@@ -29,6 +30,7 @@ module CookstyleRunner
       logger.debug(e.backtrace.join("\n"))
       []
     end
+    # rubocop:enable Metrics/AbcSize
 
     # Check if a branch exists using GitHub API
     # @param repo_full_name [String] Full repository name (owner/repo)
@@ -51,6 +53,7 @@ module CookstyleRunner
     # @param default_branch [String] Default branch name
     # @param logger [Logger] Logger instance
     # @return [Boolean] True if successful
+    # rubocop:disable Metrics/MethodLength
     def self.create_or_update_branch(repo_full_name, branch_name, default_branch, logger)
       default_branch_ref = client.ref(repo_full_name, "heads/#{default_branch}")
       default_branch_sha = default_branch_ref.object.sha
@@ -76,6 +79,7 @@ module CookstyleRunner
       logger.error("Error creating/updating branch for #{repo_full_name}: #{e.message}")
       false
     end
+    # rubocop:enable Metrics/MethodLength
 
     # Find an existing PR for a branch
     # @param repo_full_name [String] Full repository name (owner/repo)
@@ -99,6 +103,7 @@ module CookstyleRunner
     # @param labels [Array<String>] PR labels
     # @param logger [Logger] Logger instance
     # @return [Sawyer::Resource, nil] Pull request object or nil if failed
+    # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity, Metrics/ParameterLists, Metrics/AbcSize, Metrics/MethodLength
     def self.create_or_update_pr(repo_full_name, branch_name, default_branch, title, body, labels, logger)
       existing_pr = find_existing_pr(repo_full_name, branch_name, logger)
       if existing_pr
@@ -109,7 +114,7 @@ module CookstyleRunner
           title: title,
           body: body
         )
-        if labels && labels.any?
+        if labels&.any?
           existing_labels = client.labels_for_issue(repo_full_name, existing_pr.number).map(&:name)
           new_labels = labels - existing_labels
           client.add_labels_to_an_issue(repo_full_name, existing_pr.number, new_labels) if new_labels.any?
@@ -125,7 +130,7 @@ module CookstyleRunner
         )
 
         # Add labels if specified
-        client.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels && labels.any?
+        client.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels&.any?
       end
       pr
     rescue StandardError => e
@@ -133,6 +138,7 @@ module CookstyleRunner
       logger.debug(e.backtrace.join("\n"))
       nil
     end
+    # rubocop:enable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity, Metrics/ParameterLists, Metrics/AbcSize, Metrics/MethodLength
 
     # Format PR body for auto-fix PRs
     # @param cookstyle_output [String] Output from cookstyle run
@@ -178,6 +184,7 @@ module CookstyleRunner
     # @param labels [Array<String>] Issue labels
     # @param logger [Logger] Logger instance
     # @return [Sawyer::Resource, nil] Issue object or nil if failed
+    # rubocop:disable Metrics/ParameterLists
     def self.create_issue(client, repo_full_name, title, body, labels, logger)
       issue = client.create_issue(repo_full_name, title, body, labels: labels)
       logger.info("Created issue ##{issue.number} for #{repo_full_name}")
@@ -187,5 +194,6 @@ module CookstyleRunner
       logger.debug(e.backtrace.join("\n"))
       nil
     end
+    # rubocop:enable Metrics/ParameterLists
   end
 end

@@ -13,6 +13,7 @@ module CookstyleRunner
   class Report
     attr_reader :num_auto, :num_manual, :pr_description, :issue_description, :changes_committed, :error
 
+    # rubocop:disable Metrics/ParameterLists
     def initialize(num_auto: 0, num_manual: 0, pr_description: '', issue_description: '', changes_committed: false, error: false)
       @num_auto = num_auto
       @num_manual = num_manual
@@ -21,6 +22,7 @@ module CookstyleRunner
       @changes_committed = changes_committed
       @error = error
     end
+    # rubocop:enable Metrics/ParameterLists
   end
   # Default return value for run_cookstyle in case of critical errors
   DEFAULT_ERROR_RETURN = Report.new(error: true).freeze
@@ -39,13 +41,13 @@ module CookstyleRunner
     #   - Formatted Issue description (if applicable)
     #   - Boolean indicating if changes were committed
     #   - Returns default values ([{}, 0, 0, '', '', false]) on errors.
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
     def self.run_cookstyle(context, logger)
       cmd = TTY::Command.new(output: logger, pty: true)
-      changes_committed = false
 
       begin
         # Run 1: Report mode
-        parsed_json, report, _ = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
+        parsed_json, report, = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
 
         # Check if the first run succeeded and returned a valid report object with auto-correctable offenses
         if report.is_a?(CookstyleRunner::Report) && report.num_auto.positive?
@@ -54,7 +56,7 @@ module CookstyleRunner
           # We only care about whether changes were committed in this *specific* run.
           _, _, changes_committed_autocorrect_run = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: true)
           # Update the overall changes_committed status if the autocorrect run committed changes
-          changes_committed = true if changes_committed_autocorrect_run
+          true if changes_committed_autocorrect_run
         elsif !report.is_a?(CookstyleRunner::Report)
           logger.debug("Initial run did not return a valid report object. Type: #{report.class}. Skipping autocorrect.")
         else
@@ -63,7 +65,7 @@ module CookstyleRunner
 
         # Construct the return value safely, checking if report is valid
         if report.is_a?(CookstyleRunner::Report)
-          logger.debug("run_cookstyle returning successfully with report.")
+          logger.debug('run_cookstyle returning successfully with report.')
           [parsed_json, report]
         else
           # If the initial report was not valid (e.g., DEFAULT_ERROR_RETURN was returned),
@@ -78,11 +80,13 @@ module CookstyleRunner
         DEFAULT_ERROR_RETURN
       end
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
 
     # --- Private Helper Methods ---
     # Executes the core cookstyle command, parses results, and handles autocorrect.
     # Returns results array and the command result object.
     # Raises errors to be caught by run_cookstyle.
+    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
     private_class_method def self._execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
       logger.debug("Executing Cookstyle: autocorrect=#{autocorrect}")
 
@@ -98,7 +102,7 @@ module CookstyleRunner
 
       # Check for unexpected failure (exit status neither 0 nor 1)
       if cookstyle_result.failure? && ![0, 1].include?(cookstyle_result.exit_status)
-        logger.error("PATH A: Cookstyle command failed unexpectedly.")
+        logger.error('PATH A: Cookstyle command failed unexpectedly.')
         logger.error("Exit Status: #{cookstyle_result.exit_status}")
         logger.error("Stderr: #{cookstyle_result.err}".strip)
         logger.error("Stdout: #{cookstyle_result.out}".strip)
@@ -114,20 +118,21 @@ module CookstyleRunner
 
       # Check if parsing failed or resulted in empty data
       if parsed_json.nil? || parsed_json.empty?
-        logger.error("PATH B: Cookstyle command ran (exit status #{cookstyle_result.exit_status}) but produced no parsable JSON output or empty data.")
+        logger.error("Cookstyle command ran (exit status #{cookstyle_result.exit_status}) but produced no parsable JSON output or empty data.")
         logger.debug("Raw Stdout: #{cookstyle_result.out}")
         logger.debug("Raw Stderr: #{cookstyle_result.err}")
         return DEFAULT_ERROR_RETURN # Return default error if JSON is bad/empty
       end
 
       # Calculate results using the valid parsed_json
-      logger.debug("JSON parsed successfully. Calculating results.")
+      logger.debug('JSON parsed successfully. Calculating results.')
       report = _calculate_results(parsed_json, changes_committed)
 
       # Return all relevant data
       logger.debug("Returning from _execute_cookstyle_and_process with parsed_json: #{parsed_json.inspect}")
       [parsed_json, report]
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
     # Calculates offense counts and generates descriptions from parsed JSON.
     # @param parsed_json [Hash] The parsed JSON output from Cookstyle.

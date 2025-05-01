@@ -4,6 +4,7 @@ source 'https://rubygems.org'
 
 gem 'base64'
 gem 'cookstyle'
+gem 'faraday-retry'
 gem 'git' # Required for local Git operations
 gem 'json', '~> 2.6' # JSON parsing
 gem 'jwt', '~> 2.7' # For GitHub App JWT generation
@@ -12,7 +13,6 @@ gem 'ostruct'
 gem 'parallel', '~> 1.26' # Parallel processing
 gem 'pp'
 gem 'tty-command' # For running shell commands
-gem 'faraday-retry'
 
 group :development, :test do
   gem 'rspec', '~> 3.12'

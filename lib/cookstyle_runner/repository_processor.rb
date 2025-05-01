@@ -9,7 +9,6 @@ module CookstyleRunner
   # - Handling retries and error reporting
   # - Interacting with cache and PR managers
   # rubocop:disable Metrics/ClassLength
-
   class RepositoryProcessor
     # Initialize the repository processor
     # @param config [Hash] Configuration hash
@@ -40,6 +39,7 @@ module CookstyleRunner
     #   - :output [Hash] Parsed JSON output from Cookstyle
     #   - :processing_time [Float] Time taken for Cookstyle run
     #   - :error_message [String, nil] Error message if status is :error
+    # rubocop:disable Metrics/AbcSize
     def process_repository(repo_url, processed_count, total_repos)
       repo_name, repo_dir = setup_working_directory(repo_url)
       log_processing(repo_name, processed_count, total_repos)
@@ -99,7 +99,9 @@ module CookstyleRunner
     # @param context [Context] Context instance
     # @param repo_name [String] Repository name
     # @return [Hash] Result of Cookstyle execution, including status and PR info
-    def run_in_subprocess(context, repo_name) # Removed repo_dir
+    # Removed repo_dir
+    # rubocop:disable Metrics/MethodLength
+    def run_in_subprocess(context, repo_name)
       start_time = Time.now
       # Execute Cookstyle and capture JSON output, handle potential errors
       # Pass context object to run_cookstyle
@@ -108,7 +110,7 @@ module CookstyleRunner
 
       # Check if Cookstyle run itself failed critically
       # Use hash access for status and include?
-      if [:error, :failed_to_parse].include?(report[:status])
+      if %i[error failed_to_parse].include?(report[:status])
         processing_time = Time.now - start_time
         # Use hash access for output
         return { status: report[:status], repo_name: repo_name, output: report[:output],
@@ -163,10 +165,13 @@ module CookstyleRunner
       logger.debug(e.backtrace.join("\n"))
       { status: :error, repo_name: repo_name, error_message: "Internal processing error: #{e.message}" }
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
     # --- Helper methods for run_in_subprocess ---
     # Handles the creation of Pull Requests or Issues based on Cookstyle results
     # Returns a hash containing :pr_details (for PR/Issue) or :pr_error if creation failed, or empty hash otherwise.
+    # rubocop:disable Metrics/AbcSize, Metrics/ParameterLists, Metrics/MethodLength
+    # TODO: consume an object that contains all the necessary data instead of individual parameters
     def handle_cookstyle_pr_creation(repo_name:, repo_dir:, num_auto_correctable:, num_manual_correctable:,
                                      pr_description:, issue_description:, git_changes_made:, context:)
       # No action needed if no offenses or changes
@@ -189,10 +194,15 @@ module CookstyleRunner
         return assign_pr_result(issue_created, issue_details, repo_name, 'issue')
       end
 
-      # No applicable PR/Issue scenario was met
-      logger.info("No PR or Issue created for #{repo_name} (Auto: #{num_auto_correctable}, Manual: #{num_manual_correctable}, Changes: #{git_changes_made}, Create Issues: #{config[:create_manual_fix_issues]})")
+      logger.info("No PR or Issue created for #{repo_name} " \
+                  "(Auto: #{num_auto_correctable}, " \
+                  "Manual: #{num_manual_correctable}, " \
+                  "Changes: #{git_changes_made}, " \
+                  "Create Issues: #{config[:create_manual_fix_issues]})")
+
       {} # Return empty hash if no action taken
     end
+    # rubocop:enable Metrics/MethodLength
 
     def correctable?(num_auto_correctable, num_manual_correctable)
       num_auto_correctable.positive? || num_manual_correctable.positive?
@@ -221,5 +231,5 @@ module CookstyleRunner
       RepositoryManager.should_skip_repository?(repo_name, config[:include_repos], config[:exclude_repos]) # Use attr_reader
     end
   end
-  # rubocop:enable Metrics/ClassLength
+  # rubocop:enable Metrics/ClassLength, Metrics/ParameterLists, Metrics/AbcSize
 end
