@@ -105,9 +105,6 @@ module GitOperations
   def self.authenticated_url(context)
     if CookstyleRunner::Authentication.use_pat?
       context.logger.debug("Using PAT authentication for #{context.repo_name}")
-    end
-
-    if CookstyleRunner::Authentication.use_pat?
       "https://#{context.github_token}:x-oauth-basic@github.com/#{context.owner}/#{context.repo_name}.git"
     else
       token = CookstyleRunner::Authentication.get_installation_token(

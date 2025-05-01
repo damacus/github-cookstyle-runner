@@ -51,13 +51,14 @@ module CookstyleRunner
 
       return { status: :skipped, repo_name: repo_name } if should_skip_repository?(repo_name)
 
-      # Run cookstyle and get the result hash
-      result_hash = run_in_subprocess(context, repo_dir, repo_name)
+      # Trigger the processing in a subprocess
+      # Remove repo_dir from call
+      result = run_in_subprocess(context, repo_name)
 
-      update_cache_if_needed(repo_name, result_hash)
+      update_cache_if_needed(repo_name, result)
 
       # Return the full result hash, adding repo_name
-      result_hash.merge(repo_name: repo_name)
+      result.merge(repo_name: repo_name)
     rescue StandardError => e
       logger.error("Error processing repository #{repo_name}: #{e.message}")
       logger.debug(e.backtrace.join("\n"))
@@ -96,51 +97,68 @@ module CookstyleRunner
     # --- Core Cookstyle Execution ---
     # Run Cookstyle checks and auto-correction
     # @param context [Context] Context instance
-    # @param repo_dir [String] Directory containing repository
     # @param repo_name [String] Repository name
     # @return [Hash] Result of Cookstyle execution, including status and PR info
-    def run_in_subprocess(context, repo_dir, repo_name)
+    def run_in_subprocess(context, repo_name) # Removed repo_dir
       start_time = Time.now
-      logger.debug("Starting Cookstyle run for #{repo_name} in #{repo_dir}")
+      # Execute Cookstyle and capture JSON output, handle potential errors
+      # Pass context object to run_cookstyle
+      # Assume run_cookstyle returns the report hash directly
+      report = CookstyleOperations.run_cookstyle(context, logger)
 
-      # CookstyleOperations.run_cookstyle returns an ARRAY:
-      # [parsed_json, num_auto, num_manual, pr_desc, issue_desc, changes_committed]
-      # OR the DEFAULT_ERROR_RETURN
-      parsed_json, report = CookstyleOperations.run_cookstyle(context, logger)
-
-      # Check if CookstyleOperations returned the default error signature
-      if report.error
-        logger.error("CookstyleOperations reported an error for #{repo_name}, returning error status.")
-        return { status: :error, repo_name: repo_name, error_message: 'Cookstyle execution failed' }
+      # Check if Cookstyle run itself failed critically
+      # Use hash access for status and include?
+      if [:error, :failed_to_parse].include?(report[:status])
+        processing_time = Time.now - start_time
+        # Use hash access for output
+        return { status: report[:status], repo_name: repo_name, output: report[:output],
+                 error_message: report[:error_message], processing_time: processing_time }
       end
 
-      final_commit_sha_after_run = GitOperations.get_latest_commit_sha(context)
-      logger.debug("Final commit SHA after run for #{repo_name}: #{final_commit_sha_after_run}")
-      total_offenses = report.num_auto + report.num_manual
-
-      logger.info("Cookstyle run finished for #{repo_name}. Auto-correctable: #{report.num_auto}, Manual: #{report.num_manual}, Git changes committed: #{report.changes_committed}")
+      # --- Handle Git Commit for Auto-fixes ---
+      # Use hash access for num_auto and config[:autocorrect]
+      if report[:num_auto].positive? && config[:autocorrect]
+        logger.info("Auto-correctable offenses found for #{repo_name}, attempting commit.")
+        # Pass context object to add_and_commit_changes
+        commit_success = GitOperations.add_and_commit_changes(context, config[:commit_message])
+        # Update the report hash directly
+        report[:changes_committed] = commit_success
+        logger.info("Commit for #{repo_name} #{commit_success ? 'succeeded' : 'failed'}.")
+      else
+        logger.debug("Skipping commit for #{repo_name} (Auto: #{report[:num_auto]}, Correct: #{config[:autocorrect]})")
+        report[:changes_committed] = false # Ensure it's explicitly false if commit is skipped
+      end
 
       # --- Handle PR or Issue Creation --- # Pass repo_dir from context
       pr_result = handle_cookstyle_pr_creation(
         repo_name: repo_name,
         repo_dir: context.repo_dir, # Get repo_dir from context
-        num_auto_correctable: report.num_auto, # Use variable
-        num_manual_correctable: report.num_manual, # Use variable
-        pr_description: report.pr_description,       # Use variable
-        issue_description: report.issue_description, # Use variable
-        git_changes_made: report.changes_committed    # Use variable
+        # Use hash access for report elements
+        num_auto_correctable: report[:num_auto],
+        num_manual_correctable: report[:num_manual],
+        pr_description: report[:pr_description],
+        issue_description: report[:issue_description],
+        git_changes_made: report[:changes_committed],
+        context: context # Pass the context object
       )
 
       # Combine status, cookstyle data, and PR result
-      {
-        status: total_offenses.zero? ? :no_issues : :issues_found,
-        commit_sha: final_commit_sha_after_run,
-        had_issues: total_offenses.positive?,
-        total_offenses: total_offenses,
-        output: parsed_json, # Use variable for parsed JSON output
-        processing_time: Time.now - start_time
-      }.merge(pr_result)
-    rescue StandardError => e # Catch errors specifically within run_in_subprocess
+      processing_time = Time.now - start_time
+      final_commit_sha = GitOperations.get_latest_commit_sha(context.repo_dir)
+      # Use hash access for report elements
+      result = {
+        status: report[:status],
+        repo_name: repo_name,
+        had_issues: report[:status] != :no_issues_found,
+        total_offenses: report[:output]['summary']['offense_count'],
+        output: report[:output],
+        processing_time: processing_time,
+        commit_sha: final_commit_sha
+      }.merge(pr_result) # Merge PR details/error
+
+      logger.debug("run_in_subprocess result for #{repo_name}: #{result}")
+      result
+    rescue StandardError => e
       logger.error("Internal error during subprocess processing for #{repo_name}: #{e.message}")
       logger.debug(e.backtrace.join("\n"))
       { status: :error, repo_name: repo_name, error_message: "Internal processing error: #{e.message}" }
@@ -150,9 +168,9 @@ module CookstyleRunner
     # Handles the creation of Pull Requests or Issues based on Cookstyle results
     # Returns a hash containing :pr_details (for PR/Issue) or :pr_error if creation failed, or empty hash otherwise.
     def handle_cookstyle_pr_creation(repo_name:, repo_dir:, num_auto_correctable:, num_manual_correctable:,
-                                     pr_description:, issue_description:, git_changes_made:)
+                                     pr_description:, issue_description:, git_changes_made:, context:)
       # No action needed if no offenses or changes
-      return {} unless correctable?
+      return {} unless correctable?(num_auto_correctable, num_manual_correctable)
 
       # Attempt auto-fix PR if applicable
       if auto_fix_applicable?(num_auto_correctable, git_changes_made)
@@ -177,18 +195,7 @@ module CookstyleRunner
     end
 
     def correctable?(num_auto_correctable, num_manual_correctable)
-      if num_auto_correctable.positive? || num_manual_correctable.positive?
-        logger.debug(
-          "Auto: #{num_auto_correctable}, " \
-          "Manual: #{num_manual_correctable}, " \
-          "Changes: #{git_changes_made}, " \
-          "Create Issues: #{config[:create_manual_fix_issues]}"
-        )
-        true
-      else
-        logger.info("No offenses found for #{repo_name}, skipping PR/Issue creation.")
-        false
-      end
+      num_auto_correctable.positive? || num_manual_correctable.positive?
     end
 
     def auto_fix_applicable?(num_auto_correctable, git_changes_made)
