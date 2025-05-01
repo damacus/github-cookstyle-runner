@@ -86,7 +86,7 @@ RSpec.describe CookstyleRunner::RepositoryProcessor, :integration do
         .with(repo_context, logger)
         .and_return(
           {
-            status: :no_issues_found,
+            status: :no_issues,
             output: { 'summary' => { 'offense_count' => 0 } },
             num_auto: 0,
             num_manual: 0,

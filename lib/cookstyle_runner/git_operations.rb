@@ -77,11 +77,11 @@ module GitOperations
   # Get the latest commit SHA for the repository
   # @param context [RepoContext]
   # @return [String, nil]
-  def self.get_latest_commit_sha(context)
-    repo = Git.open(context.repo_dir)
+  def self.get_latest_commit_sha(repo_dir, logger)
+    repo = Git.open(repo_dir)
     repo.object('HEAD').sha
   rescue StandardError => e
-    context.logger.error("Failed to get latest commit SHA: #{e.message}")
+    logger.error("Failed to get latest commit SHA: #{e.message}")
     nil
   end
 

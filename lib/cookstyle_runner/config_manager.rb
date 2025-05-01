@@ -22,8 +22,12 @@ module CookstyleRunner
     # Load configuration from environment variables
     # @param logger [Logger] Logger instance
     # @return [Hash] Configuration hash
-    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
     def self.load_config(logger)
+      _initialize_config_from_env(logger)
+    end
+
+    # @!visibility private
+    private_class_method def self._initialize_config_from_env(logger) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
       # Required environment variables for GitHub App authentication
       app_id = ENV.fetch('GITHUB_APP_ID', nil)
       installation_id = ENV.fetch('GITHUB_APP_INSTALLATION_ID', nil)
@@ -65,10 +69,7 @@ module CookstyleRunner
         use_cache: ENV['GCR_USE_CACHE'] != '0',
         cache_max_age: (ENV['GCR_CACHE_MAX_AGE'] || 7).to_i,
         force_refresh: ENV['GCR_FORCE_REFRESH'] == '1',
-        force_refresh_repos: ENV['GCR_FORCE_REFRESH_REPOS']&.split(',')&.map(&:strip),
-        filter_repos: ENV['GCR_FILTER_REPOS'].split(',')&.map(&:strip)&.map { |r| r.gsub(/^"|"?$/, '') },
-        include_repos: ENV['GCR_INCLUDE_REPOS']&.split(',')&.map(&:strip),
-        exclude_repos: ENV['GCR_EXCLUDE_REPOS']&.split(',')&.map(&:strip),
+        filter_repos: parse_repo_filter_from_env('GCR_FILTER_REPOS'),
         retry_count: (ENV['GCR_RETRY_COUNT'] || 3).to_i,
         thread_count: (ENV['GCR_THREAD_COUNT'] || 4).to_i,
         manage_changelog: ENV['GCR_MANAGE_CHANGELOG'] != '0',
@@ -79,10 +80,21 @@ module CookstyleRunner
         git_email: ENV['GCR_GIT_EMAIL'] || 'cookstyle-runner@example.com'
       }
 
-      log_config_summary(config, logger)
+      logger.info('Configuration loaded successfully')
       config
+    end # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
+
+    # @!visibility private
+    # Parses the GCR_FILTER_REPOS environment variable into an array of repo names.
+    # Removes surrounding quotes and trims whitespace. Defaults to an empty array if not set.
+    private_class_method def self.parse_repo_filter_from_env(env_var)
+      repo_filter_env = ENV.fetch(env_var, nil)
+      return [] if repo_filter_env.nil? || repo_filter_env.empty?
+
+      repo_filter_env.split(',')
+                     .map(&:strip)
+                     .map { |r| r.gsub(/^"|"?$/, '') }
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
     # Log configuration summary
     # @param config [Hash] Configuration hash
@@ -108,9 +120,6 @@ module CookstyleRunner
         Manage Changelog: #{config[:manage_changelog] ? 'Yes' : 'No'}
         Changelog Location: #{config[:changelog_location]}
         Changelog Marker: #{config[:changelog_marker]}
-        Excluding Repos: #{config[:exclude_repos]&.join(', ') || 'None'}
-        Force Refresh Repos: #{config[:force_refresh_repos]&.join(', ') || 'None'}
-        Include Only Repos: #{config[:include_repos]&.join(', ') || 'None'}
         Filter Repos: #{config[:filter_repos]&.join(', ') || 'None'}
         Create Manual Fix Issues: #{config[:create_manual_fix_issues] ? 'Yes' : 'No'}
         ---------------------

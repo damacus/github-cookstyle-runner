@@ -160,20 +160,5 @@ module CookstyleRunner
       logger.debug('Initialized new cache')
       save
     end
-
-    # Get the latest commit SHA for a repository
-    # @param repo_dir [String] Repository directory
-    # @return [String, nil] Latest commit SHA or nil if not found
-    # NOTE: Made this private as it's likely an internal detail
-    # If needed externally, it should probably live in GitOperations
-    private_class_method def self.get_latest_commit_sha(repo_dir)
-      return nil unless Dir.exist?(repo_dir)
-
-      # Get the latest commit SHA
-      stdout, _stderr, status = Open3.capture3("cd #{repo_dir} && git rev-parse HEAD")
-      return nil unless status.success?
-
-      stdout.strip
-    end
   end
 end

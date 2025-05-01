@@ -49,19 +49,4 @@ module RepositoryManager
     logger.info("Found #{filtered.length} repositories matching filter criteria")
     filtered
   end
-
-  # Check if a repository should be skipped based on inclusion/exclusion lists
-  # @param repo_name [String] Repository name
-  # @param include_repos [Array<String>] List of repositories to include
-  # @param exclude_repos [Array<String>] List of repositories to exclude
-  # @return [Boolean] True if the repository should be skipped
-  def self.should_skip_repository?(repo_name, include_repos, exclude_repos)
-    # If include list is specified, only process repositories in that list
-    return !include_repos.include?(repo_name) if include_repos && !include_repos.empty?
-
-    # If exclude list is specified, skip repositories in that list
-    return exclude_repos.include?(repo_name) if exclude_repos && !exclude_repos.empty?
-
-    false
-  end
 end

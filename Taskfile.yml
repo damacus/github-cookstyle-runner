@@ -14,7 +14,7 @@ tasks:
   run-locally:
     desc: Run the application locally
     cmds:
-      - GITHUB_TOKEN="$GITHUB_TOKEN" GCR_FILTER_REPOS="elasticsearch" GCR_LOG_LEVEL=DEBUG bundle exec ruby lib/cookstyle_runner.rb
+      - GITHUB_TOKEN="$GITHUB_TOKEN" GCR_LOG_LEVEL=ERROR bundle exec ruby lib/cookstyle_runner.rb
 
   test:
     desc: Run unit tests for Ruby code

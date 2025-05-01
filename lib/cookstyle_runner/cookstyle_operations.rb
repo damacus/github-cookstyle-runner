@@ -11,16 +11,17 @@ require_relative 'git_operations'
 module CookstyleRunner
   # Class for Cookstyle report
   class Report
-    attr_reader :num_auto, :num_manual, :pr_description, :issue_description, :changes_committed, :error
+    attr_reader :num_auto, :num_manual, :pr_description, :issue_description, :changes_committed, :error, :status
 
     # rubocop:disable Metrics/ParameterLists
-    def initialize(num_auto: 0, num_manual: 0, pr_description: '', issue_description: '', changes_committed: false, error: false)
+    def initialize(num_auto: 0, num_manual: 0, pr_description: '', issue_description: '', changes_committed: false, error: false, status: :no_issues)
       @num_auto = num_auto
       @num_manual = num_manual
       @pr_description = pr_description
       @issue_description = issue_description
       @changes_committed = changes_committed
       @error = error
+      @status = status
     end
     # rubocop:enable Metrics/ParameterLists
   end
@@ -79,6 +80,11 @@ module CookstyleRunner
         logger.debug(e.backtrace.join("\n")) # Optional: Add backtrace for detailed debugging
         DEFAULT_ERROR_RETURN
       end
+
+      {
+        parsed_json: parsed_json,
+        report: report
+      }
     end
     # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity
 
@@ -90,19 +96,22 @@ module CookstyleRunner
     private_class_method def self._execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
       logger.debug("Executing Cookstyle: autocorrect=#{autocorrect}")
 
-      cookstyle_result = cmd.run(
-        "cookstyle --display-cop-names #{'--autocorrect-all' if autocorrect} --format json",
+      command = 'cookstyle --format json --display-cop-names'
+      command << '--autocorrect-all' if autocorrect
+
+      cookstyle_result = cmd.run!(
+        command,
         chdir: context.repo_dir,
-        timeout: 300
+        timeout: 300,
+        only_output_on_error: true
       )
 
       # Attempt to commit changes *after* cookstyle run, regardless of exit status (if autocorrect was on)
       # This assumes cookstyle modified files even if it exited with 1
       changes_committed = _commit_autocorrections(context, logger) if autocorrect
 
-      # Check for unexpected failure (exit status neither 0 nor 1)
-      if cookstyle_result.failure? && ![0, 1].include?(cookstyle_result.exit_status)
-        logger.error('PATH A: Cookstyle command failed unexpectedly.')
+      if cookstyle_result.exit_status == 2
+        logger.error('Cookstyle command failed unexpectedly.')
         logger.error("Exit Status: #{cookstyle_result.exit_status}")
         logger.error("Stderr: #{cookstyle_result.err}".strip)
         logger.error("Stdout: #{cookstyle_result.out}".strip)
@@ -126,7 +135,7 @@ module CookstyleRunner
 
       # Calculate results using the valid parsed_json
       logger.debug('JSON parsed successfully. Calculating results.')
-      report = _calculate_results(parsed_json, changes_committed)
+      report = _parse_results(parsed_json, changes_committed)
 
       # Return all relevant data
       logger.debug("Returning from _execute_cookstyle_and_process with parsed_json: #{parsed_json.inspect}")
@@ -137,7 +146,7 @@ module CookstyleRunner
     # Calculates offense counts and generates descriptions from parsed JSON.
     # @param parsed_json [Hash] The parsed JSON output from Cookstyle.
     # @return [Array] [num_auto, num_manual, pr_desc, issue_desc, changes_committed]
-    private_class_method def self._calculate_results(parsed_json)
+    private_class_method def self._parse_results(parsed_json, changes_committed)
       num_auto = count_correctable_offences(parsed_json)
       num_manual = count_uncorrectable_offences(parsed_json)
       total = num_auto + num_manual
@@ -150,7 +159,11 @@ module CookstyleRunner
       issue_details = format_issue_description(parsed_json)
       issue_description = "#{issue_summary}\n\n#{issue_details}".strip
 
-      Report.new(num_auto, num_manual, pr_description, issue_description)
+      Report.new(num_auto: num_auto,
+                 num_manual: num_manual,
+                 pr_description: pr_description,
+                 issue_description: issue_description,
+                 changes_committed: changes_committed)
     end
 
     # Commits changes after a successful auto-correction run.

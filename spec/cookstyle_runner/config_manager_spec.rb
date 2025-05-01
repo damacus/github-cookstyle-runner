@@ -66,7 +66,6 @@ RSpec.describe CookstyleRunner::ConfigManager do
         expect(config[:force_refresh]).to be false
         expect(config[:pr_labels]).to eq(['Skip: Announcements', 'Release: Patch', 'Cookstyle'])
         expect(config[:topics]).to be_nil
-        expect(config[:force_refresh_repos]).to be_nil
         expect(config[:include_repos]).to be_nil
       end
     end
@@ -83,7 +82,6 @@ RSpec.describe CookstyleRunner::ConfigManager do
           'GCR_CACHE_MAX_AGE' => '30',
           'GCR_FORCE_REFRESH' => '1',
           'GCR_DESTINATION_REPO_TOPICS' => ' topic-a, topic-b',
-          'GCR_FORCE_REFRESH_REPOS' => ' repo1 , repo2',
           'GCR_INCLUDE_REPOS' => ' repo3, repo4 '
         }
       end
@@ -104,7 +102,6 @@ RSpec.describe CookstyleRunner::ConfigManager do
         expect(config[:cache_max_age]).to eq(30)
         expect(config[:force_refresh]).to be true
         expect(config[:topics]).to eq(%w[topic-a topic-b])
-        expect(config[:force_refresh_repos]).to eq(%w[repo1 repo2])
         expect(config[:include_repos]).to eq(%w[repo3 repo4])
       end
     end

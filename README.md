@@ -43,15 +43,12 @@ Below are a list of variables, what they mean and example values
 | GCR_USE_CACHE           | `Boolean` | No       | Enable/disable caching system (default: enabled, set to `0` to disable)                                          |
 | GCR_CACHE_MAX_AGE       | `Integer` | No       | Maximum age of cache entries in days before they're considered stale (default: 7)                                |
 | GCR_FORCE_REFRESH       | `Boolean` | No       | Force refresh of all repositories regardless of cache status (default: disabled, set to `1` to enable)           |
-| GCR_FORCE_REFRESH_REPOS | `String`  | No       | Comma-separated list of specific repositories to force refresh regardless of cache status                        |
 
 ### Repository Filtering
 
 | Name              | Type     | Required | Description                                                                                                      |
 |-------------------|----------|----------|------------------------------------------------------------------------------------------------------------------|
 | GCR_FILTER_REPOS  | `String` | No       | Comma-separated list of specific repositories to process (will only process these repos)                         |
-| GCR_INCLUDE_REPOS | `String` | No       | Comma-separated list of repositories to include in processing (in addition to any found via topic search)         |
-| GCR_EXCLUDE_REPOS | `String` | No       | Comma-separated list of repositories to exclude from processing                                                  |
 
 ### Performance Configuration
 

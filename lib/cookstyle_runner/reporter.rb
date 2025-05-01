@@ -13,7 +13,7 @@ module CookstyleRunner
     # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
     def aggregate_results(results)
       processed_count = 0
-      issues_found_count = 0
+      issues_count = 0
       skipped_count = 0
       error_count = 0
 
@@ -23,7 +23,7 @@ module CookstyleRunner
           processed_count += 1 # Count successful processing without issues
         when :issues_found
           processed_count += 1
-          issues_found_count += 1
+          issues_count += 1
         when :skipped
           skipped_count += 1
         when :error
@@ -40,7 +40,7 @@ module CookstyleRunner
         # Collect artifact creation error if available
         @artifact_creation_errors << result[:pr_error] if result[:pr_error]
       end
-      [processed_count, issues_found_count, skipped_count, error_count]
+      [processed_count, issues_count, skipped_count, error_count]
     end
     # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
 
@@ -59,6 +59,7 @@ module CookstyleRunner
     def summary(total_repos:, processed_count:, issues_count: 0, skipped_count: 0, error_count: 0,
                 issues_created: 0, prs_created: 0, issue_errors: 0, pr_errors: 0)
       summary = <<~SUMMARY
+
         --- Summary ---
         Total repositories considered: #{total_repos}
         Successfully processed: #{processed_count}
@@ -72,7 +73,7 @@ module CookstyleRunner
         Issue Creation Errors: #{issue_errors}
         PR Creation Errors: #{pr_errors}
       SUMMARY
-      @logger.info(summary.strip)
+      @logger.info(summary)
       summary
     end
     # rubocop:enable Metrics/ParameterLists
