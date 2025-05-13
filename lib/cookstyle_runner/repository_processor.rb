@@ -79,13 +79,13 @@ module CookstyleRunner
 
       # Prepare result hash with defaults
       result = {
-        name: repo_name,
-        url: repo_url,
-        state: 'skipped',
-        issues_found: false,
-        time_taken: 0,
-        error: nil,
-        message: ''
+        'name' => repo_name,
+        'url' => repo_url,
+        'state' => 'skipped',
+        'issues_found' => false,
+        'time_taken' => 0,
+        'error' => nil,
+        'message' => ''
       }
 
       # Set up the working directory for this repository
@@ -94,16 +94,16 @@ module CookstyleRunner
       # Clone or update the repository
       begin
         commit_sha = clone_or_update_repository(repo_url, repo_dir)
-        return result.merge(state: 'error', error: 'Failed to get commit SHA') if commit_sha.nil?
+        return result.merge('state' => 'error', 'error' => 'Failed to get commit SHA') if commit_sha.nil?
       rescue StandardError => e
         logger.error("Error cloning/updating repository #{repo_name}: #{e.message}")
-        return result.merge(state: 'error', error: "Git error: #{e.message}")
+        return result.merge('state' => 'error', 'error' => "Git error: #{e.message}")
       end
 
       # Check if repository is up to date in cache
       if cache_up_to_date?(repo_name, commit_sha)
         logger.info("Skipping #{repo_name} - No changes detected since last run")
-        return result.merge(state: 'skipped', message: 'No changes detected since last run')
+        return result.merge('state' => 'skipped', 'message' => 'No changes detected since last run')
       end
 
       # Run Cookstyle on the repository
@@ -112,26 +112,26 @@ module CookstyleRunner
         issues_found = cookstyle_result[:issue_count].positive?
 
         result = result.merge(
-          state: 'processed',
-          issues_found: issues_found,
-          auto_correctable: cookstyle_result[:auto_correctable_count],
-          manual_fixes: cookstyle_result[:manual_fixes_count],
-          offense_details: cookstyle_result[:offense_details]
+          'state' => 'processed',
+          'issues_found' => issues_found,
+          'auto_correctable' => cookstyle_result[:auto_correctable_count],
+          'manual_fixes' => cookstyle_result[:manual_fixes_count],
+          'offense_details' => cookstyle_result[:offense_details]
         )
       rescue StandardError => e
         logger.error("Error running Cookstyle on #{repo_name}: #{e.message}")
-        return result.merge(state: 'error', error: "Cookstyle error: #{e.message}")
+        return result.merge('state' => 'error', 'error' => "Cookstyle error: #{e.message}")
       end
 
       # Create pull request or issue if there are issues and we're not in dry run mode
-      result = handle_issues(result, repo_dir, repo_name, commit_sha) unless @config[:dry_run] || !issues_found
+      result = handle_issues(result, repo_dir, repo_name, commit_sha) unless @config['dry_run'] || !issues_found
 
       # Update cache if enabled
       update_cache(repo_name, commit_sha, issues_found, JSON.generate(cookstyle_result), Time.now - start_time) if @cache_manager
 
       # Add the time taken to the result
-      result[:time_taken] = Time.now - start_time
-      logger.info("Finished processing #{repo_name} in #{result[:time_taken].round(2)}s")
+      result['time_taken'] = Time.now - start_time
+      logger.info("Finished processing #{repo_name} in #{result['time_taken'].round(2)}s")
       result
     end
 
@@ -142,7 +142,7 @@ module CookstyleRunner
     # @return [String] Repository directory path
     sig { params(repo_name: String).returns(String) }
     def prepare_repo_directory(repo_name)
-      repo_dir = File.join(@config[:workspace_dir], repo_name)
+      repo_dir = File.join(@config['workspace_dir'], repo_name)
       FileUtils.mkdir_p(repo_dir)
       repo_dir
     end
@@ -153,18 +153,28 @@ module CookstyleRunner
     # @return [String, nil] The current commit SHA or nil if failed
     sig { params(repo_url: String, repo_dir: String).returns(T.nilable(String)) }
     def clone_or_update_repository(repo_url, repo_dir)
+      # Create a minimal repo context for Git operations
+      repo_name = repo_dir.split('/').last
+      context = Git::RepoContext.new(
+        repo_name: T.must(repo_name),
+        owner: @config['owner'],
+        logger: logger,
+        repo_dir: repo_dir,
+        repo_url: repo_url
+      )
+
       if Dir.exist?(File.join(repo_dir, '.git'))
         # Update existing repository
         logger.debug("Updating existing repository in #{repo_dir}")
-        Git.update_repo(repo_dir, logger)
+        Git.update_repo(context, 'main')
       else
         # Clone new repository
         logger.debug("Cloning #{repo_url} to #{repo_dir}")
-        Git.clone_repo(repo_url, repo_dir, logger)
+        Git.clone_repo(context, repo_url, 'main')
       end
 
       # Get current commit SHA
-      Git.get_current_sha(repo_dir, logger)
+      Git.current_commit_sha(context)
     end
 
     # Check if the repository is up to date in the cache
@@ -173,9 +183,9 @@ module CookstyleRunner
     # @return [Boolean] True if up to date in cache
     sig { params(repo_name: String, commit_sha: String).returns(T::Boolean) }
     def cache_up_to_date?(repo_name, commit_sha)
-      return false unless @cache_manager && @config[:use_cache]
+      return false unless @cache_manager && @config['use_cache']
 
-      max_age = @config[:cache_max_age] || (7 * 24 * 60 * 60) # Default to 7 days in seconds
+      max_age = @config['cache_max_age'] || (7 * 24 * 60 * 60) # Default to 7 days in seconds
       @cache_manager.up_to_date?(repo_name, commit_sha, max_age: max_age)
     end
 
@@ -199,13 +209,13 @@ module CookstyleRunner
       return result unless @pr_manager
 
       # Prepare strings for PR/issue
-      repo_full_name = "#{@config[:owner]}/#{repo_name}"
-      branch_name = @config[:branch_name] || 'cookstyle-fixes'
+      repo_full_name = "#{@config['owner']}/#{repo_name}"
+      branch_name = @config['branch_name'] || 'cookstyle-fixes'
 
-      if result[:auto_correctable].positive?
+      if result['auto_correctable'].positive?
         # Create pull request with auto-corrected changes
         handle_auto_correctable_issues(result, repo_dir, repo_full_name, branch_name, commit_sha)
-      elsif result[:manual_fixes].positive?
+      elsif result['manual_fixes'].positive?
         # Create issue with details for manual fixing
         handle_manual_fixes(result, repo_full_name)
       else
@@ -221,52 +231,67 @@ module CookstyleRunner
         repo_dir: String,
         repo_full_name: String,
         branch_name: String,
-        base_commit: String
+        _base_commit: String
       ).returns(T::Hash[String, T.untyped])
     end
     def handle_auto_correctable_issues(result, repo_dir, repo_full_name, branch_name, _base_commit)
       return result unless @pr_manager
 
       # Run Cookstyle with auto-correct
-      logger.info("Auto-correcting #{result[:auto_correctable]} issues in #{repo_full_name}")
+      logger.info("Auto-correcting #{result['auto_correctable']} issues in #{repo_full_name}")
       auto_correct_result = CookstyleOperations.run_cookstyle(repo_dir, logger)
 
       # Update changelog if configured
-      if @config[:manage_changelog]
-        context = {
-          repo_dir: repo_dir,
-          repo_name: repo_full_name.split('/').last,
-          owner: @config[:owner]
-        }
+      if @config['manage_changelog']
+        # Create a context object with the required properties
+        repo_name = repo_full_name.split('/').last
+        context = Git::RepoContext.new(
+          repo_name: T.must(repo_name),
+          owner: @config['owner'],
+          logger: logger,
+          repo_dir: repo_dir
+        )
 
-        ChangelogUpdater.update_changelog(context, @config, result[:offense_details])
+        # Convert string keys to symbols for ChangelogUpdater
+        symbolized_config = @config.transform_keys(&:to_sym)
+        ChangelogUpdater.update_changelog(context, symbolized_config, result['offense_details'])
       end
 
       # Commit changes and create PR
       begin
         # Commit the changes locally
         commit_message = "Cookstyle auto-corrections\n\nThis change is automatically generated by the GitHub Cookstyle Runner."
-        Git.commit_changes(repo_dir, branch_name, commit_message, logger)
+        # Create a repo context for Git operations
+        repo_name = repo_dir.split('/').last
+        context = Git::RepoContext.new(
+          repo_name: T.must(repo_name),
+          owner: @config['owner'],
+          logger: logger,
+          repo_dir: repo_dir
+        )
 
-        # Push changes and create PR
-        default_branch = Git.create_branch(repo_dir, logger)
+        # Add and commit changes
+        Git.add_and_commit_changes(context, commit_message)
+        # Create branch and push
+        git_config = { branch_name: branch_name, git_user_name: 'Cookstyle Runner', git_user_email: 'cookstyle@example.com' }
+        default_branch = Git.create_branch(context, git_config, logger) ? 'main' : 'master'
         pr_result = @pr_manager.create_pr(repo_full_name, branch_name, default_branch, {
-                                            title: @config[:pull_request_title] || 'Automated PR: Cookstyle Changes',
-                                            body: format_pr_description(auto_correct_result[:offense_details]),
-                                            labels: %w[cookstyle automated-pr]
+                                            'title' => @config['pull_request_title'] || 'Automated PR: Cookstyle Changes',
+                                            'body' => format_pr_description(auto_correct_result['offense_details']),
+                                            'labels' => %w[cookstyle automated-pr]
                                           })
 
         if pr_result[:success]
-          result[:pr_url] = pr_result[:url]
-          result[:pr_number] = pr_result[:number]
-          result[:message] = "Created PR ##{pr_result[:number]} with auto-corrected changes"
+          result['pr_url'] = pr_result[:url]
+          result['pr_number'] = pr_result[:number]
+          result['message'] = "Created PR ##{pr_result[:number]} with auto-corrected changes"
           logger.info("Created PR ##{pr_result[:number]} for #{repo_full_name}")
         else
-          result[:error] = pr_result[:error]
+          result['error'] = pr_result[:error]
           logger.error("Failed to create PR for #{repo_full_name}: #{pr_result[:error]}")
         end
       rescue StandardError => e
-        result[:error] = "Failed to create PR: #{e.message}"
+        result['error'] = "Failed to create PR: #{e.message}"
         logger.error("Error creating PR for #{repo_full_name}: #{e.message}")
       end
 
@@ -284,21 +309,21 @@ module CookstyleRunner
       return result unless @pr_manager
 
       # Create issue with details for manual fixing
-      logger.info("Creating issue for #{result[:manual_fixes]} manual fixes in #{repo_full_name}")
+      logger.info("Creating issue for #{result['manual_fixes']} manual fixes in #{repo_full_name}")
 
       issue_result = @pr_manager.create_issue(repo_full_name, {
-                                                title: 'Manual Cookstyle Fixes Required',
-                                                body: format_issue_description(result[:offense_details]),
-                                                labels: %w[cookstyle manual-fixes-required]
+                                                'title' => 'Manual Cookstyle Fixes Required',
+                                                'body' => format_issue_description(result['offense_details']),
+                                                'labels' => %w[cookstyle manual-fixes-required]
                                               })
 
       if issue_result[:success]
-        result[:issue_url] = issue_result[:url]
-        result[:issue_number] = issue_result[:number]
-        result[:message] = "Created issue ##{issue_result[:number]} for manual fixes"
+        result['issue_url'] = issue_result[:url]
+        result['issue_number'] = issue_result[:number]
+        result['message'] = "Created issue ##{issue_result[:number]} for manual fixes"
         logger.info("Created issue ##{issue_result[:number]} for #{repo_full_name}")
       else
-        result[:error] = issue_result[:error]
+        result['error'] = issue_result[:error]
         logger.error("Failed to create issue for #{repo_full_name}: #{issue_result[:error]}")
       end
 
@@ -312,15 +337,15 @@ module CookstyleRunner
       pr_body += "This pull request applies automatic Cookstyle fixes to ensure code quality and consistency.\n\n"
       pr_body += "### Changes Made\n\n"
 
-      offense_details[:files]&.each do |file|
-        pr_body += "* **#{file[:path]}**: "
-        pr_body += file[:offenses].map { |o| o[:cop_name] }.uniq.join(', ')
+      offense_details['files']&.each do |file|
+        pr_body += "* **#{file['path']}**: "
+        pr_body += file['offenses'].map { |o| o['cop_name'] }.uniq.join(', ')
         pr_body += "\n"
       end
 
       pr_body += "\n### Summary\n\n"
-      pr_body += "* Total offenses fixed: #{offense_details[:summary][:offense_count]}\n"
-      pr_body += "* Files updated: #{offense_details[:files]&.length || 0}\n\n"
+      pr_body += "* Total offenses fixed: #{offense_details['summary']['offense_count']}\n"
+      pr_body += "* Files updated: #{offense_details['files']&.length || 0}\n\n"
       pr_body += '*This PR was automatically generated by the [GitHub Cookstyle Runner](https://github.com/damacus/github-cookstyle-runner).*'
 
       pr_body
@@ -332,24 +357,24 @@ module CookstyleRunner
       issue_body = "## Cookstyle Manual Fixes Required\n\n"
       issue_body += "The following Cookstyle offenses were found but require manual fixes:\n\n"
 
-      offense_details[:files]&.each do |file|
-        next if file[:offenses].empty?
+      offense_details['files']&.each do |file|
+        next if file['offenses'].empty?
 
-        issue_body += "### #{file[:path]}\n\n"
+        issue_body += "### #{file['path']}\n\n"
 
-        file[:offenses].each do |offense|
-          next if offense[:correctable]
+        file['offenses'].each do |offense|
+          next if offense['correctable']
 
-          issue_body += "* **#{offense[:cop_name]}** at line #{offense[:location][:line]}: "
-          issue_body += "#{offense[:message]}\n"
+          issue_body += "* **#{offense['cop_name']}** at line #{offense['location']['line']}: "
+          issue_body += "#{offense['message']}\n"
         end
 
         issue_body += "\n"
       end
 
       issue_body += "### Summary\n\n"
-      issue_body += "* Total offenses requiring manual fixes: #{offense_details[:summary][:offense_count]}\n"
-      issue_body += "* Files with issues: #{offense_details[:files]&.length || 0}\n\n"
+      issue_body += "* Total offenses requiring manual fixes: #{offense_details['summary']['offense_count']}\n"
+      issue_body += "* Files with issues: #{offense_details['files']&.length || 0}\n\n"
       issue_body += '*This issue was automatically generated by the [GitHub Cookstyle Runner](https://github.com/damacus/github-cookstyle-runner).*'
 
       issue_body
@@ -363,22 +388,10 @@ module CookstyleRunner
         had_issues: T::Boolean,
         result: String,
         processing_time: Float
-      ).returns(NilClass)
-    end
-    def update_cache(repo_name, commit_sha, had_issues, result, processing_time)
-      @cache.update_cache(repo_name, commit_sha, had_issues, result, processing_time)
-    end
-    sig do
-      params(
-        repo_name: String,
-        commit_sha: String,
-        had_issues: T::Boolean,
-        result: String,
-        processing_time: Float
       ).void
     end
     def update_cache(repo_name, commit_sha, had_issues, result, processing_time)
-      return unless @cache_manager && @config[:use_cache]
+      return unless @cache_manager && @config['use_cache']
 
       @cache_manager.update(repo_name, commit_sha, had_issues, result, processing_time)
       logger.debug("Updated cache for #{repo_name}")
