@@ -9,6 +9,7 @@ module CookstyleRunner
   # Module for GitHub API operations
   module GitHubAPI
     extend T::Sig
+
     # Fetch repositories from GitHub
     # rubocop:disable Metrics/AbcSize
     sig { params(owner: String, logger: Logger, topics: T.nilable(T::Array[String])).returns(T::Array[String]) }
@@ -45,12 +46,12 @@ module CookstyleRunner
     # Create or update a branch using GitHub API
     sig { params(repo_full_name: String, branch_name: String, default_branch: String, logger: Logger).returns(T::Boolean) }
     def self.create_or_update_branch(repo_full_name, branch_name, default_branch, logger)
-      default_branch_ref = clone.ref(repo_full_name, "heads/#{default_branch}")
+      default_branch_ref = ::Git.clone.ref(repo_full_name, "heads/#{default_branch}")
 
       begin
-        clone.ref(repo_full_name, "heads/#{branch_name}")
+        ::Git.clone.ref(repo_full_name, "heads/#{branch_name}")
         logger.info("Branch #{branch_name} already exists for #{repo_full_name}, updating")
-        clone.update_ref(
+        ::Git.clone.update_ref(
           repo_full_name,
           "heads/#{branch_name}",
           default_branch_ref.object.sha,
@@ -58,7 +59,7 @@ module CookstyleRunner
         )
       rescue Octokit::NotFound
         logger.info("Creating branch #{branch_name} for #{repo_full_name}")
-        clone.create_ref(
+        ::Git.clone.create_ref(
           repo_full_name,
           "heads/#{branch_name}",
           default_branch_ref.object.sha
@@ -89,17 +90,17 @@ module CookstyleRunner
     def self.create_or_update_pr(repo_full_name, branch_name, default_branch, title, body, labels, logger)
       existing_pr = find_existing_pr(repo_full_name, branch_name, logger)
       if existing_pr
-        logger.info("Pull request already exists for #{repo_full_name}, updating PR ##{existing_pr.member?}")
+        logger.info("Pull request already exists for #{repo_full_name}, updating PR ##{existing_pr.number}")
         pr = clone.update_pull_request(
           repo_full_name,
-          existing_pr.member?,
+          existing_pr.number,
           title: title,
           body: body
         )
         if labels.any?
-          existing_labels = clone.labels_for_issue(repo_full_name, existing_pr.member?).map(&:name)
+          existing_labels = clone.labels_for_issue(repo_full_name, existing_pr.number).map(&:name)
           new_labels = labels - existing_labels
-          clone.add_labels_to_an_issue(repo_full_name, existing_pr.member?, new_labels) if new_labels.any?
+          clone.add_labels_to_an_issue(repo_full_name, existing_pr.number, new_labels) if new_labels.any?
         end
       else
         logger.info("Creating new PR for #{repo_full_name}")
@@ -112,7 +113,7 @@ module CookstyleRunner
         )
 
         # Add labels if specified
-        GitHubAPI.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels.any?
+        clone.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels.any?
       end
       pr
     rescue StandardError => e

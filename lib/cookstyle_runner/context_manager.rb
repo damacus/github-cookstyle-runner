@@ -101,14 +101,21 @@ module CookstyleRunner
     # rubocop:disable Metrics/MethodLength
     sig { params(repo_name: String, owner: String, repo_url: T.nilable(String)).returns(CookstyleRunner::Git::RepoContext) }
     def create_context(repo_name, owner, repo_url = nil)
-      auth_params = if CookstyleRunner::Authentication.use_pat?
-                      { github_token: ENV.fetch('GITHUB_TOKEN', nil) }
-                    else
+      # Get credentials from Authentication module
+      credentials = CookstyleRunner::Authentication.github_credentials
+
+      # Prepare parameters based on credential type
+      auth_params = case credentials.auth_type
+                    when :pat
+                      { github_token: credentials.token }
+                    when :app
                       {
-                        app_id: ENV.fetch('GITHUB_APP_ID', nil),
-                        installation_id: ENV.fetch('GITHUB_INSTALLATION_ID', nil)&.to_i,
-                        private_key: ENV.fetch('GITHUB_PRIVATE_KEY', nil)
+                        app_id: credentials.app_id,
+                        installation_id: credentials.installation_id,
+                        private_key: credentials.private_key
                       }
+                    else
+                      {} # No auth available
                     end
 
       # Use RepoContext directly
