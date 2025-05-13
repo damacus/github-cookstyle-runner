@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# typed: true
+# typed: strict
 
 require 'json'
 require 'fileutils'
@@ -21,22 +21,36 @@ module CookstyleRunner
   #
   class Cache
     extend T::Sig
-    attr_reader :dir, :file, :data, :logger, :stats
+
+    sig { returns(String) }
+    attr_reader :dir
+
+    sig { returns(String) }
+    attr_reader :file
+
+    sig { returns(T::Hash[String, T.untyped]) }
+    attr_reader :data
+
+    sig { returns(T.untyped) }
+    attr_reader :logger
+
+    sig { returns(CacheStats) }
+    attr_reader :stats
 
     # Initialize the cache manager
-    # @param dir [String] Directory to store cache files
-    # @param logger [Logger] Logger instance
+    sig { params(dir: String, logger: T.untyped).void }
     def initialize(dir, logger)
-      @dir = dir
-      @file = File.join(dir, 'cache.json')
-      @logger = logger
+      # Initialize instance variables with proper type annotations
+      @dir = T.let(dir, String)
+      @file = T.let(File.join(dir, 'cache.json'), String)
+      @logger = T.let(logger, T.untyped)
+      @data = T.let({}, T::Hash[String, T.untyped])
+      @stats = T.let(CacheStats.new, CacheStats)
 
       # Create cache directory if it doesn't exist
       FileUtils.mkdir_p(dir)
 
-      # Initialize statistics helper
-      @stats = CacheStats.new
-
+      # Load cache from disk or initialize new one
       load_cache
 
       # Give the stats object access to our data
@@ -44,7 +58,7 @@ module CookstyleRunner
     end
 
     # Load cache from disk or initialize a new cache
-    sig { returns(T::Hash[T.untyped, T.untyped]) }
+    sig { returns(T::Hash[String, T.untyped]) }
     def load_cache
       @data = if File.exist?(@file)
                 parse_cache_file
@@ -67,10 +81,13 @@ module CookstyleRunner
     # Save cache to disk
     sig { returns(NilClass) }
     def save
-      @data ||= {
-        'repositories' => {},
-        'last_updated' => Time.now.utc.iso8601
-      }
+      # Ensure data has at least the default structure
+      if @data.empty?
+        @data = {
+          'repositories' => {},
+          'last_updated' => Time.now.utc.iso8601
+        }
+      end
 
       @data['last_updated'] = Time.now.utc.iso8601
       File.write(@file, JSON.pretty_generate(@data))
@@ -79,11 +96,7 @@ module CookstyleRunner
     end
 
     # Check if a repository is up to date in cache
-    # @param repo_name [String] Repository name
-    # @param current_sha [String] Current commit SHA
-    # @param options [Hash] Options hash
-    # @option options [Integer] :max_age Maximum age in seconds (default: 7 days)
-    # @return [Boolean] True if repository is up to date
+    sig { params(repo_name: String, current_sha: String, options: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
     def up_to_date?(repo_name, current_sha, options = {})
       # Default max_age to 7 days
       max_age = options[:max_age] || (7 * 24 * 60 * 60) # 7 days in seconds
@@ -111,8 +124,7 @@ module CookstyleRunner
     end
 
     # Get cached result for a repository
-    # @param repo_name [String] Repository name
-    # @return [Hash, nil] Cached result or nil if not found
+    sig { params(repo_name: String).returns(T.nilable(Hash)) }
     def get_result(repo_name)
       repo_data = @data['repositories'][repo_name]
       return nil if repo_data.nil?
@@ -121,12 +133,7 @@ module CookstyleRunner
     end
 
     # Update the cache with repository processing results
-    # @param repo_name [String] Repository name
-    # @param commit_sha [String] Commit SHA
-    # @param had_issues [Boolean] Whether issues were found
-    # @param result [String] Processing result
-    # @param processing_time [Float] Processing time in seconds
-    # @return [nil]
+    sig { params(repo_name: String, commit_sha: String, had_issues: T::Boolean, result: String, processing_time: Float).void }
     def update(repo_name, commit_sha, had_issues, result, processing_time)
       # Create a new CacheEntry object
       entry = CacheEntry.new(
@@ -146,7 +153,6 @@ module CookstyleRunner
     end
 
     # Clear the cache for a specific repository
-    # @param repo_name [String] Repository name
     sig { params(repo_name: String).returns(NilClass) }
     def clear_repo(repo_name)
       @data['repositories'].delete(repo_name)
@@ -162,8 +168,7 @@ module CookstyleRunner
     end
 
     # Get cache statistics - delegates to the CacheStats object
-    # @return [Hash] Cache statistics
-    sig { returns(Hash) }
+    sig { returns(T::Hash[T.untyped, T.untyped]) }
     def cache_stats
       # Ensure stats has up-to-date cache data
       @stats.cache_data = @data
@@ -171,7 +176,7 @@ module CookstyleRunner
     end
 
     # Get runtime statistics
-    sig { returns(Hash) }
+    sig { returns(T::Hash[T.untyped, T.untyped]) }
     def runtime_stats
       @stats.runtime_stats
     end
@@ -202,15 +207,16 @@ module CookstyleRunner
       end
     end
 
-    sig { returns(T::Hash[T.untyped, T.untyped]) }
+    sig { returns(T::Hash[String, T.untyped]) }
     def initialize_cache
-      @data = {
+      default_data = {
         'repositories' => {},
         'last_updated' => Time.now.utc.iso8601
       }
+      @data = default_data
       logger.debug('Initialized new cache')
       save
-      @data
+      default_data
     end
   end
 end
