@@ -51,7 +51,7 @@ module CookstyleRunner
       @had_issues = had_issues
       @result = result
       @processing_time = processing_time
-      @timestamp = timestamp || Time.now.utc.iso8601
+      @timestamp = T.let(timestamp || Time.now.utc.iso8601, String)
     end
 
     # Check if this cache entry matches a given SHA

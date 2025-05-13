@@ -124,7 +124,7 @@ module CookstyleRunner
     end
 
     # Get cached result for a repository
-    sig { params(repo_name: String).returns(T.nilable(Hash)) }
+    sig { params(repo_name: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
     def get_result(repo_name)
       repo_data = @data['repositories'][repo_name]
       return nil if repo_data.nil?

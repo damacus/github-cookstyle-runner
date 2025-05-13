@@ -34,10 +34,10 @@ module CookstyleRunner
     sig { returns(T.nilable(Cache)) }
     attr_reader :cache_manager
 
-    sig { returns(T.nilable(T.untyped)) }
+    sig { returns(T.untyped) }
     attr_reader :github_client
 
-    sig { returns(T.nilable(T.untyped)) }
+    sig { returns(T.untyped) }
     attr_reader :pr_manager
 
     # Initialize a new repository processor
@@ -51,16 +51,16 @@ module CookstyleRunner
         config: T::Hash[String, T.untyped],
         logger: T.untyped,
         cache_manager: T.nilable(Cache),
-        github_client: T.nilable(T.untyped),
-        pr_manager: T.nilable(T.untyped)
+        github_client: T.untyped,
+        pr_manager: T.untyped
       ).void
     end
     def initialize(config:, logger:, cache_manager: nil, github_client: nil, pr_manager: nil)
       @config = T.let(config, T::Hash[String, T.untyped])
       @logger = T.let(logger, T.untyped)
       @cache_manager = T.let(cache_manager, T.nilable(Cache))
-      @github_client = T.let(github_client, T.nilable(T.untyped))
-      @pr_manager = T.let(pr_manager, T.nilable(T.untyped))
+      @github_client = T.let(github_client, T.untyped)
+      @pr_manager = T.let(pr_manager, T.untyped)
     end
 
     # Process a single repository
@@ -156,11 +156,11 @@ module CookstyleRunner
       if Dir.exist?(File.join(repo_dir, '.git'))
         # Update existing repository
         logger.debug("Updating existing repository in #{repo_dir}")
-        Git.update_repository(repo_dir, logger)
+        Git.update_repo(repo_dir, logger)
       else
         # Clone new repository
         logger.debug("Cloning #{repo_url} to #{repo_dir}")
-        Git.clone_repository(repo_url, repo_dir, logger)
+        Git.clone_repo(repo_url, repo_dir, logger)
       end
 
       # Get current commit SHA
@@ -183,7 +183,7 @@ module CookstyleRunner
     sig { params(repo_dir: String).returns(T::Hash[Symbol, T.untyped]) }
     def run_cookstyle_checks(repo_dir)
       logger.debug("Running Cookstyle on #{repo_dir}")
-      CookstyleOperations.run_cookstyle(repo_dir, logger, @config[:auto_correct])
+      CookstyleOperations.run_cookstyle(repo_dir, logger)
     end
 
     # Handle issues found in the repository by creating PR or issue
@@ -229,7 +229,7 @@ module CookstyleRunner
 
       # Run Cookstyle with auto-correct
       logger.info("Auto-correcting #{result[:auto_correctable]} issues in #{repo_full_name}")
-      auto_correct_result = CookstyleOperations.run_cookstyle(repo_dir, logger, true)
+      auto_correct_result = CookstyleOperations.run_cookstyle(repo_dir, logger)
 
       # Update changelog if configured
       if @config[:manage_changelog]
@@ -249,7 +249,7 @@ module CookstyleRunner
         Git.commit_changes(repo_dir, branch_name, commit_message, logger)
 
         # Push changes and create PR
-        default_branch = Git.get_default_branch(repo_dir, logger)
+        default_branch = Git.create_branch(repo_dir, logger)
         pr_result = @pr_manager.create_pr(repo_full_name, branch_name, default_branch, {
                                             title: @config[:pull_request_title] || 'Automated PR: Cookstyle Changes',
                                             body: format_pr_description(auto_correct_result[:offense_details]),

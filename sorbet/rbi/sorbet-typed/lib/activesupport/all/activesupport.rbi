@@ -1844,7 +1844,7 @@ end
 
 module ActiveSupport::Rescuable::ClassMethods
   # https://github.com/rails/rails/blob/5-2-stable/activesupport/lib/active_support/rescuable.rb#L51
-  sig { params(klasses: Class, with: T.nilable(Symbol), block: T.nilable(T.proc.params(error: T.untyped).void)).void }
+  sig { params(klasses: T::Class[T.anything], with: T.nilable(Symbol), block: T.nilable(T.proc.params(error: T.untyped).void)).void }
   def rescue_from(*klasses, with: T.unsafe(nil), &block); end
 end
 
