@@ -12,6 +12,8 @@ RSpec/ExampleLength:
   Max: 20
 Layout/LineLength:
   Max: 150
+Metrics/ClassLength:
+  Max: 120
 # Ignore tests for now
 AllCops:
   NewCops: enable

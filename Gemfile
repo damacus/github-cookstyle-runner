@@ -4,6 +4,7 @@ source 'https://rubygems.org'
 
 gem 'base64'
 gem 'cookstyle'
+gem 'faraday', '~> 2.0'
 gem 'faraday-retry', '~> 2.0' # Specify v2 for Faraday v2 compatibility
 gem 'git' # Required for local Git operations
 gem 'json', '~> 2.6' # JSON parsing
