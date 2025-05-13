@@ -3,7 +3,7 @@
 require 'spec_helper'
 require 'cookstyle_runner/repository_processor'
 require 'cookstyle_runner/cookstyle_operations'
-require 'cookstyle_runner/git_operations'
+require 'cookstyle_runner/git'
 require 'cookstyle_runner/context_manager'
 require 'cookstyle_runner/github_pr_manager'
 require 'cookstyle_runner/cache'
@@ -51,7 +51,7 @@ RSpec.describe CookstyleRunner::RepositoryProcessor, :integration do
                                                                  installation_id: nil,
                                                                  private_key: nil
                                                                }, logger)
-    allow(GitOperations).to receive(:clone_repo).and_return(true)
+    allow(CookstyleRunner::Git).to receive(:clone_repo).and_return(true)
     allow(FileUtils).to receive(:remove_entry_secure).with(any_args)
   end
 

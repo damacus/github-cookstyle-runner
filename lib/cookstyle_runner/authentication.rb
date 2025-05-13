@@ -206,10 +206,31 @@ module CookstyleRunner
     # @return [String] the private key content
     sig { params(private_key: String).returns(String) }
     def self.read_private_key(private_key)
-      if File.exist?(private_key.to_s)
-        File.read(private_key)
+      File.exist?(private_key) ? File.read(private_key) : private_key
+    end
+
+    # Generate an authenticated URL for Git operations
+    # @param owner [String] repository owner
+    # @param repo_name [String] repository name
+    # @param logger [Logger] logger instance
+    # @return [String] authenticated URL for Git operations
+    sig { params(owner: String, repo_name: String, logger: T.nilable(Logger)).returns(String) }
+    def self.authenticated_url(owner, repo_name, logger = nil)
+      credentials = github_credentials
+
+      if credentials.auth_type == :pat && !credentials.token.nil?
+        logger&.debug("Using PAT authentication for #{repo_name}")
+        "https://#{credentials.token}:x-oauth-basic@github.com/#{owner}/#{repo_name}.git"
+      elsif credentials.auth_type == :app && credentials.valid?
+        token = get_installation_token(
+          app_id: T.must(credentials.app_id),
+          installation_id: T.must(credentials.installation_id),
+          private_key: T.must(credentials.private_key)
+        )
+        "https://x-access-token:#{token}@github.com/#{owner}/#{repo_name}.git"
       else
-        private_key
+        logger&.error("No valid authentication found for #{repo_name}")
+        "https://github.com/#{owner}/#{repo_name}.git"
       end
     end
   end

@@ -128,24 +128,10 @@ module CookstyleRunner
     end
 
     # Get authenticated URL for git operations based on auth method in context
+    # Delegates to Authentication module's authenticated_url method
     sig { params(context: RepoContext).returns(String) }
     def self.authenticated_url(context)
-      credentials = CookstyleRunner::Authentication.github_credentials
-      return unless credentials.valid?
-
-      if credentials.auth_type == :pat
-        "https://#{credentials.token}:x-oauth-basic@github.com/#{context.owner}/#{context.repo_name}.git"
-      elsif credentials.auth_type == :app
-        token = CookstyleRunner::Authentication.get_installation_token(
-          app_id: T.must(credentials.app_id),
-          installation_id: T.must(credentials.installation_id),
-          private_key: T.must(credentials.private_key)
-        )
-        "https://x-access-token:#{token}@github.com/#{context.owner}/#{context.repo_name}.git"
-      else
-        context.logger.error("No valid authentication found for #{context.repo_name}")
-        "https://github.com/#{context.owner}/#{context.repo_name}.git"
-      end
+      CookstyleRunner::Authentication.authenticated_url(context.owner, context.repo_name, context.logger)
     end
 
     # Update the repository to the specified branch

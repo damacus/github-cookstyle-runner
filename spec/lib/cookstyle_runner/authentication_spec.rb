@@ -268,5 +268,60 @@ RSpec.describe CookstyleRunner::Authentication do
       end
     end
   end
-  # rubocop:enable Metrics/BlockLength
+
+  describe '.authenticated_url' do
+    let(:owner) { 'sous-chefs' }
+    let(:repo_name) { 'apt' }
+    let(:logger) { Logger.new(StringIO.new) }
+    
+    context 'with PAT authentication' do
+      before do
+        allow(described_class).to receive(:github_credentials).and_return(
+          CookstyleRunner::Authentication::Credentials.new(
+            auth_type: :pat,
+            token: 'fake_pat_token'
+          )
+        )
+      end
+
+      it 'returns a URL with PAT token' do
+        url = described_class.authenticated_url(owner, repo_name, logger)
+        expect(url).to eq('https://fake_pat_token:x-oauth-basic@github.com/sous-chefs/apt.git')
+        # We can't easily verify logger calls with a real logger
+      end
+    end
+
+    context 'with GitHub App authentication' do
+      before do
+        allow(described_class).to receive(:github_credentials).and_return(
+          CookstyleRunner::Authentication::Credentials.new(
+            auth_type: :app,
+            app_id: app_id,
+            installation_id: installation_id,
+            private_key: private_key_pem
+          )
+        )
+        allow(described_class).to receive(:get_installation_token).and_return('fake_installation_token')
+      end
+
+      it 'returns a URL with installation token' do
+        url = described_class.authenticated_url(owner, repo_name, logger)
+        expect(url).to eq('https://x-access-token:fake_installation_token@github.com/sous-chefs/apt.git')
+      end
+    end
+
+    context 'with no valid authentication' do
+      before do
+        allow(described_class).to receive(:github_credentials).and_return(
+          CookstyleRunner::Authentication::Credentials.new(auth_type: :none)
+        )
+      end
+
+      it 'returns a fallback URL without authentication' do
+        url = described_class.authenticated_url(owner, repo_name, logger)
+        expect(url).to eq('https://github.com/sous-chefs/apt.git')
+        # We can't easily verify logger calls with a real logger
+      end
+    end
+  end
 end
