@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# typed: strict
 
 require 'octokit'
 require 'logger'
@@ -7,37 +8,32 @@ require_relative 'authentication'
 module CookstyleRunner
   # Module for GitHub API operations
   module GitHubAPI
+    extend T::Sig
     # Fetch repositories from GitHub
-    # @param owner [String] Repository owner
-    # @param topics [Array<String>] Topics to filter by
-    # @param logger [Logger] Logger instance
-    # @return [Array<String>] List of repository clone URLs
     # rubocop:disable Metrics/AbcSize
-    def self.fetch_repositories(owner, topics = nil, logger)
+    sig { params(owner: String, logger: Logger, topics: T.nilable(T::Array[String])).returns(T::Array[String]) }
+    def self.fetch_repositories(owner, logger, topics = nil)
       query = "org:#{owner}"
       topics.each { |topic| query += " topic:#{topic}" } if topics && !topics.empty?
       logger.debug("Search query: #{query}")
-      results = CookstyleRunner::Authentication.client.search_repositories(query)
+      results = Authentication.client.search_repositories(query)
       logger.info("Found #{results.total_count} repositories")
       results.items.map(&:clone_url)
     rescue Octokit::Error => e
       logger.error("GitHub API error: #{e.message}")
-      logger.debug(e.backtrace.join("\n"))
+      logger.debug(T.must(e.backtrace).join("\n"))
       []
     rescue StandardError => e
       logger.error("Error fetching repositories: #{e.message}")
-      logger.debug(e.backtrace.join("\n"))
+      logger.debug(T.must(e.backtrace).join("\n"))
       []
     end
     # rubocop:enable Metrics/AbcSize
 
     # Check if a branch exists using GitHub API
-    # @param repo_full_name [String] Full repository name (owner/repo)
-    # @param branch_name [String] Branch name
-    # @param logger [Logger] Logger instance
-    # @return [Boolean] True if branch exists
+    sig { params(repo_full_name: String, branch_name: String, logger: Logger).returns(T::Boolean) }
     def self.branch_exists?(repo_full_name, branch_name, logger)
-      client.ref(repo_full_name, "heads/#{branch_name}")
+      clone.ref(repo_full_name, "heads/#{branch_name}")
       true
     rescue Octokit::NotFound
       false
@@ -47,30 +43,25 @@ module CookstyleRunner
     end
 
     # Create or update a branch using GitHub API
-    # @param repo_full_name [String] Full repository name (owner/repo)
-    # @param branch_name [String] Branch name to create or update
-    # @param default_branch [String] Default branch name
-    # @param logger [Logger] Logger instance
-    # @return [Boolean] True if successful
-    # rubocop:disable Metrics/MethodLength
+    sig { params(repo_full_name: String, branch_name: String, default_branch: String, logger: Logger).returns(T::Boolean) }
     def self.create_or_update_branch(repo_full_name, branch_name, default_branch, logger)
-      default_branch_ref = client.ref(repo_full_name, "heads/#{default_branch}")
-      default_branch_sha = default_branch_ref.object.sha
+      default_branch_ref = clone.ref(repo_full_name, "heads/#{default_branch}")
+
       begin
-        client.ref(repo_full_name, "heads/#{branch_name}")
+        clone.ref(repo_full_name, "heads/#{branch_name}")
         logger.info("Branch #{branch_name} already exists for #{repo_full_name}, updating")
-        client.update_ref(
+        clone.update_ref(
           repo_full_name,
           "heads/#{branch_name}",
-          default_branch_sha,
+          default_branch_ref.object.sha,
           true
         )
       rescue Octokit::NotFound
         logger.info("Creating branch #{branch_name} for #{repo_full_name}")
-        client.create_ref(
+        clone.create_ref(
           repo_full_name,
           "heads/#{branch_name}",
-          default_branch_sha
+          default_branch_ref.object.sha
         )
       end
       true
@@ -78,15 +69,11 @@ module CookstyleRunner
       logger.error("Error creating/updating branch for #{repo_full_name}: #{e.message}")
       false
     end
-    # rubocop:enable Metrics/MethodLength
 
     # Find an existing PR for a branch
-    # @param repo_full_name [String] Full repository name (owner/repo)
-    # @param branch_name [String] Branch name
-    # @param logger [Logger] Logger instance
-    # @return [Sawyer::Resource, nil] Pull request object or nil if not found
+    sig { params(repo_full_name: String, branch_name: String, logger: Logger).returns(T.nilable(Sawyer::Resource)) }
     def self.find_existing_pr(repo_full_name, branch_name, logger)
-      prs = client.pull_requests(repo_full_name, state: 'open')
+      prs = clone.pull_requests(repo_full_name, state: 'open')
       prs.find { |pr| pr.head.ref == branch_name }
     rescue StandardError => e
       logger.error("Error finding existing PR for #{repo_full_name}: #{e.message}")
@@ -94,33 +81,29 @@ module CookstyleRunner
     end
 
     # Create or update a pull request
-    # @param repo_full_name [String] Full repository name (owner/repo)
-    # @param branch_name [String] Branch name
-    # @param default_branch [String] Default branch name
-    # @param title [String] PR title
-    # @param body [String] PR body
-    # @param labels [Array<String>] PR labels
-    # @param logger [Logger] Logger instance
-    # @return [Sawyer::Resource, nil] Pull request object or nil if failed
-    # rubocop:disable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity, Metrics/ParameterLists, Metrics/AbcSize, Metrics/MethodLength
+    # rubocop:disable Metrics/ParameterLists, Metrics/AbcSize, Metrics/MethodLength
+    sig do
+      params(repo_full_name: String, branch_name: String, default_branch: String, title: String, body: String, labels: T::Array[String],
+             logger: Logger).returns(T.nilable(Sawyer::Resource))
+    end
     def self.create_or_update_pr(repo_full_name, branch_name, default_branch, title, body, labels, logger)
       existing_pr = find_existing_pr(repo_full_name, branch_name, logger)
       if existing_pr
-        logger.info("Pull request already exists for #{repo_full_name}, updating PR ##{existing_pr.number}")
-        pr = client.update_pull_request(
+        logger.info("Pull request already exists for #{repo_full_name}, updating PR ##{existing_pr.member?}")
+        pr = clone.update_pull_request(
           repo_full_name,
-          existing_pr.number,
+          existing_pr.member?,
           title: title,
           body: body
         )
-        if labels&.any?
-          existing_labels = client.labels_for_issue(repo_full_name, existing_pr.number).map(&:name)
+        if labels.any?
+          existing_labels = clone.labels_for_issue(repo_full_name, existing_pr.member?).map(&:name)
           new_labels = labels - existing_labels
-          client.add_labels_to_an_issue(repo_full_name, existing_pr.number, new_labels) if new_labels.any?
+          clone.add_labels_to_an_issue(repo_full_name, existing_pr.member?, new_labels) if new_labels.any?
         end
       else
         logger.info("Creating new PR for #{repo_full_name}")
-        pr = client.create_pull_request(
+        pr = clone.create_pull_request(
           repo_full_name,
           default_branch,
           branch_name,
@@ -129,19 +112,18 @@ module CookstyleRunner
         )
 
         # Add labels if specified
-        client.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels&.any?
+        GitHubAPI.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels.any?
       end
       pr
     rescue StandardError => e
       logger.error("Error creating/updating PR for #{repo_full_name}: #{e.message}")
-      logger.debug(e.backtrace.join("\n"))
+      logger.debug(T.must(e.backtrace).join("\n"))
       nil
     end
-    # rubocop:enable Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity, Metrics/ParameterLists, Metrics/AbcSize, Metrics/MethodLength
+    # rubocop:enable Metrics/ParameterLists, Metrics/AbcSize, Metrics/MethodLength
 
     # Format PR body for auto-fix PRs
-    # @param cookstyle_output [String] Output from cookstyle run
-    # @return [String] Formatted PR body
+    sig { params(cookstyle_output: String).returns(String) }
     def self.format_pr_body(cookstyle_output)
       <<~BODY
         ## Cookstyle Automated Changes
@@ -158,10 +140,9 @@ module CookstyleRunner
       BODY
     end
 
-    # Format PR body for manual fix PRs
-    # @param cookstyle_output [String] Output from cookstyle run
-    # @return [String] Formatted PR body
-    def self.format_manual_fix_pr_body(cookstyle_output)
+    # Format issue body for manual fix issues
+    sig { params(cookstyle_output: String).returns(String) }
+    def self.format_issue_body(cookstyle_output)
       <<~BODY
         ## Manual Cookstyle Fixes Required
 
@@ -174,25 +155,5 @@ module CookstyleRunner
         ```
       BODY
     end
-
-    # Create a GitHub Issue
-    # @param client [Octokit::Client] GitHub API client
-    # @param repo_full_name [String] Full repository name (owner/repo)
-    # @param title [String] Issue title
-    # @param body [String] Issue body
-    # @param labels [Array<String>] Issue labels
-    # @param logger [Logger] Logger instance
-    # @return [Sawyer::Resource, nil] Issue object or nil if failed
-    # rubocop:disable Metrics/ParameterLists
-    def self.create_issue(client, repo_full_name, title, body, labels, logger)
-      issue = client.create_issue(repo_full_name, title, body, labels: labels)
-      logger.info("Created issue ##{issue.number} for #{repo_full_name}")
-      issue
-    rescue StandardError => e
-      logger.error("Error creating issue for #{repo_full_name}: #{e.message}")
-      logger.debug(e.backtrace.join("\n"))
-      nil
-    end
-    # rubocop:enable Metrics/ParameterLists
   end
 end

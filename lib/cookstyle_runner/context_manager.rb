@@ -1,77 +1,127 @@
 # frozen_string_literal: true
+# typed: strict
 
 require 'singleton'
-require_relative 'git_operations'
+require_relative 'git'
+require 'logger'
+require 'sorbet-runtime'
+require_relative 'context'
 
 module CookstyleRunner
-  # Manages repository contexts across the application
-  # Provides thread-safe access to repository context objects
+  # =============================================================================
+  # Context Manager
+  # =============================================================================
+  #
+  # Manages repository context including authentication and configuration.
+  # Ensures that each repository has a dedicated context object.
+  #
   class ContextManager
+    extend T::Sig
     include Singleton
 
+    sig { void }
     def initialize
-      @context_mutex = Mutex.new
-      @repo_contexts = {}
-      @global_config = {}
+      @context_mutex = T.let(Mutex.new, Mutex)
+      @repo_contexts = T.let({}, T::Hash[String, CookstyleRunner::Git::RepoContext])
+      @global_config = T.let({}, T::Hash[Symbol, T.untyped])
+      @global_logger = T.let(nil, T.nilable(Logger))
     end
 
     # Set global configuration that will be used for all contexts
     # @param config [Hash] Global configuration hash
     # @param logger [Logger] Logger instance
+    # @return [T.self_type] Return self for chaining
+    sig { params(config: T::Hash[Symbol, T.untyped], logger: Logger).returns(T.self_type) }
     def set_global_config(config, logger)
       @context_mutex.synchronize do
         @global_config = config
-        @global_logger = logger
+        @global_logger = logger # Assign logger
       end
+      self
     end
 
     # Get or create a repository context for a specific repository
-    # @param repo_url [String] Repository URL
-    # @param repo_dir [String] Repository directory
-    # @return [GitOperations::RepoContext] Repository context
-    def get_repo_context(repo_url, repo_dir)
+    # @param repo_url [String] Repository URL (e.g., 'https://github.com/owner/repo.git')
+    # @param _repo_dir [String] Repository directory (unused, marked with _)
+    # @return [RepoContext] Repository context
+    sig { params(repo_url: String, _repo_dir: String).returns(CookstyleRunner::Git::RepoContext) }
+    def get_repo_context(repo_url, _repo_dir)
       repo_name = File.basename(repo_url, '.git')
 
-      @context_mutex.synchronize do
-        # Return existing context if available
-        return @repo_contexts[repo_name] if @repo_contexts.key?(repo_name)
+      T.must(@context_mutex.synchronize do
+        # Check if context already exists
+        if @repo_contexts.key?(repo_name)
+          @repo_contexts[repo_name]
+        else
+          # Otherwise create a new context
+          # Ensure owner is retrieved correctly from global config
+          owner = T.let(@global_config[:owner], T.nilable(String))
+          raise 'Owner not found in global config' unless owner
 
-        # Otherwise create a new context
-        context = create_context(repo_name, repo_url, repo_dir)
-        @repo_contexts[repo_name] = context
-        context
-      end
+          context = create_context(repo_name, owner, repo_url)
+          @repo_contexts[repo_name] = context
+          context
+        end
+      end)
     end
 
     # Clear all cached contexts
+    # @return [T.self_type] Return self for chaining
+    sig { returns(T.self_type) }
     def clear_contexts
       @context_mutex.synchronize do
         @repo_contexts.clear
       end
+      self
+    end
+
+    # Add a new context for a repository
+    # @param repo_name [String] Repository name
+    # @param owner [String] Repository owner
+    # @param repo_url [String, nil] Optional repository URL
+    # @return [T.self_type] Return self for chaining
+    sig { params(repo_name: String, owner: String, repo_url: T.nilable(String)).returns(T.self_type) }
+    def add_context(repo_name, owner, repo_url = nil)
+      # Use RepoContext directly
+      context = CookstyleRunner::Git::RepoContext.new(
+        repo_name: repo_name,
+        owner: owner,
+        logger: T.must(@global_logger),
+        repo_url: repo_url
+        # repo_dir, github_token, app_id, installation_id, private_key will use defaults (nil)
+      )
+      @repo_contexts[repo_name] = context
+      self
     end
 
     private
 
     # Create a repository context with appropriate authentication
+    # Disable length check for this method
     # rubocop:disable Metrics/MethodLength
-    def create_context(repo_name, repo_url, repo_dir)
+    sig { params(repo_name: String, owner: String, repo_url: T.nilable(String)).returns(CookstyleRunner::Git::RepoContext) }
+    def create_context(repo_name, owner, repo_url = nil)
       auth_params = if CookstyleRunner::Authentication.use_pat?
                       { github_token: ENV.fetch('GITHUB_TOKEN', nil) }
                     else
                       {
                         app_id: ENV.fetch('GITHUB_APP_ID', nil),
-                        installation_id: ENV.fetch('GITHUB_APP_INSTALLATION_ID', nil),
-                        private_key: ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil)
+                        installation_id: ENV.fetch('GITHUB_INSTALLATION_ID', nil)&.to_i,
+                        private_key: ENV.fetch('GITHUB_PRIVATE_KEY', nil)
                       }
                     end
 
-      GitOperations::RepoContext.new(
+      # Use RepoContext directly
+      CookstyleRunner::Git::RepoContext.new(
         repo_name: repo_name,
-        owner: @global_config[:owner],
-        logger: @global_logger,
-        repo_dir: repo_dir,
+        owner: owner,
+        logger: T.must(@global_logger),
+        repo_dir: nil, # Pass nil explicitly for default base_dir calculation
         repo_url: repo_url,
-        **auth_params
+        github_token: auth_params[:github_token],
+        app_id: auth_params[:app_id],
+        installation_id: auth_params[:installation_id],
+        private_key: auth_params[:private_key]
       )
     end
     # rubocop:enable Metrics/MethodLength

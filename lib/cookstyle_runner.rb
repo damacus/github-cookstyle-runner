@@ -33,13 +33,15 @@ require 'open3'
 require 'parallel'
 require 'pp'
 
-require_relative 'cookstyle_runner/git_operations'
+require_relative 'cookstyle_runner/git'
 require_relative 'cookstyle_runner/github_api'
 require_relative 'cookstyle_runner/repository_manager'
 require_relative 'cookstyle_runner/cookstyle_operations'
 require_relative 'cookstyle_runner/config_manager'
-require_relative 'cookstyle_runner/context_manager'
+require_relative 'cookstyle_runner/cache_entry'
 require_relative 'cookstyle_runner/cache'
+require_relative 'cookstyle_runner/cache_stats'
+require_relative 'cookstyle_runner/context_manager'
 require_relative 'cookstyle_runner/github_pr_manager'
 require_relative 'cookstyle_runner/repository_processor'
 require_relative 'cookstyle_runner/reporter'
@@ -47,7 +49,6 @@ require_relative 'cookstyle_runner/reporter'
 # Main application class for GitHub Cookstyle Runner
 module CookstyleRunner
   # Main application class for GitHub Cookstyle Runner
-  # rubocop:disable Metrics/ClassLength
   class Application
     attr_reader :logger, :config, :cache, :pr_manager, :context_manager
 
@@ -57,6 +58,7 @@ module CookstyleRunner
       _setup_configuration
       _setup_cache
       _setup_context_manager
+      _setup_github_client
       _setup_pr_manager
     end
 
@@ -106,7 +108,7 @@ module CookstyleRunner
       # Report created artifacts
       reporter.created_artifacts(created_artifacts: @created_artifacts)
       # Report artifact creation errors
-      reporter.artifact_creation_error(@artifact_creation_errors)
+      reporter.artifact_creation_errors(@artifact_creation_errors)
 
       # Return appropriate exit code (e.g., non-zero if errors occurred)
       error_count.zero? && @artifact_creation_errors.empty? ? 0 : 1
@@ -141,8 +143,14 @@ module CookstyleRunner
       @context_manager.set_global_config(@config, @logger)
     end
 
+    # Sets up the GitHub client for API operations
+    # Uses CookstyleRunner::Authentication.client for PAT or App auth
+    def _setup_github_client
+      @github_client = Authentication.client
+    end
+
     def _setup_pr_manager
-      @pr_manager = GitHubPRManager.new(@config, @logger)
+      @pr_manager = GitHubPRManager.new(@config, @logger, @github_client)
     end
 
     # Fetches repositories from GitHub and applies filtering based on config
@@ -152,8 +160,8 @@ module CookstyleRunner
       # Use the GitHubAPI module to fetch repositories
       repositories = GitHubAPI.fetch_repositories(
         @config[:owner],
-        @config[:topics],
-        logger
+        logger,
+        @config[:topics]
       )
 
       if repositories.empty?
@@ -165,7 +173,7 @@ module CookstyleRunner
 
       # Apply repository filtering if specified using the RepositoryManager module
       if @config[:filter_repos] && !@config[:filter_repos].empty?
-        filtered_repos = RepositoryManager.filter_repositories(repositories, @config[:filter_repos], logger)
+        filtered_repos = CookstyleRunner::RepositoryManager.filter_repositories(repositories, @config[:filter_repos], logger)
         logger.info("Filtered from #{initial_count} to #{filtered_repos.length} repositories based on include/exclude lists.")
         repositories = filtered_repos
       end
@@ -199,15 +207,10 @@ module CookstyleRunner
       Parallel.map(repositories.each_with_index, in_threads: thread_count) do |repo_url, index|
         # Calculate current count for logging (1-based index)
         current_log_count = index + 1
-
-        # Delegate all per-repository processing to RepositoryProcessor
-        # process_repository now returns a hash
         repo_processor.process_repository(repo_url, current_log_count, total_repos)
       end
     end
   end
-  # rubocop:enable Metrics/ClassLength
-
   # Run the application if this file is executed directly
   if __FILE__ == $PROGRAM_NAME
     runner = CookstyleRunner::Application.new

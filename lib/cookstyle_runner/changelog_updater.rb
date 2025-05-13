@@ -1,28 +1,57 @@
 # frozen_string_literal: true
+# typed: true
 
-# Module for handling changelog updates
-module ChangelogUpdater
-  # Update the changelog with a new entry
-  # @param config [Hash] Configuration hash containing changelog location and marker
-  # @param logger [Logger] Logger instance
-  def self.update_changelog(config, logger)
-    changelog_file = config[:changelog_location]
-    marker = config[:changelog_marker]
-    content = File.read(changelog_file)
-    today = Time.now.strftime('%Y-%m-%d')
+require 'logger'
+require_relative 'git' # Defines Git::RepoContext
+require 'sorbet-runtime'
 
-    return unless File.exist?(changelog_file)
+module CookstyleRunner
+  # Module for updating Changelog files
+  module ChangelogUpdater
+    extend T::Sig
 
-    unless content.include?(marker)
-      logger.warn("Changelog marker '#{marker}' not found in #{changelog_file}")
-      return
+    # Update changelog with cookstyle fixes
+    # rubocop:disable Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/AbcSize
+    sig { params(context: Git::RepoContext, config: T::Hash[Symbol, T.untyped], offense_details: String).returns(T::Boolean) }
+    def self.update_changelog(context, config, offense_details)
+      changelog_path = File.join(context.repo_dir, config[:changelog_location])
+      unless File.exist?(changelog_path)
+        context.logger.warn("Changelog file not found at #{changelog_path}, skipping update.")
+        return false
+      end
+
+      content = File.readlines(changelog_path)
+      # Ensure config[:changelog_marker] is not nil before calling strip
+      marker_value = T.let(config[:changelog_marker], T.nilable(String))
+      return false unless marker_value # Or handle error appropriately if marker is mandatory
+
+      marker_index = content.find_index { |line| line.strip.start_with?(marker_value.strip) }
+
+      unless marker_index
+        context.logger.warn("Changelog marker '#{marker_value}' not found in #{changelog_path}, skipping update.")
+        return false
+      end
+
+      # Find the index of the next header (line starting with '## ') after the marker
+      # T.must ensures marker_index is not nil here, which is guaranteed by the 'unless marker_index' check above.
+      next_header_index = content.find_index.with_index do |line, idx|
+        idx > T.must(marker_index) && line.strip.start_with?('## ')
+      end
+
+      # Determine insertion point
+      # If no next header found, insert at the end. Otherwise, insert before the next header.
+      insertion_point = next_header_index || content.length
+
+      # Insert the offense details
+      content.insert(insertion_point, "\n#{offense_details.strip}\n")
+
+      File.write(changelog_path, content.join)
+      context.logger.info("Updated changelog file: #{changelog_path}")
+      true
+    rescue StandardError => e
+      context.logger.error("Failed to update changelog: #{e.message}")
+      false
     end
-
-    logger.info("Updating changelog at #{changelog_file}")
-    new_content = content.gsub(marker, "#{marker}\n- Cookstyle auto-corrections applied on #{today}")
-    File.write(changelog_file, new_content)
-    logger.info('Changelog updated successfully')
-  rescue StandardError => e
-    logger.error("Error updating changelog: #{e.message}")
+    # rubocop:enable Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/AbcSize
   end
 end

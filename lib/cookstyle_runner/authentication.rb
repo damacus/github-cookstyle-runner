@@ -1,12 +1,15 @@
 # frozen_string_literal: true
+# typed: true
 
 require 'openssl'
 require 'jwt'
 require 'octokit'
+require 'sorbet-runtime'
 
 module CookstyleRunner
   # Helper module for GitHub App authentication
   module Authentication
+    extend T::Sig
     # Returns a memoized Octokit client (PAT or App auth)
     # Use this for all GitHub API calls
     # @return [Octokit::Client] Octokit client instance
@@ -15,19 +18,19 @@ module CookstyleRunner
     end
 
     # Determine if a Personal Access Token should be used
-    # @return [Boolean] True if PAT should be used
+    sig { returns(T::Boolean) }
     def self.use_pat?
-      ENV.fetch('GITHUB_TOKEN', nil) && !ENV['GITHUB_TOKEN'].empty?
+      ENV.fetch('GITHUB_TOKEN', nil) && !T.must(ENV.fetch('GITHUB_TOKEN', nil)).empty?
     end
 
     # Returns the API endpoint to use for GitHub API calls
-    # @return [String] API endpoint URL
+    sig { returns(String) }
     def self.api_endpoint
       ENV['GITHUB_API_ENDPOINT'] || 'https://api.github.com'
     end
 
     # Build an Octokit client using a Personal Access Token
-    # @return [Octokit::Client] Octokit client instance
+    sig { returns(Octokit::Client) }
     def self.build_pat_client
       client = Octokit::Client.new(
         access_token: ENV.fetch('GITHUB_TOKEN', nil),
@@ -38,12 +41,12 @@ module CookstyleRunner
     end
 
     # Build an Octokit client using GitHub App authentication
-    # @return [Octokit::Client] Octokit client instance
+    sig { returns(Octokit::Client) }
     def self.build_app_client
       app_id = ENV.fetch('GITHUB_APP_ID', nil)
       installation_id = ENV.fetch('GITHUB_APP_INSTALLATION_ID', nil)
       private_key = ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil)
-      token = get_installation_token(app_id: app_id, installation_id: installation_id, private_key: private_key)
+      token = get_installation_token(app_id: T.must(app_id), installation_id: installation_id, private_key: T.must(private_key))
       client = Octokit::Client.new(
         access_token: token,
         auto_paginate: true
@@ -53,9 +56,7 @@ module CookstyleRunner
     end
 
     # Generate a JWT for the GitHub App
-    # @param app_id [String, Integer]
-    # @param private_key [String] PEM-encoded private key or path to key file
-    # @return [String] JWT
+    sig { params(app_id: String, private_key: String).returns(String) }
     def self.generate_jwt(app_id, private_key)
       payload = jwt_payload(app_id)
       key_content = read_private_key(private_key)
@@ -64,10 +65,7 @@ module CookstyleRunner
     end
 
     # Get an installation access token
-    # @param app_id [String, Integer]
-    # @param installation_id [String, Integer]
-    # @param private_key [String] PEM-encoded private key or path to key file
-    # @return [String] installation access token
+    sig { params(app_id: String, installation_id: Integer, private_key: String).returns(String) }
     def self.get_installation_token(app_id:, installation_id:, private_key:)
       jwt = generate_jwt(app_id, private_key)
       client = Octokit::Client.new(bearer_token: jwt)
@@ -76,8 +74,7 @@ module CookstyleRunner
     end
 
     # Builds the payload for the JWT
-    # @param app_id [String, Integer] GitHub App ID
-    # @return [Hash] JWT payload
+    sig { params(app_id: String).returns(Hash) }
     def self.jwt_payload(app_id)
       now = Time.now.to_i
       {
@@ -88,13 +85,12 @@ module CookstyleRunner
     end
 
     # Reads the private key content from a file path or uses the string directly
-    # @param private_key [String] Path to the key file or the key content itself
-    # @return [String] Private key content
+    sig { params(private_key: String).returns(String) }
     def self.read_private_key(private_key)
       if File.exist?(private_key.to_s)
         File.read(private_key)
       else
-        private_key # Assume it's the key content itself
+        private_key
       end
     end
   end

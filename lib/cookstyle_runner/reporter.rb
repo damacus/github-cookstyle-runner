@@ -1,8 +1,10 @@
 # frozen_string_literal: true
+# typed: true
 
 module CookstyleRunner
   # This class is responsible for reporting the results of the Cookstyle run.
   class Reporter
+    extend T::Sig
     def initialize(logger)
       @logger = logger
     end
@@ -10,7 +12,8 @@ module CookstyleRunner
     # Aggregates results from parallel processing
     # @param results [Array<Hash>] Array of result hashes from RepositoryProcessor
     # @return [Array<Integer>] counts for [processed, issues, skipped, errors]
-    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
+    # rubocop:disable Metrics/MethodLength
+    sig { params(results: T::Array[Hash]).returns(T::Array[Integer]) }
     def aggregate_results(results)
       processed_count = 0
       issues_count = 0
@@ -33,16 +36,10 @@ module CookstyleRunner
           @logger.warn("Unknown status '#{result[:status]}' received for repository: #{result[:repo_name]}")
           error_count += 1 # Treat unknown status as an error
         end
-
-        # Collect artifact details if available
-        @created_artifacts << result[:pr_details] if result[:pr_details]
-
-        # Collect artifact creation error if available
-        @artifact_creation_errors << result[:pr_error] if result[:pr_error]
       end
       [processed_count, issues_count, skipped_count, error_count]
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength
+    # rubocop:enable Metrics/MethodLength
 
     # Reports the summary of the application run
     # @param total_repos [Integer] Total repositories considered
@@ -56,6 +53,10 @@ module CookstyleRunner
     # @param pr_errors [Integer] Number of pull request creation errors
     # @return [String] Summary report
     # rubocop:disable Metrics/ParameterLists
+    sig do
+      params(total_repos: Integer, processed_count: Integer, issues_count: Integer, skipped_count: Integer, error_count: Integer,
+             issues_created: Integer, prs_created: Integer, issue_errors: Integer, pr_errors: Integer).returns(String)
+    end
     def summary(total_repos:, processed_count:, issues_count: 0, skipped_count: 0, error_count: 0,
                 issues_created: 0, prs_created: 0, issue_errors: 0, pr_errors: 0)
       summary = <<~SUMMARY
@@ -78,11 +79,12 @@ module CookstyleRunner
     end
     # rubocop:enable Metrics/ParameterLists
 
+    sig { params(created_artifacts: T::Array[Hash]).returns(T::Array[String]) }
     def created_artifacts(created_artifacts:)
-      artifact_report = ["--- Created Artifacts (#{created_artifacts.size}) ---"]
+      report = ["--- Created Artifacts (#{created_artifacts.size}) ---"]
 
       created_artifacts.each do |artifact|
-        artifact_report << <<~ARTIFACT_ENTRY
+        report << <<~ARTIFACT_ENTRY
           Repository: #{artifact[:repo]}
           Artifact ##{artifact[:number]}: #{artifact[:title]}
           Type: #{artifact[:type]}
@@ -91,26 +93,31 @@ module CookstyleRunner
       end
 
       if created_artifacts.any?
-        @logger.info(artifact_report.join("\n").strip)
+        @logger.info(report.join("\n").strip)
       else
         @logger.info('No artifacts were created during this run.')
       end
+
+      report
     end
 
-    def artifact_creation_error(artifact_creation_errors = [])
-      artifact_error_report = ["--- Artifact Creation Errors (#{artifact_creation_errors.size}) ---"]
+    sig { params(artifact_creation_errors: T::Array[Hash]).returns(T::Array[String]) }
+    def artifact_creation_errors(artifact_creation_errors = [])
+      report = ["--- Artifact Creation Errors (#{artifact_creation_errors.size}) ---"]
       artifact_creation_errors.each do |error|
-        artifact_error_report << <<~ARTIFACT_ERROR_ENTRY
+        report << <<~ARTIFACT_ERROR_ENTRY
           Repository: #{error[:repo]}
           Error: #{error[:message]}
           Type: #{error[:type]}
         ARTIFACT_ERROR_ENTRY
       end
       if artifact_creation_errors.any?
-        @logger.info(artifact_error_report.join("\n").strip)
+        @logger.info(report.join("\n").strip)
       else
         @logger.info('No artifact creation errors were reported.')
       end
+
+      report
     end
   end
 end

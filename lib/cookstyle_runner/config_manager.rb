@@ -1,15 +1,16 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
+# typed: true
 
 require 'logger'
 require 'fileutils'
+require 'sorbet-runtime'
 
 module CookstyleRunner
   # Module for configuration and logging management
   module ConfigManager
+    extend T::Sig
     # Setup logger with appropriate configuration
-    # @param debug_mode [Boolean] Whether to enable debug logging
-    # @return [Logger] Configured logger instance
+    sig { params(debug_mode: T::Boolean).returns(Logger) }
     def self.setup_logger(debug_mode: false)
       logger = Logger.new($stdout)
       logger.level = debug_mode ? Logger::DEBUG : Logger::INFO
@@ -20,13 +21,13 @@ module CookstyleRunner
     end
 
     # Load configuration from environment variables
-    # @param logger [Logger] Logger instance
-    # @return [Hash] Configuration hash
+    sig { params(logger: Logger).returns(Hash) }
     def self.load_config(logger)
       _initialize_config_from_env(logger)
     end
 
-    # @!visibility private
+    # Initialize configuration from environment variables
+    sig { params(logger: Logger).returns(Hash) }
     private_class_method def self._initialize_config_from_env(logger) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
       # Required environment variables for GitHub App authentication
       app_id = ENV.fetch('GITHUB_APP_ID', nil)
@@ -64,6 +65,7 @@ module CookstyleRunner
         branch_name: ENV['GCR_BRANCH_NAME'] || 'cookstyle-fixes',
         pr_title: ENV['GCR_PULL_REQUEST_TITLE'] || 'Automated PR: Cookstyle Changes',
         pr_labels: ENV['GCR_PR_LABELS']&.split(',')&.map(&:strip) || ['Skip: Announcements', 'Release: Patch', 'Cookstyle'],
+        issue_labels: ENV['GCR_ISSUE_LABELS']&.split(',')&.map(&:strip) || ['Cookstyle'],
         default_branch: ENV['GCR_DEFAULT_BRANCH'] || 'main',
         cache_dir: ENV['GCR_CACHE_DIR'] || '/tmp/cookstyle-runner',
         use_cache: ENV['GCR_USE_CACHE'] != '0',
@@ -84,9 +86,9 @@ module CookstyleRunner
       config
     end # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
-    # @!visibility private
     # Parses the GCR_FILTER_REPOS environment variable into an array of repo names.
     # Removes surrounding quotes and trims whitespace. Defaults to an empty array if not set.
+    sig { params(env_var: String).returns(T::Array[String]) }
     private_class_method def self.parse_repo_filter_from_env(env_var)
       repo_filter_env = ENV.fetch(env_var, nil)
       return [] if repo_filter_env.nil? || repo_filter_env.empty?
@@ -100,6 +102,7 @@ module CookstyleRunner
     # @param config [Hash] Configuration hash
     # @param logger [Logger] Logger instance
     # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
+    sig { params(config: Hash, logger: Logger).void }
     def self.log_config_summary(config, logger)
       cache_age_days = config[:cache_max_age]
 
@@ -120,7 +123,7 @@ module CookstyleRunner
         Manage Changelog: #{config[:manage_changelog] ? 'Yes' : 'No'}
         Changelog Location: #{config[:changelog_location]}
         Changelog Marker: #{config[:changelog_marker]}
-        Filter Repos: #{config[:filter_repos]&.join(', ') || 'None'}
+        Filter Repos: #{config[:filter_repos] || 'None'}
         Create Manual Fix Issues: #{config[:create_manual_fix_issues] ? 'Yes' : 'No'}
         ---------------------
       SUMMARY
@@ -130,9 +133,7 @@ module CookstyleRunner
     # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
     # Setup cache directory
-    # @param cache_dir [String] Cache directory path
-    # @param logger [Logger] Logger instance
-    # @return [Boolean] True if successful
+    sig { params(cache_dir: String, logger: Logger).returns(T::Boolean) }
     def self.setup_cache_directory(cache_dir, logger)
       FileUtils.mkdir_p(cache_dir)
       true
