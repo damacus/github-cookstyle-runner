@@ -3,7 +3,7 @@
 # spec/cookstyle_runner/cookstyle_operations_spec.rb
 require 'spec_helper'
 require 'cookstyle_runner/cookstyle_operations'
-require 'cookstyle_runner/git_operations'
+require 'cookstyle_runner/git'
 require 'json'
 require 'tty-command' # Ensure TTY::Command is available
 

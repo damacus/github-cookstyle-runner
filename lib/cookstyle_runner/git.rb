@@ -116,11 +116,8 @@ module CookstyleRunner
     # Ensure the repository exists locally and is up-to-date
     sig { params(context: RepoContext, config: T::Hash[Symbol, T.untyped]).returns(T.nilable(::Git::Base)) }
     def self.clone_or_update_repo(context, config)
-      # Get authenticated URL for cloning/fetching (may raise authentication error)
-      authed_url = authenticated_url(context)
-
       # Clone or update based on whether repo already exists
-      repo_exists?(context) ? update_repo(context, config[:branch_name]) : clone_repo(context, authed_url, config[:branch_name])
+      repo_exists?(context) ? update_repo(context, config[:branch_name]) : clone_repo(context, authenticated_url(context), config[:branch_name])
     rescue StandardError => e
       context.logger.error("Error when ensuring repository is up to date: #{e.message}")
       context.logger.debug(T.must(e.backtrace).join("\n"))

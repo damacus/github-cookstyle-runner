@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 require 'cookstyle_runner/github_pr_manager'
-require 'cookstyle_runner/git_operations'
+require 'cookstyle_runner/git'
 require 'cookstyle_runner/github_api'
 require 'logger'
 require 'ostruct'
@@ -41,10 +41,10 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     allow(Dir).to receive(:exist?).and_return(true) # Assume dir exists unless specified
     allow(Dir).to receive(:chdir).with(repo_dir).and_yield # Allow chdir to work
 
-    # Stub GitOperations class methods by default
+    # Stub Git class methods by default
     # Use a context double for new API
     repo_context = instance_double(
-      GitOperations::RepoContext,
+      CookstyleRunner::Git::RepoContext,
       repo_name: repo_name,
       owner: config[:owner],
       logger: logger,
@@ -55,25 +55,25 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       installation_id: nil,
       private_key: nil
     )
-    allow(GitOperations).to receive(:changes_to_commit?).with(repo_context).and_return(true)
-    allow(GitOperations).to receive(:create_branch).and_return(true)
-    allow(GitOperations).to receive(:update_changelog).with(repo_context, config[:changelog_location],
+    allow(Git).to receive(:changes_to_commit?).with(repo_context).and_return(true)
+    allow(Git).to receive(:create_branch).and_return(true)
+    allow(Git).to receive(:update_changelog).with(repo_context, config[:changelog_location],
                                                             config[:changelog_marker]).and_return(true)
-    allow(GitOperations).to receive(:commit_and_push_changes).with(repo_context, config[:branch_name],
+    allow(Git).to receive(:commit_and_push_changes).with(repo_context, config[:branch_name],
                                                                    kind_of(String)).and_return(true)
-    allow(GitOperations).to receive(:create_empty_commit).with(repo_context, config[:branch_name],
+    allow(Git).to receive(:create_empty_commit).with(repo_context, config[:branch_name],
                                                                kind_of(String)).and_return(true)
-    allow(GitOperations).to receive(:checkout_branch).and_return(true)
-    allow(GitOperations).to receive(:current_commit_sha).and_return('sha123')
+    allow(Git).to receive(:checkout_branch).and_return(true)
+    allow(Git).to receive(:current_commit_sha).and_return('sha123')
     allow(Dir).to receive(:exist?).with(repo_dir).and_return(true)
     allow(Dir).to receive(:chdir).with(repo_dir).and_yield
-    allow(GitOperations).to receive(:repo_exists?).and_return(true)
-    allow(GitOperations).to receive(:clone_or_update_repo).and_return(true)
-    allow(GitOperations).to receive(:setup_git_config).and_return(true)
-    allow(GitOperations).to receive(:add_and_commit_changes).and_return(true)
-    allow(GitOperations).to receive(:push_to_remote).and_return(true)
-    allow(GitOperations).to receive(:setup_remote).and_return(true)
-    allow(GitOperations).to receive(:get_authenticated_url).and_return("https://github.com/#{config[:owner]}/#{repo_name}.git")
+    allow(Git).to receive(:repo_exists?).and_return(true)
+    allow(Git).to receive(:clone_or_update_repo).and_return(true)
+    allow(Git).to receive(:setup_git_config).and_return(true)
+    allow(Git).to receive(:add_and_commit_changes).and_return(true)
+    allow(Git).to receive(:push_to_remote).and_return(true)
+    allow(Git).to receive(:setup_remote).and_return(true)
+    allow(Git).to receive(:get_authenticated_url).and_return("https://github.com/#{config[:owner]}/#{repo_name}.git")
 
     # Stub the Octokit client's PR creation
     allow(octokit_client).to receive(:create_pull_request).and_return(mock_pr_details)
@@ -86,9 +86,9 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       end
 
       it 'checks for changes, creates branch, commits, pushes, and creates PR' do
-        # Use the context double for all GitOperations calls
+        # Use the context double for all Git calls
         repo_context = instance_double(
-          GitOperations::RepoContext,
+          Git::RepoContext,
           repo_name: repo_name,
           owner: config[:owner],
           logger: logger,
@@ -99,37 +99,37 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
           installation_id: nil,
           private_key: nil
         )
-        allow(GitOperations).to receive(:changes_to_commit?).with(repo_context).and_return(true)
-        allow(GitOperations).to receive(:create_branch).and_return(true)
-        allow(GitOperations).to receive(:update_changelog).with(repo_context, config[:changelog_location],
+        allow(Git).to receive(:changes_to_commit?).with(repo_context).and_return(true)
+        allow(Git).to receive(:create_branch).and_return(true)
+        allow(Git).to receive(:update_changelog).with(repo_context, config[:changelog_location],
                                                                 config[:changelog_marker]).and_return(true)
-        allow(GitOperations).to receive(:commit_and_push_changes).with(repo_context, config[:branch_name],
+        allow(Git).to receive(:commit_and_push_changes).with(repo_context, config[:branch_name],
                                                                        kind_of(String)).and_return(true)
-        allow(GitOperations).to receive(:create_empty_commit).with(repo_context, config[:branch_name],
+        allow(Git).to receive(:create_empty_commit).with(repo_context, config[:branch_name],
                                                                    kind_of(String)).and_return(true)
-        allow(GitOperations).to receive(:checkout_branch).and_return(true)
-        allow(GitOperations).to receive(:current_commit_sha).and_return('sha123')
+        allow(Git).to receive(:checkout_branch).and_return(true)
+        allow(Git).to receive(:current_commit_sha).and_return('sha123')
         allow(Dir).to receive(:exist?).with(repo_dir).and_return(true)
         allow(Dir).to receive(:chdir).with(repo_dir).and_yield
-        allow(GitOperations).to receive(:repo_exists?).and_return(true)
-        allow(GitOperations).to receive(:clone_or_update_repo).and_return(true)
-        allow(GitOperations).to receive(:setup_git_config).and_return(true)
-        allow(GitOperations).to receive(:add_and_commit_changes).and_return(true)
-        allow(GitOperations).to receive(:push_to_remote).and_return(true)
-        allow(GitOperations).to receive(:setup_remote).and_return(true)
-        allow(GitOperations).to receive(:get_authenticated_url).and_return("https://github.com/#{config[:owner]}/#{repo_name}.git")
+        allow(Git).to receive(:repo_exists?).and_return(true)
+        allow(Git).to receive(:clone_or_update_repo).and_return(true)
+        allow(Git).to receive(:setup_git_config).and_return(true)
+        allow(Git).to receive(:add_and_commit_changes).and_return(true)
+        allow(Git).to receive(:push_to_remote).and_return(true)
+        allow(Git).to receive(:setup_remote).and_return(true)
+        allow(Git).to receive(:get_authenticated_url).and_return("https://github.com/#{config[:owner]}/#{repo_name}.git")
 
         # Expectations
         expect(Dir).to receive(:exist?).with(repo_dir).and_return(true)
         expect(Dir).to receive(:chdir).with(repo_dir).and_yield
-        expect(GitOperations).to receive(:changes_to_commit?)
+        expect(Git).to receive(:changes_to_commit?)
           .with(logger).and_return(true)
         expect(manager).to receive(:create_branch).with(repo_name).and_call_original # Assuming create_branch is a private method we want to test indirectly or mock GitOps directly
-        expect(GitOperations).to receive(:create_branch)
+        expect(Git).to receive(:create_branch)
           .with(repo_name, config[:branch_name], github_token, config[:owner], logger)
           .and_return(true)
-        expect(GitOperations).not_to receive(:update_changelog) # Since manage_changelog is false
-        expect(GitOperations).to receive(:commit_and_push_changes)
+        expect(Git).not_to receive(:update_changelog) # Since manage_changelog is false
+        expect(Git).to receive(:commit_and_push_changes)
           .with(repo_name, config[:branch_name], expected_commit_message, github_token, config[:owner], logger)
           .and_return(true)
         expect(octokit_client).to receive(:create_pull_request)
