@@ -1,0 +1,27 @@
+---
+owner: sous-chefs
+topics:
+  - chef
+  - cookbook
+filter_repos:
+  - repo1
+  - repo2
+branch_name: cookstyle-fixes
+pr_title: "Automated PR: Cookstyle Changes"
+issue_labels:
+  - "Skip: Announcements"
+  - "Release: Patch"
+  - "Cookstyle"
+default_branch: main
+git_name: Test User
+git_email: test@example.com
+cache_dir: /tmp/cookstyle-runner
+use_cache: true
+cache_max_age: 7
+force_refresh: false
+manage_changelog: true
+changelog_location: CHANGELOG.md
+changelog_marker: "## Unreleased"
+retry_count: 3
+thread_count: 4
+create_manual_fix_issues: true
