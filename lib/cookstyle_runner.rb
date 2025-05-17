@@ -165,7 +165,7 @@ module CookstyleRunner
 
     def _setup_cache
       settings = Object.const_get('Settings')
-      cache_dir = settings.respond_to?(:cache_dir) ? settings.cache_dir : '/tmp/cookstyle-runner'
+      cache_dir = settings.cache_dir
       @cache = Cache.new(cache_dir, logger)
     end
 
@@ -193,15 +193,11 @@ module CookstyleRunner
     def _fetch_and_filter_repositories
       settings = Object.const_get('Settings')
 
-      # Get settings with fallbacks
-      owner = settings.respond_to?(:owner) ? settings.owner : 'sous-chefs'
-      topics = settings.respond_to?(:topics) ? settings.topics : []
-
       # Use the GitHubAPI module to fetch repositories
       repositories = GitHubAPI.fetch_repositories(
-        owner,
+        settings.owner,
         logger,
-        topics
+        settings.topics
       )
 
       if repositories.empty?
@@ -212,7 +208,7 @@ module CookstyleRunner
       initial_count = repositories.length
 
       # Apply repository filtering if specified using the RepositoryManager module
-      filter_repos = settings.respond_to?(:filter_repos) ? settings.filter_repos : []
+      filter_repos = settings.filter_repos
       if filter_repos && !filter_repos.empty?
         filtered_repos = CookstyleRunner::RepositoryManager.filter_repositories(repositories, filter_repos, logger)
         logger.info("Filtered from #{initial_count} to #{filtered_repos.length} repositories based on include/exclude lists.")

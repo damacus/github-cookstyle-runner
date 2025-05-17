@@ -40,11 +40,11 @@ module CookstyleRunner
       @github_client = T.let(github_client, T.untyped)
 
       # Set default values for settings that might be missing
-      @owner = T.let(settings.respond_to?(:owner) ? settings.owner : 'sous-chefs', String)
-      @branch_name = T.let(settings.respond_to?(:branch_name) ? settings.branch_name : 'cookstyle-fixes', String)
-      @pr_title = T.let(settings.respond_to?(:pr_title) ? settings.pr_title : 'Automated PR: Cookstyle Changes', String)
-      @issue_labels = T.let(settings.respond_to?(:issue_labels) ? settings.issue_labels : [], T::Array[String])
-      @create_manual_fix_issues = T.let(settings.respond_to?(:create_manual_fix_issues) ? settings.create_manual_fix_issues : true, T::Boolean)
+      @owner = T.let(settings.owner || 'sous-chefs', String)
+      @branch_name = T.let(settings.branch_name || 'cookstyle-fixes', String)
+      @pr_title = T.let(settings.pr_title || 'Automated PR: Cookstyle Changes', String)
+      @issue_labels = T.let(settings.issue_labels || [], T::Array[String])
+      @create_manual_fix_issues = T.let(settings.create_manual_fix_issues || true, T::Boolean)
     end
 
     sig { params(repository: String, branch: String, title: String, body: String).returns(T::Boolean) }

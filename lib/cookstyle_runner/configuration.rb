@@ -201,9 +201,9 @@ module CookstyleRunner
             yaml_hash[key.to_sym] = value
           end
           merged = self.class.deep_merge(merged, yaml_hash)
-          @logger.debug("Loaded configuration from #{path}") if @logger.respond_to?(:debug)
+          @logger.debug("Loaded configuration from #{path}")
         rescue StandardError => e
-          @logger.error("Error loading configuration from #{path}: #{e.message}") if @logger.respond_to?(:error)
+          @logger.error("Error loading configuration from #{path}: #{e.message}")
         end
       end
       merged

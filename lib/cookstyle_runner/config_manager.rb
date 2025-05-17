@@ -26,29 +26,29 @@ module CookstyleRunner
     def self.log_config_summary(logger)
       # Access settings via Object.const_get to avoid lint errors
       settings = Object.const_get('Settings')
-      
+
       # Get values with nil checks
-      cache_age_days = settings.cache_max_age rescue 7
-      topics = settings.respond_to?(:topics) && settings.topics ? settings.topics.join(', ') : 'None'
-      filter_repos = settings.respond_to?(:filter_repos) && settings.filter_repos && !settings.filter_repos.empty? ? settings.filter_repos.join(', ') : 'None'
-      issue_labels = settings.respond_to?(:issue_labels) && settings.issue_labels ? settings.issue_labels.join(', ') : 'None'
+      cache_age_days = settings.cache_max_age || 7
+      topics = settings.topics ? settings.topics.join(', ') : 'None'
+      filter_repos = settings.filter_repos && !settings.filter_repos.empty? ? settings.filter_repos.join(', ') : 'None'
+      issue_labels = settings.issue_labels ? settings.issue_labels.join(', ') : 'None'
 
       # Get the rest of the settings with default values as fallbacks
-      owner = settings.respond_to?(:owner) ? settings.owner : 'sous-chefs'
-      branch_name = settings.respond_to?(:branch_name) ? settings.branch_name : 'cookstyle-fixes'
-      pr_title = settings.respond_to?(:pr_title) ? settings.pr_title : 'Automated PR: Cookstyle Changes'
-      git_name = settings.respond_to?(:git_name) ? settings.git_name : 'GitHub Cookstyle Runner'
-      git_email = settings.respond_to?(:git_email) ? settings.git_email : 'cookstylerunner@noreply.com'
-      default_branch = settings.respond_to?(:default_branch) ? settings.default_branch : 'main'
-      cache_dir = settings.respond_to?(:cache_dir) ? settings.cache_dir : '/tmp/cookstyle-runner'
-      use_cache = settings.respond_to?(:use_cache) ? settings.use_cache : true
-      force_refresh = settings.respond_to?(:force_refresh) ? settings.force_refresh : false
-      retry_count = settings.respond_to?(:retry_count) ? settings.retry_count : 3
-      manage_changelog = settings.respond_to?(:manage_changelog) ? settings.manage_changelog : true
-      changelog_location = settings.respond_to?(:changelog_location) ? settings.changelog_location : 'CHANGELOG.md'
-      changelog_marker = settings.respond_to?(:changelog_marker) ? settings.changelog_marker : '## Unreleased'
-      create_manual_fix_issues = settings.respond_to?(:create_manual_fix_issues) ? settings.create_manual_fix_issues : true
-      
+      owner = settings.owner
+      branch_name = settings.branch_name || 'cookstyle-fixes'
+      pr_title = settings.pr_title || 'Automated PR: Cookstyle Changes'
+      git_name = settings.git_name || 'GitHub Cookstyle Runner'
+      git_email = settings.git_email || 'cookstylerunner@noreply.com'
+      default_branch = settings.default_branch || 'main'
+      cache_dir = settings.cache_dir || '/tmp/cookstyle-runner'
+      use_cache = settings.use_cache || true
+      force_refresh = settings.force_refresh || false
+      retry_count = settings.retry_count || 3
+      manage_changelog = settings.manage_changelog || true
+      changelog_location = settings.changelog_location || 'CHANGELOG.md'
+      changelog_marker = settings.changelog_marker || '## Unreleased'
+      create_manual_fix_issues = settings.create_manual_fix_issues || true
+
       log_message = <<~SUMMARY
         --- Configuration ---
         Destination Repo Owner: #{owner}
