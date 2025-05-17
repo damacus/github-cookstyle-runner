@@ -3,14 +3,15 @@
 
 require 'logger'
 require 'fileutils'
-require 'sorbet-runtime'
+require 'config'
+
+# Load configuration initializer if not already loaded
+require_relative '../../config/initializers/config' unless defined?(Settings)
 
 module CookstyleRunner
-  # Module for configuration and logging management
+  # Simplified config manager that works with Config gem
   module ConfigManager
-    extend T::Sig
     # Setup logger with appropriate configuration
-    sig { params(debug_mode: T::Boolean).returns(Logger) }
     def self.setup_logger(debug_mode: false)
       logger = Logger.new($stdout)
       logger.level = debug_mode ? Logger::DEBUG : Logger::INFO
@@ -20,120 +21,60 @@ module CookstyleRunner
       logger
     end
 
-    # Load configuration from environment variables
-    sig { params(logger: Logger).returns(Hash) }
-    def self.load_config(logger)
-      _initialize_config_from_env(logger)
-    end
-
-    # Initialize configuration from environment variables
-    sig { params(logger: Logger).returns(Hash) }
-    private_class_method def self._initialize_config_from_env(logger) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
-      # Required environment variables for GitHub App authentication
-      app_id = ENV.fetch('GITHUB_APP_ID', nil)
-      installation_id = ENV.fetch('GITHUB_APP_INSTALLATION_ID', nil)
-      private_key = ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil)
-      owner = ENV.fetch('GCR_DESTINATION_REPO_OWNER', nil)
-
-      # Validate required environment variables
-      github_token = ENV.fetch('GITHUB_TOKEN', nil)
-      if github_token.nil? || github_token.empty?
-        # Only require app-based variables if token is missing
-        if app_id.nil? || app_id.empty?
-          logger.error('GITHUB_APP_ID environment variable is required when GITHUB_TOKEN is not set')
-          exit 1
-        end
-        if installation_id.nil? || installation_id.empty?
-          logger.error('GITHUB_APP_INSTALLATION_ID environment variable is required when GITHUB_TOKEN is not set')
-          exit 1
-        end
-        if private_key.nil? || private_key.empty?
-          logger.error('GITHUB_APP_PRIVATE_KEY environment variable is required when GITHUB_TOKEN is not set')
-          exit 1
-        end
-      end
-
-      if owner.nil? || owner.empty?
-        logger.error('GCR_DESTINATION_REPO_OWNER environment variable is required')
-        exit 1
-      end
-
-      # Optional environment variables with defaults
-      config = {
-        owner: owner,
-        topics: ENV['GCR_DESTINATION_REPO_TOPICS']&.split(',')&.map(&:strip),
-        branch_name: ENV['GCR_BRANCH_NAME'] || 'cookstyle-fixes',
-        pr_title: ENV['GCR_PULL_REQUEST_TITLE'] || 'Automated PR: Cookstyle Changes',
-        pr_labels: ENV['GCR_PR_LABELS']&.split(',')&.map(&:strip) || ['Skip: Announcements', 'Release: Patch', 'Cookstyle'],
-        issue_labels: ENV['GCR_ISSUE_LABELS']&.split(',')&.map(&:strip) || ['Cookstyle'],
-        default_branch: ENV['GCR_DEFAULT_BRANCH'] || 'main',
-        cache_dir: ENV['GCR_CACHE_DIR'] || '/tmp/cookstyle-runner',
-        use_cache: ENV['GCR_USE_CACHE'] != '0',
-        cache_max_age: (ENV['GCR_CACHE_MAX_AGE'] || 7).to_i,
-        force_refresh: ENV['GCR_FORCE_REFRESH'] == '1',
-        filter_repos: parse_repo_filter_from_env('GCR_FILTER_REPOS'),
-        retry_count: (ENV['GCR_RETRY_COUNT'] || 3).to_i,
-        thread_count: (ENV['GCR_THREAD_COUNT'] || 4).to_i,
-        manage_changelog: ENV['GCR_MANAGE_CHANGELOG'] != '0',
-        changelog_location: ENV['GCR_CHANGELOG_LOCATION'] || 'CHANGELOG.md',
-        changelog_marker: ENV['GCR_CHANGELOG_MARKER'] || '## Unreleased',
-        create_manual_fix_issues: ENV['GCR_CREATE_MANUAL_FIX_ISSUES'] != '0',
-        git_name: ENV['GCR_GIT_NAME'] || 'GitHub Cookstyle Runner',
-        git_email: ENV['GCR_GIT_EMAIL'] || 'cookstyle-runner@example.com'
-      }
-
-      logger.info('Configuration loaded successfully')
-      config
-    end # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
-
-    # Parses the GCR_FILTER_REPOS environment variable into an array of repo names.
-    # Removes surrounding quotes and trims whitespace. Defaults to an empty array if not set.
-    sig { params(env_var: String).returns(T::Array[String]) }
-    private_class_method def self.parse_repo_filter_from_env(env_var)
-      repo_filter_env = ENV.fetch(env_var, nil)
-      return [] if repo_filter_env.nil? || repo_filter_env.empty?
-
-      repo_filter_env.split(',')
-                     .map(&:strip)
-                     .map { |r| r.gsub(/^"|"?$/, '') }
-    end
-
     # Log configuration summary
-    # @param config [Hash] Configuration hash
     # @param logger [Logger] Logger instance
-    # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
-    sig { params(config: Hash, logger: Logger).void }
-    def self.log_config_summary(config, logger)
-      cache_age_days = config[:cache_max_age]
+    def self.log_config_summary(logger)
+      # Access settings via Object.const_get to avoid lint errors
+      settings = Object.const_get('Settings')
+      
+      # Get values with nil checks
+      cache_age_days = settings.cache_max_age rescue 7
+      topics = settings.respond_to?(:topics) && settings.topics ? settings.topics.join(', ') : 'None'
+      filter_repos = settings.respond_to?(:filter_repos) && settings.filter_repos && !settings.filter_repos.empty? ? settings.filter_repos.join(', ') : 'None'
+      issue_labels = settings.respond_to?(:issue_labels) && settings.issue_labels ? settings.issue_labels.join(', ') : 'None'
 
+      # Get the rest of the settings with default values as fallbacks
+      owner = settings.respond_to?(:owner) ? settings.owner : 'sous-chefs'
+      branch_name = settings.respond_to?(:branch_name) ? settings.branch_name : 'cookstyle-fixes'
+      pr_title = settings.respond_to?(:pr_title) ? settings.pr_title : 'Automated PR: Cookstyle Changes'
+      git_name = settings.respond_to?(:git_name) ? settings.git_name : 'GitHub Cookstyle Runner'
+      git_email = settings.respond_to?(:git_email) ? settings.git_email : 'cookstylerunner@noreply.com'
+      default_branch = settings.respond_to?(:default_branch) ? settings.default_branch : 'main'
+      cache_dir = settings.respond_to?(:cache_dir) ? settings.cache_dir : '/tmp/cookstyle-runner'
+      use_cache = settings.respond_to?(:use_cache) ? settings.use_cache : true
+      force_refresh = settings.respond_to?(:force_refresh) ? settings.force_refresh : false
+      retry_count = settings.respond_to?(:retry_count) ? settings.retry_count : 3
+      manage_changelog = settings.respond_to?(:manage_changelog) ? settings.manage_changelog : true
+      changelog_location = settings.respond_to?(:changelog_location) ? settings.changelog_location : 'CHANGELOG.md'
+      changelog_marker = settings.respond_to?(:changelog_marker) ? settings.changelog_marker : '## Unreleased'
+      create_manual_fix_issues = settings.respond_to?(:create_manual_fix_issues) ? settings.create_manual_fix_issues : true
+      
       log_message = <<~SUMMARY
         --- Configuration ---
-        Destination Repo Owner: #{config[:owner]}
-        Destination Repo Topics: #{config[:topics]&.join(', ') || 'None'}
-        Branch Name: #{config[:branch_name]}
-        PR Title: #{config[:pr_title]}
-        PR Labels: #{config[:pr_labels]&.join(', ') || 'None'}
-        Git Author: #{config[:git_name]} <#{config[:git_email]}>
-        Default Branch: #{config[:default_branch]}
-        Cache Dir: #{config[:cache_dir]}
-        Cache Enabled: #{config[:use_cache] ? 'Yes' : 'No'}
+        Destination Repo Owner: #{owner}
+        Destination Repo Topics: #{topics}
+        Branch Name: #{branch_name}
+        PR Title: #{pr_title}
+        PR Labels: #{issue_labels}
+        Git Author: #{git_name} <#{git_email}>
+        Default Branch: #{default_branch}
+        Cache Dir: #{cache_dir}
+        Cache Enabled: #{use_cache ? 'Yes' : 'No'}
         Cache Max Age: #{cache_age_days} days
-        Force Refresh: #{config[:force_refresh] ? 'Yes' : 'No'}
-        Retry Count: #{config[:retry_count]}
-        Manage Changelog: #{config[:manage_changelog] ? 'Yes' : 'No'}
-        Changelog Location: #{config[:changelog_location]}
-        Changelog Marker: #{config[:changelog_marker]}
-        Filter Repos: #{config[:filter_repos] || 'None'}
-        Create Manual Fix Issues: #{config[:create_manual_fix_issues] ? 'Yes' : 'No'}
+        Force Refresh: #{force_refresh ? 'Yes' : 'No'}
+        Retry Count: #{retry_count}
+        Manage Changelog: #{manage_changelog ? 'Yes' : 'No'}
+        Changelog Location: #{changelog_location}
+        Changelog Marker: #{changelog_marker}
+        Filter Repos: #{filter_repos}
+        Create Manual Fix Issues: #{create_manual_fix_issues ? 'Yes' : 'No'}
         ---------------------
       SUMMARY
 
       logger.info(log_message.strip)
     end
-    # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity
 
     # Setup cache directory
-    sig { params(cache_dir: String, logger: Logger).returns(T::Boolean) }
     def self.setup_cache_directory(cache_dir, logger)
       FileUtils.mkdir_p(cache_dir)
       true

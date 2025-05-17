@@ -47,11 +47,11 @@ RSpec.describe CookstyleRunner::CacheStats do
     let(:stats) { described_class.new }
 
     it 'increments hits counter' do
-      expect { stats.record_hit(2.5) }.to change { stats.hits }.from(0).to(1)
+      expect { stats.record_hit(2.5) }.to change(stats, :hits).from(0).to(1)
     end
 
     it 'adds to time_saved' do
-      expect { stats.record_hit(2.5) }.to change { stats.time_saved }.from(0.0).to(2.5)
+      expect { stats.record_hit(2.5) }.to change(stats, :time_saved).from(0.0).to(2.5)
     end
 
     it 'returns the current time_saved value' do
@@ -64,7 +64,7 @@ RSpec.describe CookstyleRunner::CacheStats do
     let(:stats) { described_class.new }
 
     it 'increments misses counter' do
-      expect { stats.record_miss }.to change { stats.misses }.from(0).to(1)
+      expect { stats.record_miss }.to change(stats, :misses).from(0).to(1)
     end
 
     it 'returns the current misses count' do
@@ -77,7 +77,7 @@ RSpec.describe CookstyleRunner::CacheStats do
     let(:stats) { described_class.new }
 
     it 'increments updates counter' do
-      expect { stats.record_update }.to change { stats.updates }.from(0).to(1)
+      expect { stats.record_update }.to change(stats, :updates).from(0).to(1)
     end
 
     it 'returns the current updates count' do

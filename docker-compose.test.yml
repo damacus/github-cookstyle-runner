@@ -1,0 +1,21 @@
+---
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - .:/usr/src/app
+      - bundle_cache:/usr/local/bundle
+    environment:
+      - BUNDLE_PATH=/usr/local/bundle
+      - BUNDLE_APP_CONFIG=/usr/local/bundle
+      # Ensure no local environment variables are used
+      # - GITHUB_TOKEN=
+      # - GITHUB_APP_ID=
+      # - GITHUB_APP_INSTALLATION_ID=
+      # - GITHUB_APP_PRIVATE_KEY=
+    entrypoint: bundle exec rspec
+
+volumes:
+  bundle_cache:

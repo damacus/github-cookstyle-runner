@@ -8,7 +8,6 @@ require 'octokit'
 require 'time'
 require 'fileutils'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe CookstyleRunner::Authentication do
   let(:app_id) { '12345' }
   let(:installation_id) { '67890' }
@@ -36,7 +35,7 @@ RSpec.describe CookstyleRunner::Authentication do
   before do
     # Clean up any ENV variables that might interfere with tests
     stub_const('ENV', {})
-    
+
     # Mock file reading for consistency in most tests
     allow(File).to receive(:exist?).and_call_original # Allow real check
     allow(File).to receive(:exist?).with(dummy_key_path).and_return(true)
@@ -54,7 +53,7 @@ RSpec.describe CookstyleRunner::Authentication do
     allow(fake_octokit_client).to receive(:create_app_installation_access_token)
       .with(installation_id.to_i)
       .and_return({ token: fake_installation_token, expires_at: Time.now + 3600 })
-      
+
     # Setup for PAT client tests
     allow(Octokit::Client).to receive(:new).with(access_token: github_token, auto_paginate: true).and_return(fake_client)
     allow(fake_client).to receive(:api_endpoint=)
@@ -71,10 +70,10 @@ RSpec.describe CookstyleRunner::Authentication do
 
     it 'returns App credentials when GITHUB_APP_ variables are set' do
       stub_const('ENV', {
-        'GITHUB_APP_ID' => app_id,
-        'GITHUB_APP_INSTALLATION_ID' => installation_id,
-        'GITHUB_APP_PRIVATE_KEY' => private_key_pem
-      })
+                   'GITHUB_APP_ID' => app_id,
+                   'GITHUB_APP_INSTALLATION_ID' => installation_id,
+                   'GITHUB_APP_PRIVATE_KEY' => private_key_pem
+                 })
       credentials = described_class.github_credentials
       expect(credentials).to be_a(CookstyleRunner::Authentication::Credentials)
       expect(credentials.auth_type).to eq(:app)
@@ -151,10 +150,10 @@ RSpec.describe CookstyleRunner::Authentication do
 
     it 'handles string installation IDs by converting to integer' do
       allow(described_class).to receive(:generate_jwt).with(app_id, dummy_key_path).and_return(fake_jwt)
-      
+
       token = described_class.get_installation_token(app_id: app_id, installation_id: installation_id,
-                                                   private_key: dummy_key_path)
-      
+                                                     private_key: dummy_key_path)
+
       # Should have converted string ID to integer
       expect(Octokit::Client.new(bearer_token: fake_jwt))
         .to have_received(:create_app_installation_access_token)
@@ -171,60 +170,61 @@ RSpec.describe CookstyleRunner::Authentication do
 
     it 'returns a PAT client when PAT credentials are available' do
       stub_const('ENV', { 'GITHUB_TOKEN' => github_token })
-      
+
       # Set up expectations for this specific test
       pat_client = instance_double(Octokit::Client)
       allow(Octokit::Client).to receive(:new).with(access_token: github_token, auto_paginate: true).and_return(pat_client)
       allow(pat_client).to receive(:api_endpoint=)
-      
+
       client = described_class.client
       expect(client).to eq(pat_client)
       expect(Octokit::Client).to have_received(:new).with(access_token: github_token, auto_paginate: true)
     end
-    
+
     it 'returns an app client when app credentials are available' do
       stub_const('ENV', {
-        'GITHUB_APP_ID' => app_id,
-        'GITHUB_APP_INSTALLATION_ID' => installation_id,
-        'GITHUB_APP_PRIVATE_KEY' => private_key_pem
-      })
-      
+                   'GITHUB_APP_ID' => app_id,
+                   'GITHUB_APP_INSTALLATION_ID' => installation_id,
+                   'GITHUB_APP_PRIVATE_KEY' => private_key_pem
+                 })
+
       # Mock the token retrieval
       allow(described_class).to receive(:get_installation_token).and_return(fake_installation_token)
-      
+
       # Mock the final client creation - specific to this test
       app_client = instance_double(Octokit::Client)
       allow(Octokit::Client).to receive(:new).with(access_token: fake_installation_token, auto_paginate: true).and_return(app_client)
       allow(app_client).to receive(:api_endpoint=)
-      
+
       client = described_class.client
       expect(client).to eq(app_client)
       expect(described_class).to have_received(:get_installation_token)
     end
-    
+
     it 'raises an error when no auth credentials are available' do
       stub_const('ENV', {})
       expect { described_class.client }.to raise_error(RuntimeError, /No GitHub authentication/)
     end
   end
+
   # Additional tests for Credentials class
   describe CookstyleRunner::Authentication::Credentials do
     describe '#initialize' do
       it 'creates credentials with the given attributes' do
-        credentials = CookstyleRunner::Authentication::Credentials.new(
+        credentials = described_class.new(
           auth_type: :pat,
           token: github_token,
           api_endpoint: 'https://custom.github.com'
         )
-        
+
         expect(credentials.auth_type).to eq(:pat)
         expect(credentials.token).to eq(github_token)
         expect(credentials.api_endpoint).to eq('https://custom.github.com')
       end
-      
+
       it 'sets default values for nil attributes' do
-        credentials = CookstyleRunner::Authentication::Credentials.new(auth_type: :none)
-        
+        credentials = described_class.new(auth_type: :none)
+
         expect(credentials.auth_type).to eq(:none)
         expect(credentials.token).to be_nil
         expect(credentials.app_id).to be_nil
@@ -233,18 +233,18 @@ RSpec.describe CookstyleRunner::Authentication do
         expect(credentials.api_endpoint).to eq('https://api.github.com')
       end
     end
-    
+
     describe '#valid?' do
       it 'returns true for valid PAT credentials' do
-        credentials = CookstyleRunner::Authentication::Credentials.new(
+        credentials = described_class.new(
           auth_type: :pat,
           token: github_token
         )
         expect(credentials.valid?).to be true
       end
-      
+
       it 'returns true for valid App credentials' do
-        credentials = CookstyleRunner::Authentication::Credentials.new(
+        credentials = described_class.new(
           auth_type: :app,
           app_id: app_id,
           installation_id: installation_id,
@@ -252,18 +252,18 @@ RSpec.describe CookstyleRunner::Authentication do
         )
         expect(credentials.valid?).to be true
       end
-      
+
       it 'returns false for incomplete App credentials' do
-        credentials = CookstyleRunner::Authentication::Credentials.new(
+        credentials = described_class.new(
           auth_type: :app,
           app_id: app_id
           # Missing installation_id and private_key
         )
         expect(credentials.valid?).to be false
       end
-      
+
       it 'returns false for credentials with auth_type :none' do
-        credentials = CookstyleRunner::Authentication::Credentials.new(auth_type: :none)
+        credentials = described_class.new(auth_type: :none)
         expect(credentials.valid?).to be false
       end
     end
@@ -273,7 +273,7 @@ RSpec.describe CookstyleRunner::Authentication do
     let(:owner) { 'sous-chefs' }
     let(:repo_name) { 'apt' }
     let(:logger) { Logger.new(StringIO.new) }
-    
+
     context 'with PAT authentication' do
       before do
         allow(described_class).to receive(:github_credentials).and_return(
@@ -293,15 +293,12 @@ RSpec.describe CookstyleRunner::Authentication do
 
     context 'with GitHub App authentication' do
       before do
-        allow(described_class).to receive(:github_credentials).and_return(
-          CookstyleRunner::Authentication::Credentials.new(
-            auth_type: :app,
-            app_id: app_id,
-            installation_id: installation_id,
-            private_key: private_key_pem
-          )
-        )
-        allow(described_class).to receive(:get_installation_token).and_return('fake_installation_token')
+        allow(described_class).to receive_messages(github_credentials: CookstyleRunner::Authentication::Credentials.new(
+          auth_type: :app,
+          app_id: app_id,
+          installation_id: installation_id,
+          private_key: private_key_pem
+        ), get_installation_token: 'fake_installation_token')
       end
 
       it 'returns a URL with installation token' do

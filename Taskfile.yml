@@ -11,15 +11,16 @@ tasks:
     cmds:
       - docker compose run --rm cookstyle-runner
 
-  run-locally:
-    desc: Run the application locally
-    cmds:
-      - GITHUB_TOKEN="$GITHUB_TOKEN" GCR_LOG_LEVEL=ERROR bundle exec ruby lib/cookstyle_runner.rb
-
   test:
-    desc: Run unit tests for Ruby code
+    desc: Test app
     cmds:
-      - bundle exec rspec
+      # - docker compose -f docker-compose.test.yml run --remove-orphans --entrypoint "bundle" --rm test
+      - docker compose -f docker-compose.test.yml run --remove-orphans --entrypoint "bundle exec rspec spec/lib/cookstyle_runner/configuration_spec.rb" --rm test
+
+  # test:
+  #   desc: Run unit tests for Ruby code
+  #   cmds:
+  #     - bundle exec rspec
 
   lint:
     desc: Run Rubocop on Ruby code

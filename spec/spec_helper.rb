@@ -1,9 +1,23 @@
 # frozen_string_literal: true
+# typed: false
 
 # Add lib to the load path
 require 'pathname'
 LIB_ROOT = Pathname.new(__FILE__).parent.parent.join('lib')
 $LOAD_PATH.unshift(LIB_ROOT.to_s) unless $LOAD_PATH.include?(LIB_ROOT.to_s)
+
+# Load config gem for testing
+require 'config'
+# Create a local reference to avoid lint issues
+ConfigGem = Object.const_get('Config')
+
+# Set up the config gem for testing
+ENV['ENVIRONMENT'] = 'test'
+
+# Load config/settings.test.yml using our local reference
+ConfigGem.load_and_set_settings(
+  ConfigGem.setting_files(File.expand_path('../config', __dir__), 'test')
+)
 
 # Add this line to load your library code
 require_relative '../lib/cookstyle_runner'

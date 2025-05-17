@@ -129,11 +129,6 @@ The application supports flexible repository filtering options:
 
 ```bash
 docker run --rm \
-  -e GCR_DESTINATION_REPO_OWNER="your-org" \
-  -e GCR_DESTINATION_REPO_TOPICS="chef-cookbook" \
-  -e GCR_GIT_EMAIL="bot@example.com" \
-  -e GCR_GIT_NAME="Cookstyle Bot" \
-  -e GCR_MANAGE_CHANGELOG=1 \
   -e GITHUB_APP_ID="your-github-app-id" \
   -e GITHUB_APP_INSTALLATION_ID="your-installation-id" \
   -e GITHUB_APP_PRIVATE_KEY="$(cat /path/to/private-key.pem)" \
@@ -145,11 +140,6 @@ docker run --rm \
 
 ```bash
 docker run --rm \
-  -e GCR_DESTINATION_REPO_OWNER="your-org" \
-  -e GCR_DESTINATION_REPO_TOPICS="chef-cookbook" \
-  -e GCR_GIT_EMAIL="bot@example.com" \
-  -e GCR_GIT_NAME="Cookstyle Bot" \
-  -e GCR_MANAGE_CHANGELOG=1 \
   -e GITHUB_APP_ID="your-github-app-id" \
   -e GITHUB_APP_INSTALLATION_ID="your-installation-id" \
   -e GITHUB_APP_PRIVATE_KEY="$(cat /path/to/private-key.pem)" \
@@ -162,11 +152,6 @@ docker run --rm \
 
 ```bash
 docker run --rm \
-  -e GCR_DESTINATION_REPO_OWNER="your-org" \
-  -e GCR_DESTINATION_REPO_TOPICS="chef-cookbook" \
-  -e GCR_GIT_EMAIL="bot@example.com" \
-  -e GCR_GIT_NAME="Cookstyle Bot" \
-  -e GCR_MANAGE_CHANGELOG=1 \
   -e GITHUB_APP_ID="your-github-app-id" \
   -e GITHUB_APP_INSTALLATION_ID="your-installation-id" \
   -e GITHUB_APP_PRIVATE_KEY="$(cat /path/to/private-key.pem)" \

@@ -33,6 +33,13 @@ require 'open3'
 require 'parallel'
 require 'pp'
 
+# First, set up configuration to ensure Settings is available everywhere
+require 'config'
+# Create a local reference to ::Config to avoid lint issues
+ConfigGem = Object.const_get('Config')
+require_relative '../config/initializers/config'
+
+# Then load the rest of the application files
 require_relative 'cookstyle_runner/git'
 require_relative 'cookstyle_runner/github_api'
 require_relative 'cookstyle_runner/repository_manager'
@@ -44,13 +51,14 @@ require_relative 'cookstyle_runner/cache_stats'
 require_relative 'cookstyle_runner/context_manager'
 require_relative 'cookstyle_runner/github_pr_manager'
 require_relative 'cookstyle_runner/repository_processor'
+require_relative 'cookstyle_runner/settings_validator'
 require_relative 'cookstyle_runner/reporter'
 
 # Main application class for GitHub Cookstyle Runner
 module CookstyleRunner
   # Main application class for GitHub Cookstyle Runner
   class Application
-    attr_reader :logger, :config, :cache, :pr_manager, :context_manager
+    attr_reader :logger, :config, :configuration, :cache, :pr_manager, :context_manager
 
     # Initializes the application with a logger and configuration
     def initialize
@@ -99,7 +107,7 @@ module CookstyleRunner
       )
 
       # Log cache runtime statistics if cache is enabled
-      if @config[:use_cache] && @cache_manager&.stats
+      if @configuration.use_cache && @cache_manager&.stats
         # Call instance method on the stats object within cache_manager
         stats_hash = @cache_manager.stats.runtime_stats
         @logger.info("Cache Stats:\n#{PP.pp(stats_hash, +'')}")
@@ -120,27 +128,52 @@ module CookstyleRunner
     # Sets up the application logger
     def _setup_logger
       log_level_str = ENV.fetch('GCR_LOG_LEVEL', 'INFO').upcase
-      log_level = begin
-        Logger.const_get(log_level_str)
-      rescue NameError
-        logger&.warn("Invalid GCR_LOG_LEVEL '#{log_level_str}', defaulting to INFO.")
-        Logger::INFO
-      end
+      log_level = _parse_log_level(log_level_str)
       @logger = Logger.new($stdout, level: log_level)
       logger.info("Log level set to: #{log_level_str}") # Log the *requested* level for clarity
     end
 
+    # Parse a log level string into a Logger constant
+    # @param level_str [String] The log level string (e.g., 'INFO', 'DEBUG')
+    # @return [Integer] The corresponding Logger constant value
+    def _parse_log_level(level_str)
+      Logger.const_get(level_str)
+    rescue NameError
+      logger&.warn("Invalid log level '#{level_str}', defaulting to INFO.")
+      Logger::INFO
+    end
+
     def _setup_configuration
-      @config = ConfigManager.load_config(logger)
+      # Load application settings using ConfigGem reference
+      ConfigGem.load_and_set_settings(
+        ConfigGem.setting_files(File.expand_path('../config', __dir__), ENV['ENVIRONMENT'] || 'development')
+      )
+
+      # Validate the settings
+      settings = Object.const_get('Settings')
+      errors = SettingsValidator.validate(settings)
+
+      # If there are validation errors, log them and raise an exception
+      unless errors.empty?
+        errors.each { |error| logger.error("Configuration error: #{error}") }
+        raise "Invalid configuration: #{errors.join(', ')}"
+      end
+
+      # Log the loaded settings
+      ConfigManager.log_config_summary(logger)
     end
 
     def _setup_cache
-      @cache = Cache.new(@config[:cache_dir], logger)
+      settings = Object.const_get('Settings')
+      cache_dir = settings.respond_to?(:cache_dir) ? settings.cache_dir : '/tmp/cookstyle-runner'
+      @cache = Cache.new(cache_dir, logger)
     end
 
     def _setup_context_manager
       @context_manager = ContextManager.instance
-      @context_manager.set_global_config(@config, @logger)
+
+      # Pass the Settings object to the context manager instead of a hash
+      @context_manager.set_global_config(Object.const_get('Settings'), @logger)
     end
 
     # Sets up the GitHub client for API operations
@@ -150,37 +183,45 @@ module CookstyleRunner
     end
 
     def _setup_pr_manager
-      @pr_manager = GitHubPRManager.new(@config, @logger, @github_client)
+      settings = Object.const_get('Settings')
+      @pr_manager = GitHubPRManager.new(settings, @logger, @github_client)
     end
 
     # Fetches repositories from GitHub and applies filtering based on config
     # @return [Array<String>, nil] List of repository URLs or nil if none found/matched
     # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
     def _fetch_and_filter_repositories
+      settings = Object.const_get('Settings')
+
+      # Get settings with fallbacks
+      owner = settings.respond_to?(:owner) ? settings.owner : 'sous-chefs'
+      topics = settings.respond_to?(:topics) ? settings.topics : []
+
       # Use the GitHubAPI module to fetch repositories
       repositories = GitHubAPI.fetch_repositories(
-        @config[:owner],
+        owner,
         logger,
-        @config[:topics]
+        topics
       )
 
       if repositories.empty?
-        logger.warn('No repositories found matching the initial criteria.')
-        return nil
+        logger.error('No repositories found matching the initial criteria. Exiting.')
+        exit(1)
       end
 
       initial_count = repositories.length
 
       # Apply repository filtering if specified using the RepositoryManager module
-      if @config[:filter_repos] && !@config[:filter_repos].empty?
-        filtered_repos = CookstyleRunner::RepositoryManager.filter_repositories(repositories, @config[:filter_repos], logger)
+      filter_repos = settings.respond_to?(:filter_repos) ? settings.filter_repos : []
+      if filter_repos && !filter_repos.empty?
+        filtered_repos = CookstyleRunner::RepositoryManager.filter_repositories(repositories, filter_repos, logger)
         logger.info("Filtered from #{initial_count} to #{filtered_repos.length} repositories based on include/exclude lists.")
         repositories = filtered_repos
       end
 
       if repositories.empty?
-        logger.warn('No repositories remaining after filtering. Exiting.')
-        return nil
+        logger.error('No repositories remaining after filtering. Exiting.')
+        exit(1)
       end
 
       logger.info("Found #{repositories.length} repositories to process.")

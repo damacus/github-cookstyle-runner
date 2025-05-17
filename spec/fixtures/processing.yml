@@ -1,0 +1,4 @@
+---
+retry_count: 3
+thread_count: 4
+create_manual_fix_issues: true

@@ -1,0 +1,25 @@
+# ---
+# owner: sous-chefs
+# topics:
+#   - chef
+#   - cookbook
+# filter_repos:
+# branch_name: automated/cookstyle
+# pr_title: "Automated PR: Cookstyle Changes"
+# issue_labels:
+#   - "Skip: Announcements"
+#   - "Release: Patch"
+#   - "Cookstyle"
+# default_branch: main
+# git_name: GitHub Cookstyle Runner
+# git_email: "cookstylerunner@noreply.com"
+# cache_dir: /tmp/cookstyle-runner
+# use_cache: true
+# cache_max_age: 7
+# force_refresh: false
+# manage_changelog: true
+# changelog_location: CHANGELOG.md
+# changelog_marker: "## Unreleased"
+# retry_count: 3
+# thread_count: 4
+# create_manual_fix_issues: true

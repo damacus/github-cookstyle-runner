@@ -56,24 +56,16 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       private_key: nil
     )
     allow(Git).to receive(:changes_to_commit?).with(repo_context).and_return(true)
-    allow(Git).to receive(:create_branch).and_return(true)
     allow(Git).to receive(:update_changelog).with(repo_context, config[:changelog_location],
-                                                            config[:changelog_marker]).and_return(true)
+                                                  config[:changelog_marker]).and_return(true)
     allow(Git).to receive(:commit_and_push_changes).with(repo_context, config[:branch_name],
-                                                                   kind_of(String)).and_return(true)
+                                                         kind_of(String)).and_return(true)
     allow(Git).to receive(:create_empty_commit).with(repo_context, config[:branch_name],
-                                                               kind_of(String)).and_return(true)
-    allow(Git).to receive(:checkout_branch).and_return(true)
-    allow(Git).to receive(:current_commit_sha).and_return('sha123')
+                                                     kind_of(String)).and_return(true)
     allow(Dir).to receive(:exist?).with(repo_dir).and_return(true)
     allow(Dir).to receive(:chdir).with(repo_dir).and_yield
-    allow(Git).to receive(:repo_exists?).and_return(true)
-    allow(Git).to receive(:clone_or_update_repo).and_return(true)
-    allow(Git).to receive(:setup_git_config).and_return(true)
-    allow(Git).to receive(:add_and_commit_changes).and_return(true)
-    allow(Git).to receive(:push_to_remote).and_return(true)
-    allow(Git).to receive(:setup_remote).and_return(true)
-    allow(Git).to receive(:get_authenticated_url).and_return("https://github.com/#{config[:owner]}/#{repo_name}.git")
+    allow(Git).to receive_messages(create_branch: true, checkout_branch: true, current_commit_sha: 'sha123', repo_exists?: true,
+                                   clone_or_update_repo: true, setup_git_config: true, add_and_commit_changes: true, push_to_remote: true, setup_remote: true, get_authenticated_url: "https://github.com/#{config[:owner]}/#{repo_name}.git")
 
     # Stub the Octokit client's PR creation
     allow(octokit_client).to receive(:create_pull_request).and_return(mock_pr_details)
@@ -100,24 +92,16 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
           private_key: nil
         )
         allow(Git).to receive(:changes_to_commit?).with(repo_context).and_return(true)
-        allow(Git).to receive(:create_branch).and_return(true)
         allow(Git).to receive(:update_changelog).with(repo_context, config[:changelog_location],
-                                                                config[:changelog_marker]).and_return(true)
+                                                      config[:changelog_marker]).and_return(true)
         allow(Git).to receive(:commit_and_push_changes).with(repo_context, config[:branch_name],
-                                                                       kind_of(String)).and_return(true)
+                                                             kind_of(String)).and_return(true)
         allow(Git).to receive(:create_empty_commit).with(repo_context, config[:branch_name],
-                                                                   kind_of(String)).and_return(true)
-        allow(Git).to receive(:checkout_branch).and_return(true)
-        allow(Git).to receive(:current_commit_sha).and_return('sha123')
+                                                         kind_of(String)).and_return(true)
         allow(Dir).to receive(:exist?).with(repo_dir).and_return(true)
         allow(Dir).to receive(:chdir).with(repo_dir).and_yield
-        allow(Git).to receive(:repo_exists?).and_return(true)
-        allow(Git).to receive(:clone_or_update_repo).and_return(true)
-        allow(Git).to receive(:setup_git_config).and_return(true)
-        allow(Git).to receive(:add_and_commit_changes).and_return(true)
-        allow(Git).to receive(:push_to_remote).and_return(true)
-        allow(Git).to receive(:setup_remote).and_return(true)
-        allow(Git).to receive(:get_authenticated_url).and_return("https://github.com/#{config[:owner]}/#{repo_name}.git")
+        allow(Git).to receive_messages(create_branch: true, checkout_branch: true, current_commit_sha: 'sha123', repo_exists?: true,
+                                       clone_or_update_repo: true, setup_git_config: true, add_and_commit_changes: true, push_to_remote: true, setup_remote: true, get_authenticated_url: "https://github.com/#{config[:owner]}/#{repo_name}.git")
 
         # Expectations
         expect(Dir).to receive(:exist?).with(repo_dir).and_return(true)

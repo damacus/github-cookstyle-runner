@@ -3,7 +3,9 @@
 source 'https://rubygems.org'
 
 gem 'base64'
+gem 'config'
 gem 'cookstyle'
+gem 'dry-schema'
 gem 'faraday', '~> 2.0'
 gem 'faraday-retry', '~> 2.0' # Specify v2 for Faraday v2 compatibility
 gem 'git' # Required for local Git operations

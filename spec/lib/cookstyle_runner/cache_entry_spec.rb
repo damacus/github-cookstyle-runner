@@ -10,7 +10,9 @@ RSpec.describe CookstyleRunner::CacheEntry do
   let(:result) { '{"example": "result"}' }
   let(:processing_time) { 2.5 }
   let(:timestamp) { '2023-01-01T12:00:00Z' }
-  let(:entry) { described_class.new(commit_sha: commit_sha, had_issues: had_issues, result: result, processing_time: processing_time, timestamp: timestamp) }
+  let(:entry) do
+    described_class.new(commit_sha: commit_sha, had_issues: had_issues, result: result, processing_time: processing_time, timestamp: timestamp)
+  end
 
   describe '#initialize' do
     it 'sets attributes correctly with all parameters' do
@@ -25,9 +27,9 @@ RSpec.describe CookstyleRunner::CacheEntry do
       current_time = Time.parse('2023-02-01T12:00:00Z')
       Timecop.freeze(current_time) do
         new_entry = described_class.new(
-          commit_sha: commit_sha, 
-          had_issues: had_issues, 
-          result: result, 
+          commit_sha: commit_sha,
+          had_issues: had_issues,
+          result: result,
           processing_time: processing_time
         )
         expect(new_entry.timestamp).to eq(current_time.utc.iso8601)
@@ -36,9 +38,9 @@ RSpec.describe CookstyleRunner::CacheEntry do
 
     it 'handles nil result correctly' do
       new_entry = described_class.new(
-        commit_sha: commit_sha, 
-        had_issues: had_issues, 
-        result: nil, 
+        commit_sha: commit_sha,
+        had_issues: had_issues,
+        result: nil,
         processing_time: processing_time,
         timestamp: timestamp
       )
@@ -84,7 +86,7 @@ RSpec.describe CookstyleRunner::CacheEntry do
         Timecop.freeze(future_time) do
           expect(entry.expired?(0)).to be false
         end
-        
+
         future_time = entry_time + one_week_in_seconds + 1
         Timecop.freeze(future_time) do
           expect(entry.expired?(0)).to be true
@@ -96,7 +98,7 @@ RSpec.describe CookstyleRunner::CacheEntry do
         Timecop.freeze(future_time) do
           expect(entry.expired?(-10)).to be false
         end
-        
+
         future_time = entry_time + one_week_in_seconds + 1
         Timecop.freeze(future_time) do
           expect(entry.expired?(-10)).to be true

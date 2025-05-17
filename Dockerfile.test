@@ -4,31 +4,33 @@ FROM ruby:3.2-slim
 LABEL maintainer="Damacus <me@damacus.io>"
 LABEL description="Test environment for github-cookstyle-runner"
 
-# Install base dependencies + curl for downloading shellspec
+# Install base dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
-    jq \
     build-essential \
     ca-certificates \
     bash \
  && rm -rf /var/lib/apt/lists/*
 
-# Copy Gemfile and install cookstyle
-COPY Gemfile* /usr/src/app/
+# Set up working directory
 WORKDIR /usr/src/app
+
+# Copy Gemfile and install dependencies
+COPY Gemfile* ./
 RUN bundle install --jobs $(nproc) --retry 3
 
-# Install ShellSpec
-RUN echo "==> Installing ShellSpec..." && \
-    curl -fsSL https://git.io/shellspec | sh -s -- --yes --prefix /usr/local && \
-    echo "==> ShellSpec installation complete." && \
-    # Verify installation
-    shellspec --version
+# Copy the application code
+COPY . .
 
-# Copy the application script and test files
-COPY app /app
-COPY test /test
+# Create a directory for test fixtures
+RUN mkdir -p /usr/src/app/spec/fixtures
 
-# Ensure entrypoint is executable
-RUN chmod +x /app/entrypoint.sh
+# Ensure no local configuration is used
+ENV GITHUB_TOKEN=""
+ENV GITHUB_APP_ID=""
+ENV GITHUB_APP_INSTALLATION_ID=""
+ENV GITHUB_APP_PRIVATE_KEY=""
+
+# Default command to run tests
+CMD ["bundle", "exec", "rspec"]

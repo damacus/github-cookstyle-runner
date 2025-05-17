@@ -17,7 +17,7 @@ Metrics/ClassLength:
 # Ignore tests for now
 AllCops:
   NewCops: enable
-  Exclude:
-    - 'spec/**/*'
-    - 'test/**/*'
-    - 'tests/**/*'
+  # Exclude:
+  #   - 'spec/**/*'
+  #   - 'test/**/*'
+  #   - 'tests/**/*'
