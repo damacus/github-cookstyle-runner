@@ -268,7 +268,21 @@ module CookstyleRunner
       @github_api_endpoint = ENV['GITHUB_API_ENDPOINT'] if ENV['GITHUB_API_ENDPOINT']
 
       # Cache configuration from environment
-      @cache_max_age = [1, ENV['CACHE_MAX_AGE'].to_i].max if ENV['CACHE_MAX_AGE']
+      if ENV.key?('GCR_CACHE_MAX_AGE')
+        env_cache_max_age_str = ENV['GCR_CACHE_MAX_AGE']
+        if env_cache_max_age_str && !env_cache_max_age_str.empty?
+          env_cache_max_age_int = env_cache_max_age_str.to_i
+          if env_cache_max_age_int.positive?
+            @cache_max_age = env_cache_max_age_int
+          else
+            @logger.warn("Invalid GCR_CACHE_MAX_AGE value '#{env_cache_max_age_str}'. Using default of #{@cache_max_age} days.")
+          end
+        else
+          # This handles cases where GCR_CACHE_MAX_AGE is set but empty, or if it's nil (though ENV.key? checks for presence)
+          # If ENV.key? is true, env_cache_max_age_str won't be nil, so this mostly covers the empty string case.
+          @logger.warn("GCR_CACHE_MAX_AGE is present but effectively empty or invalid. Using default of #{@cache_max_age} days.") unless env_cache_max_age_str.nil? # Log only if it was actually an empty string
+        end
+      end
 
       # Processing configuration from environment
       @create_manual_fix_issues = ENV['CREATE_MANUAL_FIX_ISSUES'] == 'true' if ENV.key?('CREATE_MANUAL_FIX_ISSUES')
