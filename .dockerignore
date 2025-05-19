@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Local Bundler cache
+vendor/bundle/
+
+# Temporary files
+tmp/
+*.tmp
+*.swp
+*~
+
+# Logs (if written to local files)
+log/
+*.log
+
+# Test and coverage reports
+coverage/
+spec/reports/
+
+# Sorbet cache and some generated files (custom RBIs in sig/ are usually committed)
+sorbet/
+# Be cautious with ignoring all *.rbi if you manually write some in sig/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDE-specific
+.idea/
+.vscode/
+
+# Secrets / Local Config
+config/settings.local.yml
+*.pem
+*.key
+.env
