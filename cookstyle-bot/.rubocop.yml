@@ -36,6 +36,17 @@ Metrics/CyclomaticComplexity:
 Metrics/PerceivedComplexity:
   Max: 10
 
+# Test-specific configurations
+RSpec/MultipleMemoizedHelpers:
+  Max: 7
+
+RSpec/MultipleExpectations:
+  Exclude:
+    - 'spec/lib/cookstyle_bot/runner_spec.rb'
+
+RSpec/ExampleLength:
+  Max: 6
+
 Sorbet/ValidSigil:
   Enabled: true
   RequireSigilOnAllFiles: true  # Enforce # typed: <level> on all .rb files

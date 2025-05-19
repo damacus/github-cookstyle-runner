@@ -6,6 +6,7 @@ require 'sorbet-runtime'
 require_relative 'cookstyle_bot/configuration'
 require_relative 'cookstyle_bot/logging'
 require_relative 'cookstyle_bot/version'
+require_relative 'cookstyle_bot/runner'
 
 module CookstyleBot
   extend T::Sig
