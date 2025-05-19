@@ -31,6 +31,9 @@ RSpec.describe 'Settings' do
 
     it 'loads default settings from settings.yml' do
       expect(settings.github.api_root).to eq('api.github.com')
+    end
+
+    it 'loads default logging level' do
       expect(settings.logging.level).to eq('INFO')
     end
   end
@@ -40,8 +43,11 @@ RSpec.describe 'Settings' do
       reload_settings_with_env('test')
     end
 
-    it 'overrides defaults' do
+    it 'overrides logging level' do
       expect(settings.logging.level).to eq('test!')
+    end
+
+    it 'overrides destination_repo_owner' do
       expect(settings.github.destination_repo_owner).to eq('env-test-owner')
     end
   end
@@ -53,6 +59,10 @@ RSpec.describe 'Settings' do
 
     it 'loads settings from test.yml (e.g., logging level)' do
       expect(settings.logging.level).to eq('test!')
+    end
+
+    it 'loads settings from test.yml (e.g., destination_repo_owner)' do
+      expect(settings.github.destination_repo_owner).to eq('env-test-owner')
     end
   end
 end

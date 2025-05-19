@@ -18,14 +18,21 @@ RSpec.describe CookstyleBot do
       allow(test_logger).to receive(:info).and_call_original
       allow(test_logger).to receive(:debug).and_call_original
       allow(CookstyleBot::Logging).to receive(:logger).and_return(test_logger)
+
+      # Run the method under test (BEFORE we check expectations)
+      described_class.run
     end
 
-    it 'logs starting and finishing messages' do
-      # Verify the real logger is used correctly
-      expect(test_logger).to receive(:info).with(/CookstyleBot version .* starting.../).ordered
-      expect(test_logger).to receive(:debug).with(/Settings:/).ordered
-      expect(test_logger).to receive(:info).with('CookstyleBot finished.').ordered
-      described_class.run
+    it 'logs version' do
+      expect(test_logger).to have_received(:info).with(/CookstyleBot version .* starting.../)
+    end
+
+    it 'logs settings' do
+      expect(test_logger).to have_received(:debug).with(/Settings:/)
+    end
+
+    it 'logs finishing message' do
+      expect(test_logger).to have_received(:info).with('CookstyleBot finished.')
     end
   end
 end
