@@ -18,8 +18,6 @@ RSpec.describe CookstyleBot do
       allow(test_logger).to receive(:info).and_call_original
       allow(test_logger).to receive(:debug).and_call_original
       allow(CookstyleBot::Logging).to receive(:logger).and_return(test_logger)
-
-      # Run the method under test (BEFORE we check expectations)
       described_class.run
     end
 
