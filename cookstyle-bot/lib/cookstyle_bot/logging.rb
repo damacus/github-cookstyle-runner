@@ -22,20 +22,27 @@ module CookstyleBot
       level_str = T.let(settings&.level&.upcase || 'INFO', String)
       output_setting = T.let(settings&.output, T.nilable(String))
 
-      log_output_io = case output_setting&.downcase
-                      when 'stderr' then $stderr
-                      when nil, 'stdout' then $stdout
+      # Determine output destination
+      log_output_io = if output_setting&.downcase == 'stderr'
+                        $stderr
                       else
-                        # File path logic to be fully implemented later
-                        $stdout # Default to stdout for now if path
+                        # Default to stdout for nil, 'stdout', or file paths (to be implemented later)
+                        $stdout
                       end
 
       new_logger = ::Logger.new(log_output_io)
-      new_logger.level = begin
-        ::Logger.const_get(level_str)
-      rescue StandardError
-        ::Logger::INFO
-      end
+
+      # Map log level strings to Logger constants
+      log_levels = {
+        'DEBUG' => ::Logger::DEBUG,
+        'INFO' => ::Logger::INFO,
+        'WARN' => ::Logger::WARN,
+        'ERROR' => ::Logger::ERROR,
+        'FATAL' => ::Logger::FATAL,
+        'UNKNOWN' => ::Logger::UNKNOWN
+      }
+
+      new_logger.level = log_levels.fetch(level_str, ::Logger::INFO)
       new_logger.formatter = proc do |severity, datetime, progname, msg|
         "[#{datetime.strftime('%Y-%m-%d %H:%M:%S.%L')}] #{severity.ljust(5)} -- #{progname || 'CookstyleBot'}: #{msg}\n"
       end

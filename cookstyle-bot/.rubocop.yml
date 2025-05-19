@@ -24,6 +24,18 @@ Style/Documentation:
 Layout/LineLength:
   Max: 120
 
+Metrics/MethodLength:
+  Max: 25
+
+Metrics/AbcSize:
+  Max: 25
+
+Metrics/CyclomaticComplexity:
+  Max: 10
+
+Metrics/PerceivedComplexity:
+  Max: 10
+
 Sorbet/ValidSigil:
   Enabled: true
   RequireSigilOnAllFiles: true  # Enforce # typed: <level> on all .rb files
