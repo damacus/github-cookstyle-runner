@@ -1,0 +1,30 @@
+---
+plugins:
+  - rubocop-performance
+  - rubocop-rake
+  - rubocop-rspec
+  - rubocop-sorbet
+
+AllCops:
+  NewCops: enable
+  Exclude:
+    - 'vendor/**/*'
+    - 'tmp/**/*'
+    - 'node_modules/**/*'
+    - 'bin/bundle'
+    - 'sorbet/rbi/sorbet-typed/'
+    - 'sorbet/rbi/hidden-definitions/'
+    - 'sorbet/rbi/gems/'
+  # TargetRubyVersion should ideally match .ruby-version
+  TargetRubyVersion: 3.4
+
+Style/Documentation:
+  Enabled: false
+
+Layout/LineLength:
+  Max: 120
+
+Sorbet/ValidSigil:
+  Enabled: true
+  RequireSigilOnAllFiles: true  # Enforce # typed: <level> on all .rb files
+  SuggestedStrictness: strict  # Suggests # typed: strict for new files

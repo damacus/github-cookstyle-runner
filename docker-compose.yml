@@ -1,0 +1,19 @@
+---
+services:
+  cookstyle-bot:
+    build:
+      context: cookstyle-bot
+      dockerfile: Dockerfile
+    image: cookstyle-bot:dev
+    container_name: cookstyle-bot-app
+
+    env_file:
+      - .env  # Loads GITHUB_TOKEN and other GCR_ vars from .env
+
+    # Default environment for compose, can be overridden in .env
+    environment:
+      - APP_ENV=development
+      # GCR_ variables will be primarily sourced from .env
+      # You can provide fallbacks here if needed:
+      - GCR_LOGGING__LEVEL=${GCR_LOGGING__LEVEL:-INFO}
+      - GCR_GITHUB__API_ROOT=${GCR_GITHUB__

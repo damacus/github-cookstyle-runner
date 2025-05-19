@@ -1,0 +1,6 @@
+---
+logging:
+  level: 'test!'
+github:
+  destination_repo_owner: 'env-test-owner'
+  # api_root: 'http://localhost:1234' # If using a local mock server for tests
