@@ -44,7 +44,7 @@ RSpec.describe 'Settings' do
     end
 
     it 'overrides logging level' do
-      expect(settings.logging.level).to eq('test!')
+      expect(settings.logging.level).to eq('INFO')
     end
 
     it 'overrides destination_repo_owner' do
@@ -58,7 +58,7 @@ RSpec.describe 'Settings' do
     end
 
     it 'loads settings from test.yml (e.g., logging level)' do
-      expect(settings.logging.level).to eq('test!')
+      expect(settings.logging.level).to eq('INFO')
     end
 
     it 'loads settings from test.yml (e.g., destination_repo_owner)' do

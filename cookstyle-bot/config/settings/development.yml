@@ -1,3 +1,3 @@
 ---
 logging:
-  level: 'development'
+  level: 'DEBUG'
