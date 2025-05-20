@@ -4,27 +4,30 @@ name: Ruby CI
 'on':
   pull_request:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  yamllint:
+  check-yaml:
     runs-on: ubuntu-latest
+    name: runner / yamllint
     steps:
       - name: Check out code
         uses: actions/checkout@v4
       - name: Run yaml Lint
         uses: actionshub/yamllint@main
 
-  mdl:
+  check-markdown:
     runs-on: ubuntu-latest
+    name: runner / markdownlint
     steps:
       - name: Check out code
         uses: actions/checkout@v4
       - name: Run Markdown Lint
-        uses: actionshub/markdownlint@main
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "**/*.md"
 
-  lint:
+  rubocop:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -51,7 +54,6 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.4'
           bundler-cache: true
 
       - name: Install dependencies
@@ -67,7 +69,7 @@ jobs:
           path: coverage/
 
   build-and-publish:
-    needs: [lint, test, mdl, yamllint]
+    needs: [check-yaml, check-markdown, rubocop, test]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/config'
     steps:
