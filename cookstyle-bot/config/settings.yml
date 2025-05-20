@@ -22,7 +22,7 @@ git:
 
 changelog:
   location: 'CHANGELOG.md'
-  marker: '<!-- Automated Cookstyle Entry -->'
+  marker: '## Unreleased'
   manage: false  # Boolean (true/false)
 
 cookstyle:
