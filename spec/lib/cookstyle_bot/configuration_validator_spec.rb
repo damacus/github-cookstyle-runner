@@ -71,6 +71,7 @@ RSpec.describe CookstyleBot::ConfigurationValidator do
           # Missing required github section
         }
       )
+      validator.valid?
       expect(validator.errors).to include('Missing or invalid section: github')
     end
   end
@@ -85,6 +86,7 @@ RSpec.describe CookstyleBot::ConfigurationValidator do
           }
         }
       )
+      validator.valid?
       expect(validator.errors).to include(/logging\.level must be a string/)
     end
 
@@ -97,6 +99,7 @@ RSpec.describe CookstyleBot::ConfigurationValidator do
           }
         }
       )
+      validator.valid?
       expect(validator.errors).to include(/logging\.level must be one of: DEBUG, INFO, WARN, ERROR, FATAL/)
     end
     # rubocop:enable RSpec/ExampleLength
@@ -121,6 +124,7 @@ RSpec.describe CookstyleBot::ConfigurationValidator do
       allow(Settings).to receive_message_chain(:changelog, :location).and_return('')
       # rubocop:enable RSpec/MessageChain
 
+      validator.valid?
       expect(validator.errors).to include(/When changelog\.manage is true/)
     end
   end
