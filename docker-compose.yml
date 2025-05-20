@@ -2,6 +2,7 @@
 services:
   cookstyle-bot:
     build:
+      context: .
       dockerfile: Dockerfile
     image: cookstyle-bot:dev
     container_name: cookstyle-bot-app
