@@ -1,0 +1,38 @@
+# Git
+.git
+.github
+.gitignore
+
+# Development files
+.rubocop.yml
+.rspec
+.rspec_status
+.ruby-version
+.sorbet
+
+# Tests and specs
+spec/
+test/
+coverage/
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+*.md
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+.tmp/
+log/
+*.log
+
+# OS specific files
+.DS_Store
+Thumbs.db
