@@ -47,7 +47,13 @@ module CookstyleBot
   def self.run
     logger.info("CookstyleBot version #{VERSION} starting...")
     logger.debug("Settings: #{sanitize_settings.inspect}")
-    runner = Runner.new
+
+    # Pass required parameters to Runner.new
+    # Using current directory as default repo path
+    repo_path = Dir.pwd
+    options = { auto_correct: true }
+
+    runner = Runner.new(repo_path, options)
     runner.run
     logger.info('CookstyleBot finished.')
   end
