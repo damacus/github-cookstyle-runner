@@ -2,7 +2,6 @@
 services:
   cookstyle-bot:
     build:
-      context: cookstyle-bot
       dockerfile: Dockerfile
     image: cookstyle-bot:dev
     container_name: cookstyle-bot-app
@@ -16,4 +15,3 @@ services:
       # GCR_ variables will be primarily sourced from .env
       # You can provide fallbacks here if needed:
       - GCR_LOGGING__LEVEL=${GCR_LOGGING__LEVEL:-INFO}
-      - GCR_GITHUB__API_ROOT=${GCR_GITHUB__

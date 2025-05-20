@@ -6,7 +6,6 @@ name: Ruby CI
   push:
     branches:
       - main
-      - config
 
 jobs:
   yamllint:

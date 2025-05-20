@@ -1,5 +1,5 @@
 ARG RUBY_VERSION=3.4.1
-FROM ruby:${RUBY_VERSION}-slim-bullseye as builder
+FROM ruby:${RUBY_VERSION}-slim-bullseye AS builder
 
 LABEL maintainer="damacus"
 LABEL description="CookstyleBot Ruby application"
@@ -18,34 +18,39 @@ RUN apt-get update -qq \
 
 WORKDIR ${APP_HOME}
 
-RUN gem install bundler --version '~> 2.4' --no-document
+RUN gem install bundler --no-document
 
 COPY Gemfile Gemfile.lock ./
-RUN bundle config set deployment 'true' \
-	&& bundle config set without 'development test' \
-	&& bundle install --jobs ${BUNDLE_JOBS} --retry 3
+
+# Configure bundler without using deployment mode (which sets frozen)
+RUN bundle config set --local without 'development:test' \
+	&& bundle install --jobs 4 --retry 3
 
 COPY . .
 
-FROM ruby:${RUBY_VERSION}-slim-bullseye as final
+FROM ruby:${RUBY_VERSION}-slim-bullseye AS final
 
 LABEL maintainer="damacus"
 LABEL description="CookstyleBot Ruby application"
 
 ENV LANG C.UTF-8
 ENV APP_HOME /usr/src/app
-ENV APP_ENV production # Set default environment for the final image
+ENV APP_ENV production
 
 RUN apt-get update -qq \
 	&& apt-get install -y --no-install-recommends \
 		git \
-	&& rm -rf /var/lib/apt/lists/*
+	&& rm -rf /var/lib/apt/lists/* \
+	&& groupadd -r cookstyle \
+	&& useradd -r -g cookstyle -d ${APP_HOME} -s /bin/bash -c "Cookstyle user" cookstyle
 
 WORKDIR ${APP_HOME}
 
-COPY --from=builder /bundle /bundle
-COPY --from=builder ${APP_HOME} ${APP_HOME}
+COPY --chown=cookstyle:cookstyle --from=builder /bundle /bundle
+COPY --chown=cookstyle:cookstyle --from=builder ${APP_HOME} ${APP_HOME}
 
 RUN chmod +x ./bin/run_cookstyle_bot
+
+USER cookstyle
 
 ENTRYPOINT ["./bin/run_cookstyle_bot"]
