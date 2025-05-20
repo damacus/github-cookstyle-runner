@@ -1,0 +1,6 @@
+{
+  "releaseType": "ruby",
+  "changelogPath": "CHANGELOG.md",
+  "includeComponentInTag": false,
+  "versionFile": "lib/cookstyle_bot/version.rb"
+}
