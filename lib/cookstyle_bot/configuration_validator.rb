@@ -9,6 +9,8 @@ module CookstyleBot
   class ConfigurationError < StandardError; end
 
   # ConfigurationValidator validates the application configuration
+  # rubocop:disable Metrics/ClassLength
+  # TODO: Refactor this class
   class ConfigurationValidator
     extend T::Sig
 
@@ -58,9 +60,7 @@ module CookstyleBot
     end
 
     sig { returns(T::Array[String]) }
-    def errors
-      @errors
-    end
+    attr_reader :errors
 
     sig { void }
     def validate!
@@ -101,7 +101,12 @@ module CookstyleBot
       end
     end
 
-    sig { params(config: T::Hash[T.untyped, T.untyped], key: T.untyped, definition: T::Hash[T.untyped, T.untyped], path: String).void }
+    # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+    # TODO: Refactor this method
+    sig do
+      params(config: T::Hash[T.untyped, T.untyped], key: T.untyped, definition: T::Hash[T.untyped, T.untyped],
+             path: String).void
+    end
     def validate_field(config, key, definition, path)
       # Check if required field is present
       if definition[:required] && (!config.key?(key) || config[key].nil?)
@@ -119,27 +124,27 @@ module CookstyleBot
       when :integer
         @errors << "#{path} must be an integer" unless config[key].is_a?(Integer)
       when :boolean
-        unless [true, false].include?(config[key])
-          @errors << "#{path} must be a boolean"
-        end
+        @errors << "#{path} must be a boolean" unless [true, false].include?(config[key])
       when :array
         @errors << "#{path} must be an array" unless config[key].is_a?(Array)
       end
 
       # Validate allowed values if specified
-      if definition[:allowed_values] && !definition[:allowed_values].include?(config[key])
-        @errors << "#{path} must be one of: #{definition[:allowed_values].join(', ')}"
-      end
+      return unless definition[:allowed_values] && !definition[:allowed_values].include?(config[key])
+
+      @errors << "#{path} must be one of: #{definition[:allowed_values].join(', ')}"
     end
+    # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
     sig { void }
     def validate_combinations
       # Example: validate that if changelog.manage is true, changelog.location and changelog.marker are set
       if Settings.changelog.manage && (Settings.changelog.location.empty? || Settings.changelog.marker.empty?)
-        @errors << "When changelog.manage is true, changelog.location and changelog.marker must be set"
+        @errors << 'When changelog.manage is true, changelog.location and changelog.marker must be set'
       end
 
       # Add more combination validations as needed
     end
   end
+  # rubocop:enable Metrics/ClassLength
 end

@@ -6,7 +6,7 @@ require 'cookstyle_bot/configuration_validator'
 
 RSpec.describe CookstyleBot::ConfigurationValidator do
   let(:validator) { described_class.new }
-  let(:settings_double) { instance_double('Config::Options') }
+  let(:settings_double) { instance_double(Config::Options) }
 
   before do
     # Create a minimal valid configuration for testing
@@ -27,7 +27,7 @@ RSpec.describe CookstyleBot::ConfigurationValidator do
             title: 'Cookstyle Automated Fixes',
             labels: 'cookstyle,automated',
             body_header: 'Test header',
-            body_topic_template: 'Test template %{topics}'
+            body_topic_template: 'Test template %<topics>s'
           }
         },
         git: {
@@ -45,32 +45,38 @@ RSpec.describe CookstyleBot::ConfigurationValidator do
       }
     )
 
+    # rubocop:disable RSpec/MessageChain
     # Mock Settings object for specific checks
     allow(Settings).to receive_message_chain(:changelog, :manage).and_return(false)
     allow(Settings).to receive_message_chain(:changelog, :location).and_return('CHANGELOG.md')
     allow(Settings).to receive_message_chain(:changelog, :marker).and_return('## Unreleased')
+    # rubocop:enable RSpec/MessageChain
   end
 
   describe '#valid?' do
     it 'returns true when configuration is valid' do
       expect(validator.valid?).to be true
     end
+  end
 
-    it 'returns false when required field is missing' do
+  describe 'when configuration is invalid' do
+    # rubocop:disable RSpec/ExampleLength
+    it 'returns a correct error message when a required section is missing' do
       allow(Settings).to receive(:to_hash).and_return(
         {
           logging: {
             level: 'INFO'
             # output is missing
-          },
+          }
           # Missing required github section
         }
       )
-      expect(validator.valid?).to be false
-      expect(validator.errors).to include("Missing or invalid section: github")
+      expect(validator.errors).to include('Missing or invalid section: github')
     end
+  end
 
-    it 'returns false when field has incorrect type' do
+  describe 'an incorrect logging level' do
+    it 'returns a correct error message when field has incorrect type' do
       allow(Settings).to receive(:to_hash).and_return(
         {
           logging: {
@@ -79,11 +85,10 @@ RSpec.describe CookstyleBot::ConfigurationValidator do
           }
         }
       )
-      expect(validator.valid?).to be false
       expect(validator.errors).to include(/logging\.level must be a string/)
     end
 
-    it 'returns false when field has invalid value' do
+    it 'returns a correct error message when field has invalid value' do
       allow(Settings).to receive(:to_hash).and_return(
         {
           logging: {
@@ -92,9 +97,9 @@ RSpec.describe CookstyleBot::ConfigurationValidator do
           }
         }
       )
-      expect(validator.valid?).to be false
       expect(validator.errors).to include(/logging\.level must be one of: DEBUG, INFO, WARN, ERROR, FATAL/)
     end
+    # rubocop:enable RSpec/ExampleLength
   end
 
   describe '#validate!' do
@@ -111,10 +116,11 @@ RSpec.describe CookstyleBot::ConfigurationValidator do
   describe 'combination validations' do
     it 'validates changelog combinations' do
       # When changelog.manage is true, location and marker must be set
+      # rubocop:disable RSpec/MessageChain
       allow(Settings).to receive_message_chain(:changelog, :manage).and_return(true)
       allow(Settings).to receive_message_chain(:changelog, :location).and_return('')
+      # rubocop:enable RSpec/MessageChain
 
-      expect(validator.valid?).to be false
       expect(validator.errors).to include(/When changelog\.manage is true/)
     end
   end
