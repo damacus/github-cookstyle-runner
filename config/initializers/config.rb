@@ -4,6 +4,7 @@
 begin
   require 'config'
   require 'dry-schema'
+  require 'logger'
   # Create a local reference to the Config constant to avoid lint issues
   # Use Object.const_get to help Sorbet understand this constant resolution
   ConfigGem = Object.const_get('Config')
@@ -11,14 +12,51 @@ rescue LoadError => e
   raise "Required gem not available: #{e.message}. Please run bundle install."
 end
 
-# Map critical environment variables so they're accessible in our app
-# GitHub token-based auth
-ENV['GCR_GITHUB_TOKEN'] = ENV['GITHUB_TOKEN'] if ENV['GITHUB_TOKEN']
+# Initialize logger for configuration debugging
+# This can be replaced with a proper application logger later
+config_logger = Logger.new($stdout)
+config_logger.level = ENV['DEBUG'] ? Logger::DEBUG : Logger::INFO
 
-# GitHub App-based auth
-ENV['GCR_APP_ID'] = ENV['APP_ID'] if ENV['APP_ID']
-ENV['GCR_INSTALLATION_ID'] = ENV['INSTALLATION_ID'] if ENV['INSTALLATION_ID']
-ENV['GCR_GITHUB_APP_PRIVATE_KEY'] = ENV['GITHUB_APP_PRIVATE_KEY'] if ENV['GITHUB_APP_PRIVATE_KEY']
+# Helper method to map external environment variables to GCR-prefixed ones
+# This ensures consistent access pattern through Settings
+def map_github_token(logger = nil)
+  return unless ENV.fetch('GITHUB_TOKEN', nil)
+
+  ENV['GCR_GITHUB_TOKEN'] = ENV.fetch('GITHUB_TOKEN', nil)
+  logger&.debug('Mapped GITHUB_TOKEN to GCR_GITHUB_TOKEN')
+end
+
+def map_github_app_vars(logger = nil)
+  # Map GitHub App ID
+  if ENV.fetch('APP_ID', nil)
+    ENV['GCR_APP_ID'] = ENV.fetch('APP_ID', nil)
+    logger&.debug('Mapped APP_ID to GCR_APP_ID')
+  end
+
+  # Map Installation ID
+  if ENV.fetch('INSTALLATION_ID', nil)
+    ENV['GCR_INSTALLATION_ID'] = ENV.fetch('INSTALLATION_ID', nil)
+    logger&.debug('Mapped INSTALLATION_ID to GCR_INSTALLATION_ID')
+  end
+
+  # Map Private Key
+  return unless ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil)
+
+  ENV['GCR_GITHUB_APP_PRIVATE_KEY'] = ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil)
+  logger&.debug('Mapped GITHUB_APP_PRIVATE_KEY to GCR_GITHUB_APP_PRIVATE_KEY')
+end
+
+# Main function to map all environment variables
+# This is used by both the initializer and tests
+def map_environment_variables(logger = nil)
+  map_github_token(logger)
+  map_github_app_vars(logger)
+  logger&.debug('Mapped all environment variables')
+  true
+end
+
+# Apply environment variable mapping
+map_environment_variables(config_logger)
 
 # Configure the config gem
 ConfigGem.setup do |config|
@@ -26,14 +64,33 @@ ConfigGem.setup do |config|
   config.const_name = 'Settings'
 
   # Determine environment
-  environment = ENV['COOKSTYLE_ENV'] || 'development'
-  
-  # Load configuration files according to environment
-  config.load_and_set_settings(
+  environment = ENV.fetch('COOKSTYLE_ENV', 'development')
+  config_logger.info("Loading configuration for environment: #{environment}")
+
+  # Define configuration files to load with proper precedence
+  # 1. Default settings (always loaded)
+  # 2. Environment-specific settings (development, test, production)
+  # 3. Local settings override (optional, for development)
+  settings_files = [
     File.join(File.dirname(__FILE__), '..', 'settings', 'default.yml'),
-    File.join(File.dirname(__FILE__), '..', 'settings', "#{environment}.yml"),
-    File.join(File.dirname(__FILE__), '..', 'settings', 'local.yml')
-  )
+    File.join(File.dirname(__FILE__), '..', 'settings', "#{environment}.yml")
+  ]
+
+  # Only include local.yml if it exists (optional developer overrides)
+  local_config = File.join(File.dirname(__FILE__), '..', 'settings', 'local.yml')
+  settings_files << local_config if File.exist?(local_config)
+
+  # Log which files are being loaded
+  settings_files.each do |file|
+    if File.exist?(file)
+      config_logger.debug("Loading configuration file: #{file}")
+    else
+      config_logger.warn("Configuration file not found: #{file}")
+    end
+  end
+
+  # Load the configuration files
+  config.load_and_set_settings(*settings_files)
 
   # Load environment variables from ENV
   config.use_env = true
@@ -56,3 +113,5 @@ end
 
 # Load the validator after config is initialized
 require_relative '../validators/settings_validator'
+
+config_logger.debug('Configuration initialization complete')
