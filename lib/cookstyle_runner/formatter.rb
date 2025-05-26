@@ -3,11 +3,9 @@
 
 require 'sorbet-runtime'
 
-# CookstyleRunner provides functionality for running Cookstyle, parsing its output,
-# and creating GitHub pull requests for issues that can be automatically fixed
 module CookstyleRunner
   # Module for formatting Cookstyle output
-  module Format
+  module Formatter
     extend T::Sig
 
     sig do

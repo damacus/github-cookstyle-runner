@@ -3,4 +3,6 @@
 /destination-repos
 *.tmp
 .env
-spec/fixtures/dummy_private_key.pem
+
+# Local configuration
+config/settings/local.yml

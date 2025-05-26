@@ -1,5 +1,6 @@
 ---
 owner: sous-chefs
+github_api_endpoint: https://api.github.com
 topics:
   - chef
   - cookbook

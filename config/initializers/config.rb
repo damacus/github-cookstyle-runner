@@ -11,18 +11,29 @@ rescue LoadError => e
   raise "Required gem not available: #{e.message}. Please run bundle install."
 end
 
-require_relative '../validators/settings_validator'
-
 # Map critical environment variables so they're accessible in our app
+# GitHub token-based auth
 ENV['GCR_GITHUB_TOKEN'] = ENV['GITHUB_TOKEN'] if ENV['GITHUB_TOKEN']
+
+# GitHub App-based auth
 ENV['GCR_APP_ID'] = ENV['APP_ID'] if ENV['APP_ID']
 ENV['GCR_INSTALLATION_ID'] = ENV['INSTALLATION_ID'] if ENV['INSTALLATION_ID']
+ENV['GCR_GITHUB_APP_PRIVATE_KEY'] = ENV['GITHUB_APP_PRIVATE_KEY'] if ENV['GITHUB_APP_PRIVATE_KEY']
 
 # Configure the config gem
-# Use Object.const_get to ensure the linter doesn't complain about unresolved constants
 ConfigGem.setup do |config|
   # Name of the constant exposing loaded settings
   config.const_name = 'Settings'
+
+  # Determine environment
+  environment = ENV['COOKSTYLE_ENV'] || 'development'
+  
+  # Load configuration files according to environment
+  config.load_and_set_settings(
+    File.join(File.dirname(__FILE__), '..', 'settings', 'default.yml'),
+    File.join(File.dirname(__FILE__), '..', 'settings', "#{environment}.yml"),
+    File.join(File.dirname(__FILE__), '..', 'settings', 'local.yml')
+  )
 
   # Load environment variables from ENV
   config.use_env = true
@@ -36,9 +47,12 @@ ConfigGem.setup do |config|
   # Convert environment variable values to the proper type
   config.env_converter = :downcase
 
-  # Parse environment variables values as JSON
+  # Parse environment variable values as JSON
   config.env_parse_values = true
 
-  # Fail if any required environment variables are missing
-  config.fail_on_missing = true
+  # Don't fail on missing env vars - we'll validate what we need later
+  config.fail_on_missing = false
 end
+
+# Load the validator after config is initialized
+require_relative '../validators/settings_validator'
