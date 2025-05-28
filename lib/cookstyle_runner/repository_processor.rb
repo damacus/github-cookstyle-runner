@@ -91,19 +91,20 @@ module CookstyleRunner
       # Set up the working directory for this repository
       repo_dir = prepare_repo_directory(repo_name)
 
-      # Clone or update the repository
+      # Clone or update the repository and check cache status
       begin
-        commit_sha = clone_or_update_repository(repo_url, repo_dir)
-        return result.merge('state' => 'error', 'error' => 'Failed to get commit SHA') if commit_sha.nil?
-      rescue StandardError => e
-        logger.error("Error cloning/updating repository #{repo_name}: #{e.message}")
-        return result.merge('state' => 'error', 'error' => "Git error: #{e.message}")
-      end
+        # Get the latest commit SHA from the repository
+        commit_sha = current_sha(repo_url, repo_dir)
+        return result.merge('state' => 'error', 'error' => 'Failed to get commit SHA') unless commit_sha
 
-      # Check if repository is up to date in cache
-      if cache_up_to_date?(repo_name, commit_sha)
-        logger.info("Skipping #{repo_name} - No changes detected since last run")
-        return result.merge('state' => 'skipped', 'message' => 'No changes detected since last run')
+        # Skip processing if repository is up to date in cache
+        if cache_up_to_date?(repo_name, commit_sha)
+          logger.info("Skipping #{repo_name} - No changes detected since last run")
+          return result.merge('state' => 'skipped', 'message' => 'No changes detected since last run')
+        end
+      rescue StandardError => e
+        logger.error("Error processing repository #{repo_name}: #{e.message}")
+        return result.merge('state' => 'error', 'error' => "Git error: #{e.message}")
       end
 
       # Run Cookstyle on the repository
@@ -152,7 +153,7 @@ module CookstyleRunner
     # @param repo_dir [String] Repository directory path
     # @return [String, nil] The current commit SHA or nil if failed
     sig { params(repo_url: String, repo_dir: String).returns(T.nilable(String)) }
-    def clone_or_update_repository(repo_url, repo_dir)
+    def current_sha(repo_url, repo_dir)
       # Create a minimal repo context for Git operations
       repo_name = repo_dir.split('/').last
       context = Git::RepoContext.new(
@@ -163,18 +164,8 @@ module CookstyleRunner
         repo_url: repo_url
       )
 
-      if Dir.exist?(File.join(repo_dir, '.git'))
-        # Update existing repository
-        logger.debug("Updating existing repository in #{repo_dir}")
-        Git.update_repo(context, 'main')
-      else
-        # Clone new repository
-        logger.debug("Cloning #{repo_url} to #{repo_dir}")
-        Git.clone_repo(context, repo_url, 'main')
-      end
-
-      # Get current commit SHA
-      Git.current_commit_sha(context)
+      CookstyleRunner::Git.clone_or_update_repo(context, { branch_name: 'main' })
+      CookstyleRunner::Git.current_commit_sha(context)
     end
 
     # Check if the repository is up to date in the cache
