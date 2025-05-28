@@ -5,6 +5,7 @@ require 'logger'
 require 'fileutils'
 require 'git'
 require_relative 'authentication'
+require_relative '../../config/initializers/config' unless defined?(Settings)
 require 'sorbet-runtime'
 
 module CookstyleRunner
@@ -18,83 +19,35 @@ module CookstyleRunner
     # Context object for git operations
     # Holds repository information and authentication details
     class RepoContext
-      extend T::Sig
+      attr_reader :repo_name, :owner, :logger, :repo_url, :repo_dir, :github_token, :app_id, :installation_id, :private_key
 
-      sig { returns(String) }
-      attr_reader :repo_name
-
-      sig { returns(String) }
-      attr_reader :owner
-
-      # Accept T.untyped for logger so tests can use RSpec spies/doubles
-      sig { returns(T.untyped) }
-      attr_reader :logger
-
-      sig { returns(String) }
-      attr_reader :repo_url
-
-      sig { returns(String) }
-      attr_reader :repo_dir
-
-      sig { returns(T.nilable(String)) }
-      attr_reader :github_token
-
-      sig { returns(T.nilable(String)) }
-      attr_reader :app_id
-
-      sig { returns(T.nilable(Integer)) }
-      attr_reader :installation_id
-
-      sig { returns(T.nilable(String)) }
-      attr_reader :private_key
-
-      # Initialize a repository context with either token or GitHub App authentication
-      # rubocop:disable Metrics/ParameterLists, Metrics/AbcSize
-      sig do
-        # Accept T.untyped for logger so tests can use RSpec spies/doubles
-        params(repo_name: String, owner: String, logger: T.untyped, base_dir: String, repo_dir: T.nilable(String), repo_url: T.nilable(String),
-               github_token: T.nilable(String), app_id: T.nilable(String), installation_id: T.nilable(Integer), private_key: T.nilable(String)).void
-      end
-      def initialize(repo_name:, owner:, logger:, base_dir: REPO_BASE_DIR, repo_dir: nil, repo_url: nil,
-                     github_token: nil, app_id: nil, installation_id: nil, private_key: nil)
-        # Declare all instance variables with T.let first
+      def initialize(repo_name:, owner:, logger:, base_dir: Dir.pwd, repo_dir: nil, repo_url: nil, github_token: nil, app_id: nil,
+                     installation_id: nil, private_key: nil)
+        repo_dir_val = repo_dir || File.join(base_dir, owner, repo_name)
+        repo_url_val = repo_url || "https://github.com/#{owner}/#{repo_name}.git"
         @repo_name = T.let(repo_name, String)
         @owner = T.let(owner, String)
         @logger = T.let(logger, T.untyped)
-        # Handle potentially nil repo_url and repo_dir before assignment
-        repo_url_val = T.let(repo_url || "https://github.com/#{owner}/#{repo_name}.git", String)
-        repo_dir_val = T.let(repo_dir || File.join(base_dir, owner, repo_name), String)
         @repo_url = T.let(repo_url_val, String)
         @repo_dir = T.let(repo_dir_val, String)
         @github_token = T.let(github_token, T.nilable(String))
         @app_id = T.let(app_id, T.nilable(String))
         @installation_id = T.let(installation_id, T.nilable(Integer))
         @private_key = T.let(private_key, T.nilable(String))
-
-        # Now use the typed instance variables
-        # Assignments are implicitly handled by T.let above
-
         FileUtils.mkdir_p(@repo_dir)
       end
-      # rubocop:enable Metrics/ParameterLists, Metrics/AbcSize
     end
 
     # Check if a git repository exists in the directory
-    sig { params(context: RepoContext).returns(T::Boolean) }
     def self.repo_exists?(context)
-      Dir.exist?(File.join(context.repo_dir)) &&
-        # check if folder is a git repository
-        begin
-          ::Git.open(context.repo_dir)
-          true
-        rescue StandardError
-          false
-        end
+      ::Git.open(context.repo_dir)
+      true
+    rescue StandardError
+      false
     end
 
     # Create a new branch for cookstyle fixes using GitHub API
     # Deletes the existing branch if there is one
-    sig { params(context: RepoContext, config: T::Hash[Symbol, T.untyped], logger: Logger).returns(T::Boolean) }
     def self.create_branch(context, config, logger)
       setup_git_config(user_name: config[:git_user_name], user_email: config[:git_user_email], logger: logger)
       repo = ::Git.open(context.repo_dir)
@@ -106,8 +59,7 @@ module CookstyleRunner
     end
 
     # Get the latest commit SHA for the repository
-    sig { params(repo_dir: String, logger: Logger).returns(T.nilable(String)) }
-    def self.get_latest_commit_sha(repo_dir, logger)
+    def self.latest_commit_sha(repo_dir, logger)
       repo = ::Git.open(repo_dir)
       repo.object('HEAD').sha
     rescue StandardError => e
@@ -117,13 +69,8 @@ module CookstyleRunner
 
     # Ensure the repository exists locally and is up-to-date
     # Returns the repo object, or nil if an error occurs (except for auth failures, which exit)
-    sig { params(context: RepoContext, config: T::Hash[Symbol, T.untyped]).returns(T.nilable(::Git::Base)) }
     def self.clone_or_update_repo(context, config)
-      if repo_exists?(context)
-        update_repo(context, config[:branch_name])
-      else
-        clone_repo(context, authenticated_url(context), config[:branch_name])
-      end
+      repo_exists?(context) ? update_repo(context, config[:branch_name]) : clone_repo(context, authenticated_url(context), config[:branch_name])
     rescue SystemExit
       # Reraise exit for authentication failures
       raise
@@ -134,7 +81,6 @@ module CookstyleRunner
 
     # Get authenticated URL for git operations based on auth method in context
     # Exits if authentication fails
-    sig { params(context: RepoContext).returns(String) }
     def self.authenticated_url(context)
       CookstyleRunner::Authentication.authenticated_url(context.owner, context.repo_name, context.logger)
     rescue StandardError => e
@@ -144,7 +90,6 @@ module CookstyleRunner
 
     # Update the repository to the specified branch
     # Returns the repo object, or nil if an error occurs
-    sig { params(context: RepoContext, branch: String).returns(T.nilable(::Git::Base)) }
     def self.update_repo(context, branch)
       context.logger.debug("Updating repository #{context.repo_name} on branch #{branch}")
       repo = ::Git.open(context.repo_dir)
@@ -161,7 +106,6 @@ module CookstyleRunner
 
     # Clone the repository and checkout the branch
     # Returns the repo object, or nil if an error occurs
-    sig { params(context: RepoContext, authed_url: String, branch: String).returns(T.nilable(::Git::Base)) }
     def self.clone_repo(context, authed_url, branch)
       context.logger.debug("Cloning repository #{context.repo_name} from #{authed_url} to #{context.repo_dir}")
       repo = ::Git.clone(authed_url, context.repo_dir)
@@ -178,29 +122,20 @@ module CookstyleRunner
     end
 
     # Checkout or create a branch from remote
-    sig { params(context: RepoContext, branch: String).returns(T::Boolean) }
     def self.checkout_branch(context, branch)
       repo = ::Git.open(context.repo_dir)
-      begin
-        repo.checkout(branch)
-        true
-      rescue ::Git::Error
-        context.logger.info("Branch #{branch} not found, creating new branch.")
-        begin
-          repo.branch(branch).checkout
-          true
-        rescue StandardError => e
-          context.logger.error("Git checkout failed for branch #{branch}: #{e.message}")
-          false
-        end
-      rescue StandardError => e
-        context.logger.error("Git checkout failed for branch #{branch}: #{e.message}")
-        false
-      end
+      repo.checkout(branch)
+      true
+    rescue ::Git::GitExecuteError
+      context.logger.info("Branch #{branch} not found, creating new branch.")
+      repo.branch(branch).checkout
+      true
+    rescue StandardError => e
+      context.logger.error("Git checkout failed for branch #{branch}: #{e.message}")
+      false
     end
 
     # Get the current commit SHA
-    sig { params(context: RepoContext).returns(T.nilable(String)) }
     def self.current_commit_sha(context)
       repo = ::Git.open(context.repo_dir)
       repo.object('HEAD').sha
@@ -210,7 +145,6 @@ module CookstyleRunner
     end
 
     # Check if there are changes to commit
-    sig { params(context: RepoContext).returns(T::Boolean) }
     def self.changes_to_commit?(context)
       repo = ::Git.open(context.repo_dir)
       changes = changes?(repo)
@@ -222,14 +156,14 @@ module CookstyleRunner
     end
 
     # Accept T.untyped for testability with RSpec doubles (Sorbet does not accept instance doubles as ::Git::Base)
-    sig { params(repo: T.untyped).returns(T::Boolean) }
     def self.changes?(repo)
       repo.status.changed.any? || repo.status.added.any? || repo.status.deleted.any?
     end
 
     # Add and commit local changes
-    sig { params(context: RepoContext, commit_message: String).returns(T::Boolean) }
     def self.add_and_commit_changes(context, commit_message)
+      return false unless changes_to_commit?(context)
+
       repo = ::Git.open(context.repo_dir)
       repo.add(all: true)
       repo.commit(commit_message)
@@ -241,7 +175,6 @@ module CookstyleRunner
     end
 
     # Push the current branch to the remote repository
-    sig { params(context: RepoContext, branch_name: String).returns(T::Boolean) }
     def self.push_branch(context, branch_name)
       repo = ::Git.open(context.repo_dir)
       # Commit should happen before this
@@ -253,7 +186,6 @@ module CookstyleRunner
     end
 
     # Configure remote repository URL
-    sig { params(repo: ::Git::Base, context: RepoContext).returns(T::Boolean) }
     def self.setup_remote(repo, context)
       remove_origin_remote_if_exists(repo, 'origin', context)
       repo.add_remote('origin', authenticated_url(context))
@@ -265,7 +197,6 @@ module CookstyleRunner
     end
 
     # Remove the 'origin' remote if it exists, with logging
-    sig { params(repo: ::Git::Base, remote_name: String, context: RepoContext).void }
     def self.remove_origin_remote_if_exists(repo, remote_name, context)
       existing_remote = repo.remotes.find { |r| r.name == remote_name }
       return unless existing_remote
@@ -275,7 +206,6 @@ module CookstyleRunner
     end
 
     # Push changes to the remote repository
-    sig { params(repo: ::Git::Base, context: RepoContext, branch_name: String).returns(T::Boolean) }
     def self.push_to_remote(repo, context, branch_name)
       repo.push('origin', branch_name, force: true)
       context.logger.info("Pushed changes to origin/#{branch_name} for #{context.repo_name}")
@@ -286,7 +216,6 @@ module CookstyleRunner
     end
 
     # Configure git user.name and user.email globally
-    sig { params(user_name: String, user_email: String, logger: Logger).returns(T::Boolean) }
     def self.setup_git_config(user_name:, user_email:, logger:)
       ::Git.global_config('user.name', user_name)
       ::Git.global_config('user.email', user_email)
@@ -298,7 +227,6 @@ module CookstyleRunner
     end
 
     # Helper method to delete, create, and checkout a branch
-    sig { params(repo: ::Git::Base, branch_name: String, logger: Logger).void }
     def self._manage_branch_lifecycle(repo, branch_name, logger)
       logger.debug("Managing lifecycle for branch '#{branch_name}'")
       repo.branch(branch_name).delete if repo.branches.map(&:name).include?(branch_name)
@@ -309,14 +237,23 @@ module CookstyleRunner
       logger.error("Failed to manage branch lifecycle for '#{branch_name}': #{e.message}")
       raise
     end
-    # Commit and push changes to the remote branch with robust error handling
-    # @param context [RepoContext] The repo context
-    # @param branch [String] The branch to push
-    # @param commit_message [String] The commit message
-    # @return [Boolean] true if successful, false otherwise
-    sig { params(context: RepoContext, branch: String, commit_message: String).returns(T::Boolean) }
-    def self.commit_and_push_changes(context, branch, commit_message)
-      repo = nil
+
+    def self.commit_and_push_changes(context, commit_message)
+      repo = ::Git.open(context.repo_dir)
+      branch_name = ::Settings.branch_name
+
+      repo.remote(branch_name).remove if repo.remotes.any? { |r| r.name == branch_name }
+      repo.add_remote(branch_name, authenticated_url(context))
+      commit_changes(context, commit_message)
+      repo.push(branch_name, branch_name, force: true)
+
+      true
+    rescue StandardError => e
+      context.logger.error("Failed to commit and push changes: #{e.message}")
+      false
+    end
+
+    def self.commit_changes(context, commit_message)
       begin
         repo = ::Git.open(context.repo_dir)
       rescue StandardError => e
@@ -329,30 +266,8 @@ module CookstyleRunner
         repo.commit(commit_message)
       rescue StandardError => e
         context.logger.error("Error committing changes in #{context.repo_dir}: #{e.message}")
-        return false
+        false
       end
-
-      remote = 'origin'
-      begin
-        # Remove remote if it exists
-        if repo.respond_to?(:remotes)
-          has_origin = false
-          repo.remotes.each do |r|
-            has_origin = true if r.name == remote
-          end
-          repo.remote(remote).remove if has_origin
-        end
-        # Add remote with authenticated URL
-        authed_url = "https://x-access-token:#{context.github_token}@github.com/#{context.repo_name}.git"
-        repo.add_remote(remote, authed_url)
-        repo.fetch(remote)
-        repo.push(remote, branch, force: true)
-      rescue StandardError => e
-        context.logger.error("Error pushing to #{remote}/#{branch} for #{context.repo_name}: #{e.message}")
-        return false
-      end
-      true
     end
-
   end
 end

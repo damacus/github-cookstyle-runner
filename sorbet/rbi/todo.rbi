@@ -4,13 +4,7 @@
 
 # typed: false
 
-module ActiveSupport::ArrayInquirer; end
-module ActiveSupport::Multibyte::Chars; end
-module ActiveSupport::StringInquirer; end
-module CookstyleRunner::Application::GitHubPRManager; end
-module CookstyleRunner::Application::RepositoryProcessor; end
-module CookstyleRunner::GitHubPRManager; end
+module CookstyleRunner::Git::Settings; end
 module CookstyleRunner::RepositoryManager; end
-module CookstyleRunner::RepositoryProcessor; end
+module Git::RepoContext; end
 module Rake::DSL; end
-module YARD::Logger; end
