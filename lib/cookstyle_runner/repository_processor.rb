@@ -40,21 +40,6 @@ module CookstyleRunner
     sig { returns(T.untyped) }
     attr_reader :pr_manager
 
-    # Initialize a new repository processor
-    # @param config [Hash] Configuration hash
-    # @param logger [Logger] Logger instance
-    # @param cache_manager [Cache, nil] Cache manager instance (optional)
-    # @param github_client [Object, nil] GitHub API client (optional)
-    # @param pr_manager [Object, nil] Pull request manager (optional)
-    sig do
-      params(
-        config: T::Hash[String, T.untyped],
-        logger: T.untyped,
-        cache_manager: T.nilable(Cache),
-        github_client: T.untyped,
-        pr_manager: T.untyped
-      ).void
-    end
     def initialize(config:, logger:, cache_manager: nil, github_client: nil, pr_manager: nil)
       @config = T.let(config, T::Hash[String, T.untyped])
       @logger = T.let(logger, T.untyped)
@@ -64,15 +49,6 @@ module CookstyleRunner
     end
 
     # Process a single repository
-    # @param repo_name [String] Repository name
-    # @param repo_url [String] Repository URL
-    # @return [Hash] Processing result hash
-    sig do
-      params(
-        repo_name: String,
-        repo_url: String
-      ).returns(T::Hash[String, T.untyped])
-    end
     def process_repository(repo_name, repo_url)
       start_time = Time.now
       logger.info("Processing repository: #{repo_name}")
@@ -139,9 +115,6 @@ module CookstyleRunner
     private
 
     # Prepare the repository directory
-    # @param repo_name [String] Repository name
-    # @return [String] Repository directory path
-    sig { params(repo_name: String).returns(String) }
     def prepare_repo_directory(repo_name)
       repo_dir = File.join(@config['workspace_dir'], repo_name)
       FileUtils.mkdir_p(repo_dir)
@@ -149,10 +122,6 @@ module CookstyleRunner
     end
 
     # Clone or update the repository
-    # @param repo_url [String] Repository URL
-    # @param repo_dir [String] Repository directory path
-    # @return [String, nil] The current commit SHA or nil if failed
-    sig { params(repo_url: String, repo_dir: String).returns(T.nilable(String)) }
     def current_sha(repo_url, repo_dir)
       # Create a minimal repo context for Git operations
       repo_name = repo_dir.split('/').last
@@ -169,10 +138,6 @@ module CookstyleRunner
     end
 
     # Check if the repository is up to date in the cache
-    # @param repo_name [String] Repository name
-    # @param commit_sha [String] Current commit SHA
-    # @return [Boolean] True if up to date in cache
-    sig { params(repo_name: String, commit_sha: String).returns(T::Boolean) }
     def cache_up_to_date?(repo_name, commit_sha)
       return false unless @cache_manager && @config['use_cache']
 
@@ -181,21 +146,12 @@ module CookstyleRunner
     end
 
     # Run Cookstyle checks on the repository
-    sig { params(repo_dir: String).returns(T::Hash[Symbol, T.untyped]) }
     def run_cookstyle_checks(repo_dir)
       logger.debug("Running Cookstyle on #{repo_dir}")
       CookstyleOperations.run_cookstyle(repo_dir, logger)
     end
 
     # Handle issues found in the repository by creating PR or issue
-    sig do
-      params(
-        result: T::Hash[String, T.untyped],
-        repo_dir: String,
-        repo_name: String,
-        commit_sha: String
-      ).returns(T::Hash[String, T.untyped])
-    end
     def handle_issues(result, repo_dir, repo_name, commit_sha)
       return result unless @pr_manager
 
@@ -216,15 +172,6 @@ module CookstyleRunner
     end
 
     # Handle auto-correctable issues by creating a pull request
-    sig do
-      params(
-        result: T::Hash[String, T.untyped],
-        repo_dir: String,
-        repo_full_name: String,
-        branch_name: String,
-        _base_commit: String
-      ).returns(T::Hash[String, T.untyped])
-    end
     def handle_auto_correctable_issues(result, repo_dir, repo_full_name, branch_name, _base_commit)
       return result unless @pr_manager
 
@@ -290,12 +237,6 @@ module CookstyleRunner
     end
 
     # Handle manual fixes by creating an issue
-    sig do
-      params(
-        result: T::Hash[String, T.untyped],
-        repo_full_name: String
-      ).returns(T::Hash[String, T.untyped])
-    end
     def handle_manual_fixes(result, repo_full_name)
       return result unless @pr_manager
 
@@ -322,65 +263,16 @@ module CookstyleRunner
     end
 
     # Format PR description based on offense details
-    sig { params(offense_details: T::Hash[String, T.untyped]).returns(String) }
     def format_pr_description(offense_details)
-      pr_body = "## Cookstyle Automated Changes\n\n"
-      pr_body += "This pull request applies automatic Cookstyle fixes to ensure code quality and consistency.\n\n"
-      pr_body += "### Changes Made\n\n"
-
-      offense_details['files']&.each do |file|
-        pr_body += "* **#{file['path']}**: "
-        pr_body += file['offenses'].map { |o| o['cop_name'] }.uniq.join(', ')
-        pr_body += "\n"
-      end
-
-      pr_body += "\n### Summary\n\n"
-      pr_body += "* Total offenses fixed: #{offense_details['summary']['offense_count']}\n"
-      pr_body += "* Files updated: #{offense_details['files']&.length || 0}\n\n"
-      pr_body += '*This PR was automatically generated by the [GitHub Cookstyle Runner](https://github.com/damacus/github-cookstyle-runner).*'
-
-      pr_body
+      CookstyleRunner::Formatter.format_pr_description(offense_details)
     end
 
     # Format issue description based on offense details
-    sig { params(offense_details: T::Hash[String, T.untyped]).returns(String) }
     def format_issue_description(offense_details)
-      issue_body = "## Cookstyle Manual Fixes Required\n\n"
-      issue_body += "The following Cookstyle offenses were found but require manual fixes:\n\n"
-
-      offense_details['files']&.each do |file|
-        next if file['offenses'].empty?
-
-        issue_body += "### #{file['path']}\n\n"
-
-        file['offenses'].each do |offense|
-          next if offense['correctable']
-
-          issue_body += "* **#{offense['cop_name']}** at line #{offense['location']['line']}: "
-          issue_body += "#{offense['message']}\n"
-        end
-
-        issue_body += "\n"
-      end
-
-      issue_body += "### Summary\n\n"
-      issue_body += "* Total offenses requiring manual fixes: #{offense_details['summary']['offense_count']}\n"
-      issue_body += "* Files with issues: #{offense_details['files']&.length || 0}\n\n"
-      issue_body += '*This issue was automatically generated by the [GitHub Cookstyle Runner](https://github.com/damacus/github-cookstyle-runner).*'
-
-      issue_body
+      CookstyleRunner::Formatter.format_issue_description(offense_details)
     end
 
     # Update cache with processing results
-    sig do
-      params(
-        repo_name: String,
-        commit_sha: String,
-        had_issues: T::Boolean,
-        result: String,
-        processing_time: Float
-      ).void
-    end
     def update_cache(repo_name, commit_sha, had_issues, result, processing_time)
       return unless @cache_manager && @config['use_cache']
 
