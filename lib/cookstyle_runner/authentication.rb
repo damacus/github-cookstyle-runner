@@ -7,7 +7,13 @@ require 'octokit'
 require 'sorbet-runtime'
 
 module CookstyleRunner
-  # Helper module for GitHub App authentication
+  # =============================================================================
+  # GitHub Cookstyle Runner - Authentication
+  # =============================================================================
+  #
+  # This module handles GitHub authentication using either Personal Access Tokens
+  # or GitHub App authentication.
+  #
   module Authentication
     extend T::Sig
 
@@ -18,100 +24,147 @@ module CookstyleRunner
     class Credentials
       extend T::Sig
 
-      # Authentication types supported by the system
       AUTH_TYPES = T.let(%i[none pat app].freeze, T::Array[Symbol])
+      DEFAULT_API_ENDPOINT = 'https://api.github.com'
 
-      sig { returns(Symbol) }
-      attr_reader :auth_type
+      @auth_type = T.let(nil, T.nilable(Symbol))
+      @token = T.let(nil, T.nilable(String))
+      @app_id = T.let(nil, T.nilable(String))
+      @installation_id = T.let(nil, T.nilable(String))
+      @private_key = T.let(nil, T.nilable(String))
+      @api_endpoint = T.let(nil, T.nilable(String))
 
-      sig { returns(T.nilable(String)) }
-      attr_reader :token
+      attr_reader :auth_type, :token, :app_id, :installation_id, :private_key, :api_endpoint
 
-      sig { returns(T.nilable(String)) }
-      attr_reader :app_id
-
-      sig { returns(T.nilable(String)) }
-      attr_reader :installation_id
-
-      sig { returns(T.nilable(String)) }
-      attr_reader :private_key
-
-      sig { returns(String) }
-      attr_reader :api_endpoint
-
-      # Initializes a new Credentials object
-      # @param auth_type [Symbol] The type of authentication (:pat, :app, :none)
-      # @param token [String, nil] Personal access token for :pat auth
-      # @param app_id [String, nil] GitHub App ID for :app auth
-      # @param installation_id [String, nil] GitHub App installation ID for :app auth
-      # @param private_key [String, nil] GitHub App private key content or path for :app auth
-      # @param api_endpoint [String] The GitHub API endpoint URL
-      sig do
-        params(
-          auth_type: Symbol,
-          token: T.nilable(String),
-          app_id: T.nilable(String),
-          installation_id: T.nilable(String),
-          private_key: T.nilable(String),
-          api_endpoint: T.nilable(String)
-        ).void
-      end
-      def initialize(auth_type:, token: nil, app_id: nil, installation_id: nil, private_key: nil, api_endpoint: nil)
+      # Initialize a new credentials object from environment variables
+      # @param auth_type [Symbol] the authentication type (:pat, :app)
+      sig { params(auth_type: Symbol).void }
+      def initialize(auth_type)
         @auth_type = T.let(auth_type, Symbol)
-        @token = T.let(token, T.nilable(String))
-        @app_id = T.let(app_id, T.nilable(String))
-        @installation_id = T.let(installation_id, T.nilable(String))
-        @private_key = T.let(private_key, T.nilable(String))
-        @api_endpoint = T.let(api_endpoint || 'https://api.github.com', String)
+
+        # Initialize based on auth type
+        case auth_type
+        when :pat
+          initialize_pat_credentials
+        when :app
+          initialize_app_credentials
+        else
+          raise "Invalid authentication type: #{auth_type}"
+        end
+
+        # Set API endpoint (common for all auth types)
+        @api_endpoint = T.let(ENV.fetch('GITHUB_API_ENDPOINT', DEFAULT_API_ENDPOINT), String)
+      end
+
+      # Initialize PAT credentials from environment variables
+      # @return [void]
+      sig { void }
+      def initialize_pat_credentials
+        @token = T.let(ENV.fetch('GITHUB_TOKEN', nil), T.nilable(String))
+        @app_id = T.let(nil, T.nilable(String))
+        @installation_id = T.let(nil, T.nilable(String))
+        @private_key = T.let(nil, T.nilable(String))
+      end
+
+      # Initialize GitHub App credentials from environment variables
+      # @return [void]
+      sig { void }
+      def initialize_app_credentials
+        @token = T.let(nil, T.nilable(String))
+        @app_id = T.let(ENV.fetch('GITHUB_APP_ID', nil), T.nilable(String))
+        @installation_id = T.let(ENV.fetch('GITHUB_APP_INSTALLATION_ID', nil), T.nilable(String))
+        @private_key = T.let(ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil), T.nilable(String))
+      end
+
+      # Create a new credentials object for PAT authentication
+      # @return [Credentials] new credentials object
+      sig { returns(Credentials) }
+      def self.from_pat
+        new(:pat)
+      end
+
+      # Create a new credentials object for GitHub App authentication
+      # @return [Credentials] new credentials object
+      sig { returns(Credentials) }
+      def self.from_app
+        new(:app)
       end
 
       # Checks if the credentials are valid for authentication
       # @return [Boolean] true if credentials are valid for the authentication type
-      sig { returns(T::Boolean) }
       def valid?
         case auth_type
         when :pat
-          !token.nil? && !token.to_s.empty?
+          valid_token?
         when :app
-          !app_id.nil? && !installation_id.nil? && !private_key.nil? &&
-            !app_id.to_s.empty? && !installation_id.to_s.empty? && !private_key.to_s.empty?
+          valid_app_credentials?
         else
           false
         end
+      end
+
+      private
+
+      # Check if token is present and not empty
+      # @return [Boolean] true if token is valid
+      def valid_token?
+        !token.nil? && !token.to_s.empty?
+      end
+
+      # Check if all app credentials are present and not empty
+      # @return [Boolean] true if app credentials are valid
+      def valid_app_credentials?
+        all_present? && all_not_empty?
+      end
+
+      # Check if all required app credentials are present
+      # @return [Boolean] true if all credentials are present
+      def all_present?
+        !app_id.nil? && !installation_id.nil? && !private_key.nil?
+      end
+
+      # Check if all required app credentials are not empty
+      # @return [Boolean] true if all credentials are not empty
+      def all_not_empty?
+        !app_id.to_s.empty? && !installation_id.to_s.empty? && !private_key.to_s.empty?
       end
     end
 
     # Get the configured GitHub credentials from environment variables
     # @return [Credentials] credentials object with loaded config
+    # @raise [RuntimeError] if no valid credentials are available
     sig { returns(Credentials) }
     def self.github_credentials
-      if ENV.key?('GITHUB_TOKEN') && !ENV.fetch('GITHUB_TOKEN', '').strip.empty?
-        # PAT authentication
-        Credentials.new(
-          auth_type: :pat,
-          token: ENV.fetch('GITHUB_TOKEN', nil),
-          api_endpoint: ENV.fetch('GITHUB_API_ENDPOINT', nil)
-        )
-      elsif ENV.key?('GITHUB_APP_ID') && ENV.key?('GITHUB_APP_INSTALLATION_ID') && ENV.key?('GITHUB_APP_PRIVATE_KEY')
-        # GitHub App authentication
-        Credentials.new(
-          auth_type: :app,
-          app_id: ENV.fetch('GITHUB_APP_ID', nil),
-          installation_id: ENV.fetch('GITHUB_APP_INSTALLATION_ID', nil),
-          private_key: ENV.fetch('GITHUB_APP_PRIVATE_KEY', nil),
-          api_endpoint: ENV.fetch('GITHUB_API_ENDPOINT', nil)
-        )
+      if pat_available?
+        Credentials.from_pat
+      elsif app_auth_available?
+        Credentials.from_app
       else
-        # No valid authentication
-        Credentials.new(auth_type: :none, api_endpoint: ENV.fetch('GITHUB_API_ENDPOINT', nil))
+        # This will raise an error with a helpful message
+        raise 'No GitHub authentication available. Set GITHUB_TOKEN or GITHUB_APP_* environment variables to create pull requests.'
       end
+    end
+
+    # Check if PAT authentication is available
+    # @return [Boolean] true if PAT is available
+    sig { returns(T::Boolean) }
+    def self.pat_available?
+      ENV.key?('GITHUB_TOKEN') && !ENV.fetch('GITHUB_TOKEN', '').strip.empty?
+    end
+
+    # Check if GitHub App authentication is available
+    # @return [Boolean] true if GitHub App auth is available
+    sig { returns(T::Boolean) }
+    def self.app_auth_available?
+      ENV.key?('GITHUB_APP_ID') &&
+        ENV.key?('GITHUB_APP_INSTALLATION_ID') &&
+        ENV.key?('GITHUB_APP_PRIVATE_KEY')
     end
 
     # Returns a memoized Octokit client (PAT or App auth)
     # Use this for all GitHub API calls
     # @return [Octokit::Client] Octokit client instance
     # @raise [RuntimeError] if no valid authentication is available
-    sig { returns(T.any(Octokit::Client, T.untyped)) }
     def self.client
       @client ||= begin
         credentials = github_credentials
@@ -134,7 +187,6 @@ module CookstyleRunner
     # Build an Octokit client using a Personal Access Token
     # @param credentials [Credentials] credentials containing token info
     # @return [Octokit::Client] the configured client
-    sig { params(credentials: Credentials).returns(T.any(Octokit::Client, T.untyped)) }
     def self.build_pat_client(credentials)
       Octokit::Client.new(
         access_token: T.must(credentials.token),
@@ -145,7 +197,6 @@ module CookstyleRunner
     # Build an Octokit client using GitHub App authentication
     # @param credentials [Credentials] credentials containing app info
     # @return [Octokit::Client] the configured client
-    sig { params(credentials: Credentials).returns(T.any(Octokit::Client, T.untyped)) }
     def self.build_app_client(credentials)
       token = get_installation_token(
         app_id: T.must(credentials.app_id),
@@ -163,7 +214,6 @@ module CookstyleRunner
     # @param app_id [String] the GitHub App ID
     # @param private_key [String] path to private key or the key content
     # @return [String] the generated JWT
-    sig { params(app_id: String, private_key: String).returns(String) }
     def self.generate_jwt(app_id, private_key)
       payload = jwt_payload(app_id)
       key_content = read_private_key(private_key)
@@ -176,7 +226,6 @@ module CookstyleRunner
     # @param installation_id [String, Integer] the GitHub App installation ID
     # @param private_key [String] path to private key or the key content
     # @return [String] the installation token
-    sig { params(app_id: String, installation_id: T.any(String, Integer), private_key: String).returns(String) }
     def self.get_installation_token(app_id:, installation_id:, private_key:)
       # Convert installation_id to integer if it's not already
       converted_id = installation_id.is_a?(Integer) ? installation_id : installation_id.to_i
@@ -191,7 +240,6 @@ module CookstyleRunner
     # Builds the payload for the JWT
     # @param app_id [String] the GitHub App ID
     # @return [Hash] the JWT payload
-    sig { params(app_id: String).returns(T::Hash[Symbol, T.any(Integer, String)]) }
     def self.jwt_payload(app_id)
       now = Time.now.to_i
       {
@@ -204,7 +252,6 @@ module CookstyleRunner
     # Reads the private key content from a file path or uses the string directly
     # @param private_key [String] path to private key or the key content
     # @return [String] the private key content
-    sig { params(private_key: String).returns(String) }
     def self.read_private_key(private_key)
       File.exist?(private_key) ? File.read(private_key) : private_key
     end
@@ -214,24 +261,55 @@ module CookstyleRunner
     # @param repo_name [String] repository name
     # @param logger [Logger] logger instance
     # @return [String] authenticated URL for Git operations
-    sig { params(owner: String, repo_name: String, logger: T.nilable(Logger)).returns(String) }
     def self.authenticated_url(owner, repo_name, logger = nil)
       credentials = github_credentials
+      base_url = "https://github.com/#{owner}/#{repo_name}.git"
 
-      if credentials.auth_type == :pat && !credentials.token.nil?
-        logger&.debug("Using PAT authentication for #{repo_name}")
-        "https://#{credentials.token}:x-oauth-basic@github.com/#{owner}/#{repo_name}.git"
-      elsif credentials.auth_type == :app && credentials.valid?
-        token = get_installation_token(
-          app_id: T.must(credentials.app_id),
-          installation_id: T.must(credentials.installation_id),
-          private_key: T.must(credentials.private_key)
-        )
-        "https://x-access-token:#{token}@github.com/#{owner}/#{repo_name}.git"
-      else
-        logger&.error("No valid authentication found for #{repo_name}")
-        "https://github.com/#{owner}/#{repo_name}.git"
-      end
+      return build_pat_url(credentials, owner, repo_name, logger) if pat_auth?(credentials)
+      return build_app_url(credentials, owner, repo_name) if app_auth?(credentials)
+
+      # No valid authentication
+      logger&.error("No valid authentication found for #{repo_name}")
+      base_url
+    end
+
+    # Check if PAT authentication is valid
+    # @param credentials [Credentials] credentials to check
+    # @return [Boolean] true if PAT auth is valid
+    def self.pat_auth?(credentials)
+      credentials.auth_type == :pat && !credentials.token.nil?
+    end
+
+    # Check if GitHub App authentication is valid
+    # @param credentials [Credentials] credentials to check
+    # @return [Boolean] true if app auth is valid
+    def self.app_auth?(credentials)
+      credentials.auth_type == :app && credentials.valid?
+    end
+
+    # Build URL with PAT authentication
+    # @param credentials [Credentials] PAT credentials
+    # @param owner [String] repository owner
+    # @param repo_name [String] repository name
+    # @param logger [Logger] logger instance
+    # @return [String] authenticated URL
+    def self.build_pat_url(credentials, owner, repo_name, logger)
+      logger&.debug("Using PAT authentication for #{repo_name}")
+      "https://#{credentials.token}:x-oauth-basic@github.com/#{owner}/#{repo_name}.git"
+    end
+
+    # Build URL with GitHub App authentication
+    # @param credentials [Credentials] app credentials
+    # @param owner [String] repository owner
+    # @param repo_name [String] repository name
+    # @return [String] authenticated URL
+    def self.build_app_url(credentials, owner, repo_name)
+      token = get_installation_token(
+        app_id: T.must(credentials.app_id),
+        installation_id: T.must(credentials.installation_id),
+        private_key: T.must(credentials.private_key)
+      )
+      "https://x-access-token:#{token}@github.com/#{owner}/#{repo_name}.git"
     end
   end
 end
