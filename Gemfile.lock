@@ -37,7 +37,7 @@ GEM
     docile (1.4.1)
     drb (2.2.3)
     erubi (1.13.1)
-    fakefs (3.0.1)
+    fakefs (3.0.4)
     faraday (2.13.1)
       faraday-net_http (>= 2.0, < 3.5)
       json
