@@ -215,9 +215,9 @@ module CookstyleRunner
 
     # Validates that an argument is present and not a flag
     def validate_argument_present(index, flag_name, description)
-      return unless index + 1 >= @argv.length || @argv[index + 1].start_with?('-')
-
-      raise CLIArgumentError, "Error: #{flag_name} requires #{description}"
+      if index + 1 >= @argv.length || @argv[index + 1].start_with?('-')
+        raise CLIArgumentError, "Error: #{flag_name} requires #{description}"
+      end
     end
 
     # Validates that a value is a positive integer
