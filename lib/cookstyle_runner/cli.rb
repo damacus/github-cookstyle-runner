@@ -7,10 +7,16 @@ require_relative '../cookstyle_runner'
 require_relative 'version'
 
 module CookstyleRunner
+  # Custom exception for CLI argument errors
+  class CLIArgumentError < StandardError; end
+
   # Command Line Interface for Cookstyle Runner
   # Provides user-friendly commands for running Cookstyle operations
   # rubocop:disable Metrics/ClassLength
   class CLI
+    # Regex pattern for validating positive integers
+    POSITIVE_INTEGER_PATTERN = /^\d+$/
+
     attr_reader :pastel, :command, :options
 
     def initialize(argv = ARGV)
@@ -40,6 +46,9 @@ module CookstyleRunner
         puts "Run 'cookstyle-runner help' for usage information"
         1
       end
+    rescue CLIArgumentError => e
+      puts pastel.red(e.message)
+      1
     rescue StandardError => e
       handle_error(e)
       1
@@ -71,31 +80,19 @@ module CookstyleRunner
         when '--no-cache'
           opts[:no_cache] = true
         when '--threads', '-t'
-          if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
-            puts pastel.red('Error: --threads requires a numeric argument')
-            exit(1)
-          end
+          validate_argument_present(i, '--threads', 'a numeric argument')
           thread_val = @argv[i + 1]
-          unless thread_val =~ /^\d+$/
-            puts pastel.red('Error: --threads value must be a positive integer')
-            exit(1)
-          end
+          validate_positive_integer(thread_val, '--threads')
           opts[:threads] = thread_val.to_i
           i += 1
         when '--format'
-          if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
-            puts pastel.red('Error: --format requires an argument')
-            exit(1)
-          end
+          validate_argument_present(i, '--format', 'an argument')
           opts[:format] = @argv[i + 1]
           i += 1
         when '--validate', '-V'
           opts[:validate] = true
         when '--log-level'
-          if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
-            puts pastel.red('Error: --log-level requires an argument')
-            exit(1)
-          end
+          validate_argument_present(i, '--log-level', 'an argument')
           opts[:log_level] = @argv[i + 1]
           i += 1
         when '--help', '-h'
@@ -214,6 +211,20 @@ module CookstyleRunner
       ENV['GCR_USE_CACHE'] = 'false' if options[:no_cache]
       ENV['GCR_THREAD_COUNT'] = options[:threads].to_s if options[:threads]
       ENV['GCR_CREATE_MANUAL_FIX_ISSUES'] = options[:create_issues].to_s if options.key?(:create_issues)
+    end
+
+    # Validates that an argument is present and not a flag
+    def validate_argument_present(index, flag_name, description)
+      if index + 1 >= @argv.length || @argv[index + 1].start_with?('-')
+        raise CLIArgumentError, "Error: #{flag_name} requires #{description}"
+      end
+    end
+
+    # Validates that a value is a positive integer
+    def validate_positive_integer(value, flag_name)
+      return if value.match?(POSITIVE_INTEGER_PATTERN)
+
+      raise CLIArgumentError, "Error: #{flag_name} value must be a positive integer"
     end
 
     def fetch_repositories(app)
