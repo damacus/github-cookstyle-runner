@@ -1,3 +1,11 @@
 ---
-logging:
-  level: 'INFO'
+# Production Environment Configuration
+# This file extends default.yml with production-specific settings
+
+# Cache settings optimized for production
+cache_dir: /opt/cookstyle-runner/cache
+use_cache: true
+
+# Operational settings for production
+thread_count: 8
+retry_count: 3

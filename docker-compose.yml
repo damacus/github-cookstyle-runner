@@ -1,18 +1,37 @@
----
 services:
-  cookstyle-bot:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: cookstyle-bot:dev
-    container_name: cookstyle-bot-app
-
-    env_file:
-      - .env  # Loads GITHUB_TOKEN and other GCR_ vars from .env
-
-    # Default environment for compose, can be overridden in .env
+  app:
+    build: .
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+      - cookstyle_cache:/app/.cache
     environment:
-      - APP_ENV=development
-      # GCR_ variables will be primarily sourced from .env
-      # You can provide fallbacks here if needed:
-      - GCR_LOGGING__LEVEL=${GCR_LOGGING__LEVEL:-INFO}
+      - BUNDLE_PATH=/usr/local/bundle
+      - BUNDLE_APP_CONFIG=/usr/local/bundle
+      - GCR_DESTINATION_REPO_OWNER=sous-chefs
+      - GCR_MANAGE_CHANGELOG=1
+      - GCR_BRANCH_NAME=automated/cookstyle-fixes
+      - GCR_DESTINATION_REPO_TOPICS=chef-cookbook
+      - GCR_LOG_LEVEL=DEBUG
+      - GCR_USE_CACHE=1
+      - GCR_CACHE_DIR=/app/.cache
+      - GCR_THREAD_COUNT=1
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GCR_FILTER_REPOS=elasticsearch,aws,docker,nginx
+
+  test:
+    extends: app
+    environment:
+      - BUNDLE_PATH=/usr/local/bundle
+      - BUNDLE_APP_CONFIG=/usr/local/bundle
+      # Clear GitHub credentials for testing
+      - GITHUB_TOKEN=
+      - GCR_GITHUB_APP_ID=
+      - GCR_GITHUB_APP_INSTALLATION_ID=
+      - GCR_GITHUB_APP_PRIVATE_KEY=
+    entrypoint: ["bundle", "exec", "rspec"]
+    command: []
+
+volumes:
+  bundle_cache:
+  cookstyle_cache:

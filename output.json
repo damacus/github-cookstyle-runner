@@ -1,0 +1,142 @@
+{
+	"metadata": {
+		"rubocop_version": "1.25.1",
+		"ruby_engine": "ruby",
+		"ruby_version": "3.4.1",
+		"ruby_patchlevel": "0",
+		"ruby_platform": "arm64-darwin24"
+	},
+	"files": [
+		{
+			"path": "Berksfile",
+			"offenses": []
+		},
+		{
+			"path": "Dangerfile",
+			"offenses": []
+		},
+		{
+			"path": "attributes/default.rb",
+			"offenses": []
+		},
+		{
+			"path": "libraries/helpers.rb",
+			"offenses": []
+		},
+		{
+			"path": "metadata.rb",
+			"offenses": []
+		},
+		{
+			"path": "recipes/cacher-client.rb",
+			"offenses": []
+		},
+		{
+			"path": "recipes/cacher-ng.rb",
+			"offenses": []
+		},
+		{
+			"path": "recipes/default.rb",
+			"offenses": []
+		},
+		{
+			"path": "recipes/unattended-upgrades.rb",
+			"offenses": []
+		},
+		{
+			"path": "spec/spec_helper.rb",
+			"offenses": []
+		},
+		{
+			"path": "spec/unit/recipes/cacher-client_spec.rb",
+			"offenses": []
+		},
+		{
+			"path": "spec/unit/recipes/cacher-ng_spec.rb",
+			"offenses": []
+		},
+		{
+			"path": "spec/unit/recipes/default_spec.rb",
+			"offenses": []
+		},
+		{
+			"path": "spec/unit/recipes/unattended-upgrades_spec.rb",
+			"offenses": []
+		},
+		{
+			"path": "test/fixtures/cookbooks/test/metadata.rb",
+			"offenses": []
+		},
+		{
+			"path": "test/fixtures/cookbooks/test/recipes/base.rb",
+			"offenses": []
+		},
+		{
+			"path": "test/fixtures/cookbooks/test/recipes/cacher.rb",
+			"offenses": []
+		},
+		{
+			"path": "test/fixtures/cookbooks/test/recipes/unattended-upgrades.rb",
+			"offenses": []
+		},
+		{
+			"path": "test/integration/cacher/cacher-ng-client_spec.rb",
+			"offenses": []
+		},
+		{
+			"path": "test/integration/compile-time/default_spec.rb",
+			"offenses": []
+		},
+		{
+			"path": "test/integration/default/default_spec.rb",
+			"offenses": []
+		},
+		{
+			"path": "test/integration/resources/resources_spec.rb",
+			"offenses": [
+				{
+					"severity": "refactor",
+					"message": "Chef/Deprecations/ResourceWithoutUnifiedTrue: Set `unified_mode true` in Chef Infra Client 15.3+ custom resources to ensure they work correctly in Chef Infra Client 18 (April 2022) when Unified Mode becomes the default. (https://docs.chef.io/workstation/cookstyle/chef_deprecations_resourcewithoutunifiedtrue)",
+					"cop_name": "Chef/Deprecations/ResourceWithoutUnifiedTrue",
+					"corrected": false,
+					"correctable": false,
+					"location": {
+						"start_line": 1,
+						"start_column": 1,
+						"last_line": 1,
+						"last_column": 1,
+						"length": 1,
+						"line": 1,
+						"column": 1
+					}
+				}
+			]
+		},
+		{
+			"path": "test/integration/resources/unattended_upgrades_spec.rb",
+			"offenses": [
+				{
+					"severity": "refactor",
+					"message": "Chef/Deprecations/ResourceWithoutUnifiedTrue: Set `unified_mode true` in Chef Infra Client 15.3+ custom resources to ensure they work correctly in Chef Infra Client 18 (April 2022) when Unified Mode becomes the default. (https://docs.chef.io/workstation/cookstyle/chef_deprecations_resourcewithoutunifiedtrue)",
+					"cop_name": "Chef/Deprecations/ResourceWithoutUnifiedTrue",
+					"corrected": false,
+					"correctable": false,
+					"location": {
+						"start_line": 1,
+						"start_column": 1,
+						"last_line": 1,
+						"last_column": 1,
+						"length": 1,
+						"line": 1,
+						"column": 1
+					}
+				}
+			]
+		}
+	],
+	"summary": {
+		"offense_count": 2,
+		"target_file_count": 23,
+		"inspected_file_count": 23
+	}
+}

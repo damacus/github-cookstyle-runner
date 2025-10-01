@@ -2,36 +2,27 @@
 
 source 'https://rubygems.org'
 
-# Specify Ruby version from .ruby-version file
-ruby File.read('.ruby-version').strip if File.exist?('.ruby-version')
-
+gem 'base64'
 gem 'config'
 gem 'cookstyle'
-gem 'git'
-gem 'octokit'
-
-# Type Checking
-gem 'sorbet'
+gem 'dry-schema'
+gem 'faraday', '~> 2.0'
+gem 'faraday-retry', '~> 2.0' # Specify v2 for Faraday v2 compatibility
+gem 'git' # Required for local Git operations
+gem 'json', '~> 2.6' # JSON parsing
+gem 'jwt', '~> 2.7' # For GitHub App JWT generation
+gem 'octokit', '~> 6.1' # GitHub API client
+gem 'ostruct'
+gem 'parallel', '~> 1.26' # Parallel processing
+gem 'pp'
 gem 'sorbet-runtime'
-# Linting and Style (require: false as they are usually run via Rake/CLI)
-gem 'rubocop', require: false
-gem 'rubocop-performance', require: false
-gem 'rubocop-rake', require: false
-gem 'rubocop-rspec', require: false
-gem 'rubocop-sorbet', require: false
+gem 'tty-command' # For running shell commands
 
 group :development, :test do
-  gem 'fakefs'
-  gem 'guard'
-  gem 'guard-rspec'
-  gem 'guard-rubocop'
-  gem 'pry'
-  gem 'pry-byebug'
-  gem 'rake'
-  gem 'rspec'
-  gem 'simplecov', require: false
-  gem 'sorbet-struct-comparable'
-  gem 'tapioca'
-  gem 'webmock'
-  gem 'yard'
+  gem 'rspec', '~> 3.12'
+  gem 'rubocop'
+  gem 'rubocop-rspec'
+  gem 'sorbet'
+  gem 'tapioca', require: false
+  gem 'timecop'
 end

@@ -1,6 +1,43 @@
 ---
-logging:
-  level: 'INFO'
-github:
-  destination_repo_owner: 'env-test-owner'
-  # api_root: 'http://localhost:1234' # If using a local mock server for tests
+# Test Environment Configuration
+owner: test-owner
+
+# GitHub settings
+github_token: test_token
+github_app_id: null
+github_app_installation_id: null
+github_app_private_key: null
+github_api_endpoint: https://api.github.com
+
+# Topics and filters
+topics:
+  - test-topic
+filter_repos: []
+
+# Branch/PR configuration
+branch_name: test-cookstyle-fixes
+pr_title: "Test PR: Cookstyle Changes"
+issue_labels:
+  - "TestLabel"
+  - "Cookstyle"
+default_branch: test-main
+create_manual_fix_issues: true
+
+# Git author configuration
+git_name: Test Cookstyle Runner
+git_email: "test-cookstylerunner@noreply.com"
+
+# Cache configuration
+cache_dir: /tmp/cookstyle-runner-test
+use_cache: false
+cache_max_age: 7
+force_refresh: true
+
+# Changelog configuration
+manage_changelog: false
+changelog_location: CHANGELOG.test.md
+changelog_marker: "## Test Unreleased"
+
+# Processing configuration
+retry_count: 1
+thread_count: 1

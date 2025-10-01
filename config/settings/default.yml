@@ -1,0 +1,44 @@
+---
+# Default Configuration (base for all environments)
+
+# GitHub settings
+github_token: null # Will be overridden by ENV['GCR_GITHUB_TOKEN']
+github_app_id: null # Will be overridden by ENV['GCR_APP_ID']
+github_app_installation_id: null # Will be overridden by ENV['GCR_INSTALLATION_ID']
+github_app_private_key: null # Will be overridden by ENV['GCR_GITHUB_APP_PRIVATE_KEY']
+github_api_endpoint: https://api.github.com
+
+# Repository configuration
+owner: sous-chefs
+topics:
+  - chef
+  - cookbook
+filter_repos: []
+
+# Branch/PR configuration
+branch_name: cookstyle-fixes
+pr_title: "Cookstyle Fixes"
+issue_labels:
+  - "cookstyle"
+  - "automated"
+default_branch: main
+create_manual_fix_issues: true
+
+# Git author configuration
+git_name: Cookstyle Runner
+git_email: cookstyle-runner@example.com
+
+# Cache configuration
+cache_dir: tmp/cookstyle-cache
+use_cache: true
+cache_max_age: 7 # days
+force_refresh: false
+
+# Changelog configuration
+manage_changelog: false
+changelog_location: CHANGELOG.md
+changelog_marker: "## Unreleased"
+
+# Processing configuration
+retry_count: 3
+thread_count: 4

@@ -1,0 +1,71 @@
+<project_purpose>
+  <architecture>
+
+    - The project automates running Cookstyle (a RuboCop-based linter for Chef) on GitHub repositories and can create pull requests for fixes.
+    - The core logic is in the RepositoryProcessor class, which handles repo updates, Cookstyle runs, and PR creation.
+  </architecture>
+</project_purpose>
+
+<refactoring_and_code_quality>
+
+  - Significant refactoring has been done to reduce cyclomatic complexity, improve readability, and minimize parameter count (using output objects/hashes).
+  - Helper methods were extracted for each logical step, making the code more modular and testable.
+  - Early returns and guard clauses are favored for clarity.
+</refactoring_and_code_quality>
+
+<testing_and_tdd>
+
+  - The project values Test Driven Development (TDD).
+  - RSpec is used for unit and class testing, and integration tests are written for security features.
+</testing_and_tdd>
+
+<linting_and_style>
+
+  - RuboCop is the canonical style guide.
+  - Code is formatted and auto-corrected to match RuboCop’s defaults.
+  - RuboCop is (or will be) run in development, pre-commit, and CI workflows.
+</linting_and_style>
+
+<automation_and_ci>
+
+  - GitHub Actions are used to build and test all code.
+  - Plans exist to integrate RuboCop and other quality checks into CI.
+</automation_and_ci>
+
+<documentation_and_planning>
+
+  - All code and changes are documented in Markdown.
+  - There is a detailed, step-by-step plan for migrating to GitHub App authentication, with code samples and security best practices.
+  - The OODA loop (Observe, Orient, Decide, Act) is used for planning and execution.
+</documentation_and_planning>
+
+<future_improvements>
+  <testing_and_coverage>
+    - Increase test coverage: Ensure all refactored code is covered by unit and integration tests.
+    - Add mutation testing: Use tools like mutant to ensure tests are robust.
+  </testing_and_coverage>
+  <automation>
+    - Pre-commit hooks: Enforce RuboCop and RSpec checks before commits.
+    - Automated dependency updates: Use Dependabot or similar tools.
+  </automation>
+  <security>
+    - Secrets management: Use a secrets manager for GitHub App keys and sensitive config.
+    - Security audits: Periodically run static analysis and dependency vulnerability scans.
+  </security>
+  <performance_and_scalability>
+    - Optimize subprocess handling: If running many repos in parallel, consider job queues or background processing.
+    - Monitor resource usage: Add logging/metrics for performance bottlenecks.
+  </performance_and_scalability>
+  <developer_experience>
+    - Onboarding docs: Expand documentation for new contributors.
+    - Sample configs: Provide example .rubocop.yml, config.yml, and GitHub Actions workflows.
+  </developer_experience>
+  <user_features>
+    - Multi-repo/organization support: As planned, support multiple installations with the GitHub App.
+    - Webhooks: Consider using GitHub webhooks for event-driven processing.
+  </user_features>
+  <continuous_improvement>
+    - Regular code reviews: Encourage peer review for all PRs.
+    - Retrospectives: After major changes, review what went well and what can be improved.
+  </continuous_improvement>
+</future_improvements>

@@ -1,53 +1,25 @@
----
-plugins:
-  - rubocop-performance
-  - rubocop-rake
-  - rubocop-rspec
-  - rubocop-sorbet
+inherit_from: .rubocop_todo.yml
 
+plugins: rubocop-rspec
+
+Metrics/ModuleLength:
+  Max: 200
+Metrics/MethodLength:
+  Max: 15
+RSpec/MultipleMemoizedHelpers:
+  Max: 20
+RSpec/MultipleExpectations:
+  Max: 10
+RSpec/ExampleLength:
+  Max: 20
+Layout/LineLength:
+  Max: 150
+Metrics/ClassLength:
+  Max: 120
+# Ignore tests for now
 AllCops:
   NewCops: enable
-  Exclude:
-    - 'vendor/**/*'
-    - 'tmp/**/*'
-    - 'node_modules/**/*'
-    - 'bin/bundle'
-    - 'sorbet/rbi/sorbet-typed/'
-    - 'sorbet/rbi/hidden-definitions/'
-    - 'sorbet/rbi/gems/'
-  # TargetRubyVersion should ideally match .ruby-version
-  TargetRubyVersion: 3.4
-
-Style/Documentation:
-  Enabled: false
-
-Layout/LineLength:
-  Max: 120
-
-Metrics/MethodLength:
-  Max: 25
-
-Metrics/AbcSize:
-  Max: 25
-
-Metrics/CyclomaticComplexity:
-  Max: 10
-
-Metrics/PerceivedComplexity:
-  Max: 10
-
-# Test-specific configurations
-RSpec/MultipleMemoizedHelpers:
-  Max: 7
-
-RSpec/MultipleExpectations:
-  Exclude:
-    - 'spec/lib/cookstyle_bot/runner_spec.rb'
-
-RSpec/ExampleLength:
-  Max: 6
-
-Sorbet/ValidSigil:
-  Enabled: true
-  RequireSigilOnAllFiles: true  # Enforce # typed: <level> on all .rb files
-  SuggestedStrictness: strict  # Suggests # typed: strict for new files
+  # Exclude:
+  #   - 'spec/**/*'
+  #   - 'test/**/*'
+  #   - 'tests/**/*'

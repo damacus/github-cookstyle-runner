@@ -1,56 +1,30 @@
-ARG RUBY_VERSION=3.4.1
-FROM ruby:${RUBY_VERSION}-slim-bullseye AS builder
+FROM ruby:3.4-slim
 
-LABEL maintainer="damacus"
-LABEL description="CookstyleBot Ruby application"
+LABEL maintainer="Damacus <me@damacus.io>"
+LABEL org.label-schema.schema-version="1.0"
+LABEL org.label-schema.name="github-cookstyle-runner"
+LABEL org.label-schema.description="A cookstyle runner system for Github Repositories"
+LABEL org.label-schema.url="https://github.com/damacus/github-cookstyle-runner"
+LABEL org.label-schema.vcs-url="https://github.com/damacus/github-cookstyle-runner"
 
-ENV LANG C.UTF-8
-ENV APP_HOME /usr/src/app
-ENV BUNDLE_PATH /bundle
-ENV BUNDLE_WITHOUT "development:test"
-ENV BUNDLE_JOBS $(nproc)
+# Install base dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    build-essential \
+    ca-certificates \
+    bash \
+ && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update -qq \
-	&& apt-get install -y --no-install-recommends \
-		build-essential \
-		git \
-	&& rm -rf /var/lib/apt/lists/*
+# Set up working directory
+WORKDIR /app
 
-WORKDIR ${APP_HOME}
+# Copy Gemfile and install dependencies
+COPY Gemfile* ./
+RUN bundle install --jobs $(nproc) --retry 3
 
-RUN gem install bundler --no-document
-
-COPY Gemfile Gemfile.lock ./
-
-# Configure bundler without using deployment mode (which sets frozen)
-RUN bundle config set --local without 'development:test' \
-	&& bundle install --jobs 4 --retry 3
-
+# Copy application code (can be overridden by volume mount)
 COPY . .
 
-FROM ruby:${RUBY_VERSION}-slim-bullseye AS final
-
-LABEL maintainer="damacus"
-LABEL description="CookstyleBot Ruby application"
-
-ENV LANG C.UTF-8
-ENV APP_HOME /usr/src/app
-ENV APP_ENV production
-
-RUN apt-get update -qq \
-	&& apt-get install -y --no-install-recommends \
-		git \
-	&& rm -rf /var/lib/apt/lists/* \
-	&& groupadd -r cookstyle \
-	&& useradd -r -g cookstyle -d ${APP_HOME} -s /bin/bash -c "Cookstyle user" cookstyle
-
-WORKDIR ${APP_HOME}
-
-COPY --chown=cookstyle:cookstyle --from=builder /bundle /bundle
-COPY --chown=cookstyle:cookstyle --from=builder ${APP_HOME} ${APP_HOME}
-
-RUN chmod +x ./bin/run_cookstyle_bot
-
-USER cookstyle
-
-ENTRYPOINT ["./bin/run_cookstyle_bot"]
+# Default entrypoint for running the application
+ENTRYPOINT ["/app/bin/cookstyle-runner"]
