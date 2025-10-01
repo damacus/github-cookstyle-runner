@@ -80,8 +80,8 @@ RSpec.describe CookstyleRunner::CLI do
     end
 
     it 'parses repository arguments' do
-      cli = described_class.new(['run', 'repo1', 'repo2'])
-      expect(cli.options[:repos]).to eq(['repo1', 'repo2'])
+      cli = described_class.new(%w[run repo1 repo2])
+      expect(cli.options[:repos]).to eq(%w[repo1 repo2])
     end
 
     it 'parses --format option' do

@@ -14,14 +14,14 @@ gem 'jwt', '~> 3.0' # For GitHub App JWT generation
 gem 'octokit', '~> 10.0' # GitHub API client
 gem 'ostruct'
 gem 'parallel', '~> 1.26' # Parallel processing
+gem 'pastel', '~> 0.8' # Terminal colors
 gem 'pp'
 gem 'sorbet-runtime'
 gem 'tty-command' # For running shell commands
 gem 'tty-option', '~> 0.3' # CLI option parsing
 gem 'tty-progressbar', '~> 0.18' # Progress indicators
-gem 'tty-spinner', '~> 0.9' # Spinners for operations
 gem 'tty-prompt', '~> 0.23' # Interactive prompts
-gem 'pastel', '~> 0.8' # Terminal colors
+gem 'tty-spinner', '~> 0.9' # Spinners for operations
 
 group :development, :test do
   gem 'rspec', '~> 3.12'
