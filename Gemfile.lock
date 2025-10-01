@@ -85,7 +85,7 @@ GEM
     net-http (0.6.0)
       uri
     netrc (0.11.0)
-    octokit (6.1.1)
+    octokit (10.0.0)
       faraday (>= 1, < 3)
       sawyer (~> 0.9)
     ostruct (0.6.3)
@@ -206,7 +206,7 @@ DEPENDENCIES
   git
   json (~> 2.6)
   jwt (~> 2.7)
-  octokit (~> 6.1)
+  octokit (~> 10.0)
   ostruct
   parallel (~> 1.26)
   pp

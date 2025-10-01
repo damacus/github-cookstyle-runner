@@ -11,7 +11,7 @@ gem 'faraday-retry', '~> 2.0' # Specify v2 for Faraday v2 compatibility
 gem 'git' # Required for local Git operations
 gem 'json', '~> 2.6' # JSON parsing
 gem 'jwt', '~> 2.7' # For GitHub App JWT generation
-gem 'octokit', '~> 6.1' # GitHub API client
+gem 'octokit', '~> 10.0' # GitHub API client
 gem 'ostruct'
 gem 'parallel', '~> 1.26' # Parallel processing
 gem 'pp'
