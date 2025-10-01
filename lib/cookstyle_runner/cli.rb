@@ -7,6 +7,9 @@ require_relative '../cookstyle_runner'
 require_relative 'version'
 
 module CookstyleRunner
+  # Custom exception for CLI argument errors
+  class CLIArgumentError < StandardError; end
+
   # Command Line Interface for Cookstyle Runner
   # Provides user-friendly commands for running Cookstyle operations
   # rubocop:disable Metrics/ClassLength
@@ -40,6 +43,9 @@ module CookstyleRunner
         puts "Run 'cookstyle-runner help' for usage information"
         1
       end
+    rescue CLIArgumentError => e
+      puts pastel.red(e.message)
+      1
     rescue StandardError => e
       handle_error(e)
       1
@@ -71,31 +77,23 @@ module CookstyleRunner
         when '--no-cache'
           opts[:no_cache] = true
         when '--threads', '-t'
-          if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
-            puts pastel.red('Error: --threads requires a numeric argument')
-            exit(1)
-          end
+          raise CLIArgumentError, 'Error: --threads requires a numeric argument' if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
+
           thread_val = @argv[i + 1]
-          unless thread_val =~ /^\d+$/
-            puts pastel.red('Error: --threads value must be a positive integer')
-            exit(1)
-          end
+          raise CLIArgumentError, 'Error: --threads value must be a positive integer' unless thread_val.match?(/^\d+$/)
+
           opts[:threads] = thread_val.to_i
           i += 1
         when '--format'
-          if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
-            puts pastel.red('Error: --format requires an argument')
-            exit(1)
-          end
+          raise CLIArgumentError, 'Error: --format requires an argument' if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
+
           opts[:format] = @argv[i + 1]
           i += 1
         when '--validate', '-V'
           opts[:validate] = true
         when '--log-level'
-          if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
-            puts pastel.red('Error: --log-level requires an argument')
-            exit(1)
-          end
+          raise CLIArgumentError, 'Error: --log-level requires an argument' if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
+
           opts[:log_level] = @argv[i + 1]
           i += 1
         when '--help', '-h'
