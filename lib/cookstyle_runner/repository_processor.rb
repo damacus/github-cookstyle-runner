@@ -9,7 +9,6 @@ require_relative 'git'
 require_relative 'cookstyle_operations'
 require_relative 'github_api'
 require_relative 'cache'
-require_relative 'changelog_updater'
 
 module CookstyleRunner
   # =============================================================================
@@ -213,22 +212,6 @@ module CookstyleRunner
       )
 
       auto_correct_result = CookstyleOperations.run_cookstyle(context, logger)
-
-      # Update changelog if configured
-      if @configuration.manage_changelog
-        # Create a context object with the required properties
-        repo_name = T.must(repo_full_name.split('/').last)
-        context = Git::RepoContext.new(
-          repo_name: repo_name,
-          owner: @configuration.owner,
-          logger: logger,
-          repo_dir: repo_dir
-        )
-
-        # Convert Configuration to hash for ChangelogUpdater
-        config_hash = @configuration.to_h
-        ChangelogUpdater.update_changelog(context, config_hash, result['offense_details'])
-      end
 
       # Commit changes and create PR
       begin

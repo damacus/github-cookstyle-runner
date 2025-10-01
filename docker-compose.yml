@@ -9,7 +9,6 @@ services:
       - BUNDLE_PATH=/usr/local/bundle
       - BUNDLE_APP_CONFIG=/usr/local/bundle
       - GCR_DESTINATION_REPO_OWNER=sous-chefs
-      - GCR_MANAGE_CHANGELOG=1
       - GCR_BRANCH_NAME=automated/cookstyle-fixes
       - GCR_DESTINATION_REPO_TOPICS=chef-cookbook
       - GCR_LOG_LEVEL=DEBUG

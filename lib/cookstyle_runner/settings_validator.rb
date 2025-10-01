@@ -65,11 +65,6 @@ module CookstyleRunner
           # Retry settings
           required(:retry_count).filled(:integer, gteq?: 1)
 
-          # Changelog settings
-          required(:manage_changelog).filled(:bool)
-          required(:changelog_location).filled(:string)
-          required(:changelog_marker).filled(:string)
-
           # Thread count for parallel processing
           required(:thread_count).filled(:integer, gteq?: 1)
         end

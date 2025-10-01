@@ -1,4 +1,0 @@
----
-manage_changelog: true
-changelog_location: CHANGELOG.md
-changelog_marker: "## Unreleased"

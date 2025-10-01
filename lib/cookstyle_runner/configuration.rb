@@ -20,8 +20,7 @@ module CookstyleRunner
       github_app_private_key github_api_endpoint owner topics
       filter_repos branch_name pr_title issue_labels
       default_branch git_name git_email cache_dir
-      use_cache cache_max_age force_refresh manage_changelog
-      changelog_location changelog_marker retry_count
+      use_cache cache_max_age force_refresh retry_count
       thread_count create_manual_fix_issues
     ].freeze, T::Array[Symbol])
 
@@ -83,16 +82,6 @@ module CookstyleRunner
 
     sig { returns(T::Boolean) }
     attr_reader :force_refresh
-
-    # Changelog configuration
-    sig { returns(T::Boolean) }
-    attr_reader :manage_changelog
-
-    sig { returns(String) }
-    attr_reader :changelog_location
-
-    sig { returns(String) }
-    attr_reader :changelog_marker
 
     # Processing configuration
     sig { returns(Integer) }
@@ -158,11 +147,6 @@ module CookstyleRunner
       @use_cache = T.let(@settings.use_cache, T::Boolean)
       @cache_max_age = T.let(@settings.cache_max_age, Integer)
       @force_refresh = T.let(@settings.force_refresh, T::Boolean)
-
-      # Changelog configuration
-      @manage_changelog = T.let(@settings.manage_changelog, T::Boolean)
-      @changelog_location = T.let(@settings.changelog_location, String)
-      @changelog_marker = T.let(@settings.changelog_marker, String)
 
       # Processing configuration
       @retry_count = T.let(@settings.retry_count, Integer)

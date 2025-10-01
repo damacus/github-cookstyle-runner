@@ -13,14 +13,11 @@
 # Required environment variables:
 #   - GITHUB_TOKEN: Authentication token for GitHub API
 #   - GCR_DESTINATION_REPO_OWNER: Target GitHub organization/user
-#   - GCR_MANAGE_CHANGELOG: Whether to update changelog (0 or 1)
 #
 # Optional environment variables:
 #   - GCR_DESTINATION_REPO_TOPICS: Repository topics to filter by (comma-separated)
 #   - GCR_BRANCH_NAME: Branch name for cookstyle fixes (default: "cookstyle-fixes")
 #   - GCR_PULL_REQUEST_TITLE: Title for pull requests (default: "Automated PR: Cookstyle Changes")
-#   - GCR_CHANGELOG_LOCATION: Path to changelog file (default: "CHANGELOG.md")
-#   - GCR_CHANGELOG_MARKER: Marker in changelog for adding entries (default: "## Unreleased")
 #   - GCR_DEBUG_MODE: Enable debug logging (default: 0)
 #
 

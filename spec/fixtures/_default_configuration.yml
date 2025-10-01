@@ -26,10 +26,6 @@ cache:
   use_cache: true
   cache_max_age: 7
   force_refresh: false
-changelog:
-  manage_changelog: true
-  changelog_location: 'CHANGELOG.md'
-  changelog_marker: '## Unreleased'
 processing:
   retry_count: 3
   thread_count: 4
