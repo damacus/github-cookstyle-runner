@@ -32,8 +32,6 @@ require 'pp'
 
 # First, set up configuration to ensure Settings is available everywhere
 require 'config'
-# Create a local reference to ::Config to avoid lint issues
-ConfigGem = Object.const_get('Config')
 require_relative '../config/initializers/config'
 
 # Then load the rest of the application files
