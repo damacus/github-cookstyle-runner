@@ -71,14 +71,31 @@ module CookstyleRunner
         when '--no-cache'
           opts[:no_cache] = true
         when '--threads', '-t'
-          opts[:threads] = @argv[i + 1].to_i
+          if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
+            puts pastel.red('Error: --threads requires a numeric argument')
+            exit(1)
+          end
+          thread_val = @argv[i + 1]
+          unless thread_val =~ /^\d+$/
+            puts pastel.red('Error: --threads value must be a positive integer')
+            exit(1)
+          end
+          opts[:threads] = thread_val.to_i
           i += 1
         when '--format'
+          if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
+            puts pastel.red('Error: --format requires an argument')
+            exit(1)
+          end
           opts[:format] = @argv[i + 1]
           i += 1
         when '--validate', '-V'
           opts[:validate] = true
         when '--log-level'
+          if i + 1 >= @argv.length || @argv[i + 1].start_with?('-')
+            puts pastel.red('Error: --log-level requires an argument')
+            exit(1)
+          end
           opts[:log_level] = @argv[i + 1]
           i += 1
         when '--help', '-h'
@@ -200,8 +217,8 @@ module CookstyleRunner
     end
 
     def fetch_repositories(app)
-      # Access the private method for fetching repositories
-      app.send(:_fetch_and_filter_repositories)
+      # Use the public API to fetch repositories
+      app.fetch_and_filter_repositories
     end
 
     def display_repositories(repositories, format)
@@ -281,6 +298,7 @@ module CookstyleRunner
     def display_cache_status
       require_relative 'cache'
 
+      # Settings constant is dynamically loaded via config gem
       settings = Object.const_get('Settings')
       cache = Cache.new(settings.cache_dir, Logger.new($stdout))
 
