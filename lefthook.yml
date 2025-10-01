@@ -1,0 +1,31 @@
+# Lefthook configuration
+# https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: true
+  commands:
+    markdown-lint:
+      glob: "*.md"
+      run: markdownlint-cli2 "{staged_files}" --fix
+      stage_fixed: true
+
+    yaml-lint:
+      glob: "*.{yml,yaml}"
+      exclude: "vendor/|.venv/"
+      run: yamllint {staged_files}
+
+    rubocop:
+      glob: "*.rb"
+      exclude: "vendor/|.venv/"
+      run: bundle exec rubocop --autocorrect {staged_files}
+      stage_fixed: true
+
+    rspec:
+      glob: "*.rb"
+      exclude: "vendor/|.venv/"
+      run: bundle exec rspec
+
+pre-push:
+  commands:
+    rspec-full:
+      run: bundle exec rspec
