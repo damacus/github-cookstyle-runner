@@ -1,5 +1,5 @@
 ---
-description: Copilot has reviewed, fix
+description: Copilot has reviewed, please fix
 auto_execution_mode: 1
 ---
 
