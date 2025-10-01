@@ -32,8 +32,6 @@ require 'pp'
 
 # First, set up configuration to ensure Settings is available everywhere
 require 'config'
-# Create a local reference to ::Config to avoid lint issues
-ConfigGem = Object.const_get('Config')
 require_relative '../config/initializers/config'
 
 # Then load the rest of the application files
@@ -73,7 +71,7 @@ module CookstyleRunner
     # rubocop:disable Metrics/MethodLength
     def run
       # Fetch and filter repositories
-      repositories = _fetch_and_filter_repositories
+      repositories = fetch_and_filter_repositories
       return 0 if repositories.nil? # Exit if no repositories found
 
       # --- Parallel Processing ---
@@ -191,7 +189,7 @@ module CookstyleRunner
     # Fetches repositories from GitHub and applies filtering based on config
     # @return [Array<String>, nil] List of repository URLs or nil if none found/matched
     # rubocop:disable Metrics/MethodLength
-    def _fetch_and_filter_repositories
+    def fetch_and_filter_repositories
       settings = Object.const_get('Settings')
 
       # Use the GitHubAPI module to fetch repositories

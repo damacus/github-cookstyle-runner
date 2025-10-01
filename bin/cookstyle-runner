@@ -1,6 +1,14 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative '../lib/cookstyle_runner'
+require_relative '../lib/cookstyle_runner/cli'
 
-exit CookstyleRunner::Application.new.run
+begin
+  cli = CookstyleRunner::CLI.new(ARGV)
+  exit_code = cli.run
+  exit exit_code
+rescue StandardError => e
+  warn "Error: #{e.message}"
+  warn e.backtrace.join("\n") if ENV['DEBUG']
+  exit 1
+end
