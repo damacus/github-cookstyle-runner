@@ -1,0 +1,26 @@
+---
+# Local configuration overrides (copy to local.yml)
+# This file is gitignored and should contain your local overrides
+# All values here will take precedence over the environment-specific settings
+
+# GitHub auth - choose one authentication method:
+# 1. Token-based auth:
+# github_token: your_personal_access_token
+
+# 2. GitHub App auth:
+# github_app_id: your_app_id
+# github_app_installation_id: your_installation_id
+# github_app_private_key: |
+#   -----BEGIN RSA PRIVATE KEY-----
+#   Your key here...
+#   -----END RSA PRIVATE KEY-----
+
+# Repository configuration
+# owner: your-org-name
+# topics:
+#   - cookbook
+#   - chef
+
+# Cache configuration
+# cache_dir: /path/to/your/cache
+# use_cache: true

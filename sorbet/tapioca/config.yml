@@ -1,28 +1,13 @@
----
-# Configuration for Tapioca gem and DSL RBI generation
-
 gem:
-  # Exclude certain gems from RBI generation
-  exclude:
-    - rake
-    - bundler
-    - tapioca
-  # Specify the directory where RBIs will be generated
-  # Default is sorbet/rbi/gems
-  # directory: sorbet/rbi/gems
-  # Verify that the RBIs are up-to-date with the current Gemfile.lock
-  # Default is true
-  verify: true
-
+  # Add your `gem` command parameters here:
+  #
+  # exclude:
+  # - gem_name
+  # doc: true
+  # workers: 5
 dsl:
-  # Exclude certain directories from DSL RBI generation
-  exclude:
-    - vendor/**/*
-    - bin/**/*
-    - node_modules/**/*
-  # Specify the directory where DSL RBIs will be generated
-  # Default is sorbet/rbi/dsl
-  # directory: sorbet/rbi/dsl
-  # Specify custom handlers for DSL RBI generation
-  # handlers:
-  #   - custom_handler
+  # Add your `dsl` command parameters here:
+  #
+  # exclude:
+  # - SomeGeneratorName
+  # workers: 5

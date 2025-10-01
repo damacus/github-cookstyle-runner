@@ -1,31 +1,29 @@
 ---
-name: Ruby CI
+name: ci
 
-'on':
+on:
   pull_request:
   push:
     branches: [main]
 
 jobs:
-  check-yaml:
+  yamllint:
     runs-on: ubuntu-latest
-    name: runner / yamllint
     steps:
       - name: Check out code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Run yaml Lint
         uses: actionshub/yamllint@main
 
-  check-markdown:
+  markdownlint:
     runs-on: ubuntu-latest
-    name: runner / markdownlint
     steps:
       - name: Check out code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
       - name: Run Markdown Lint
         uses: DavidAnson/markdownlint-cli2-action@992badcdf24e3b8eb7e87ff9287fe931bcb00c6e # v20
         with:
-          globs: "**/*.md"
+          globs: '**/*.md'
 
   rubocop:
     runs-on: ubuntu-latest
@@ -36,12 +34,9 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.2'
           bundler-cache: true
-
-      - name: Install dependencies
-        run: bundle install
-
-      - name: Run RuboCop
+      - name: Run Rubocop
         run: bundle exec rubocop
 
   test:
@@ -53,6 +48,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.2'
           bundler-cache: true
 
       - name: Install dependencies
@@ -68,9 +64,9 @@ jobs:
           path: coverage/
 
   build-and-publish:
-    needs: [check-yaml, check-markdown, rubocop, test]
+    needs: [yamllint, markdownlint, rubocop, test]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/config'
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Check out code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
@@ -98,13 +94,8 @@ jobs:
             latest
 
       - name: Build and push
-        uses: docker/build-push-action@1dc73863535b631f98b2378be8619f83b136f4a0 # v6
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tags }}

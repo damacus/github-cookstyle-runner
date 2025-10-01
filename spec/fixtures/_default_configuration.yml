@@ -1,0 +1,44 @@
+---
+auth:
+  github_token: null
+  github_app_id: null
+  github_app_installation_id: null
+  github_app_private_key: null
+  github_api_endpoint: 'https://api.github.com'
+repository:
+  owner: 'sous-chefs' # Default from original flat file, but Configuration class defaults to ''
+  name: null # No default specified, should be per-run
+branch_pr:
+  branch_name: 'automated/cookstyle'
+  pr_title: 'Automated PR: Cookstyle Changes'
+  commit_message: 'style: Automated Cookstyle fixes'
+  issue_title: 'Cookstyle Manual Intervention Required'
+  issue_labels:
+    - "Skip: Announcements"
+    - "Release: Patch"
+    - "Cookstyle"
+git:
+  git_name: 'GitHub Cookstyle Runner'
+  git_email: 'cookstylerunner@noreply.com'
+  default_branch: 'main'
+cache:
+  cache_dir: '/tmp/cookstyle-runner'
+  use_cache: true
+  cache_max_age: 7
+  force_refresh: false
+changelog:
+  manage_changelog: true
+  changelog_location: 'CHANGELOG.md'
+  changelog_marker: '## Unreleased'
+processing:
+  retry_count: 3
+  thread_count: 4
+  create_manual_fix_issues: true
+# Top-level keys based on how ConfigManager.log_config_summary accesses them
+topics:
+  - chef
+  - cookbook
+filter_repos: []
+# Individual settings that are often directly accessed or have attr_readers
+# These might also be expected at the top level by ConfigGem if not nested during definition.
+# For now, relying on the Configuration class to pull from nested structures if defined, or its own defaults.

@@ -1,3 +1,11 @@
 ---
-logging:
-  level: 'DEBUG'
+# Development Environment Configuration
+# This file extends default.yml with development-specific settings
+
+# Cache settings adjusted for development
+cache_dir: tmp/cookstyle-dev-cache
+use_cache: true
+
+# Operational settings for faster development iteration
+thread_count: 2
+retry_count: 2

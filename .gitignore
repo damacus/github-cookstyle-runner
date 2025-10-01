@@ -1,38 +1,8 @@
-# Bundler
-/.bundle
-/vendor/bundle/
-
-# Ruby
-*.gem
-*.rbc
-/.config
-/coverage/
-/spec/reports/
-/tmp/
-
-# Sorbet generated files
-/sorbet/rbi/gems/
-/sorbet/rbi/hidden-definitions/
-/sorbet/rbi/sorbet-typed/
-# Custom RBI files in sig/ should be committed.
-
-# OS-specific
-.DS_Store
-Thumbs.db
-
-# IDE-specific
-.idea/
-.vscode/
-*.swp
-*~
-
-# Logs
-log/
-*.log
-
-# Local configuration
-/config/settings.local.yml
+*.txt
+/tmp
+/destination-repos
+*.tmp
 .env
 
-# Docker
-*.DS_Store
+# Local configuration
+config/settings/local.yml

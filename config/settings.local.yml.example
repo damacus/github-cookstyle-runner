@@ -1,7 +1,0 @@
-# Copy to config/settings.local.yml (which is gitignored) for local overrides.
-# github:
-#   token: "your_github_token_here"
-#   destination_repo_owner: "your_org"
-#   destination_repo_topics_csv: "topic1"
-# logging:
-#  level: "DEBUG"
