@@ -47,11 +47,6 @@ module CookstyleRunner
       # Retry settings
       optional(:retry_count).maybe(:integer)
 
-      # Changelog settings
-      optional(:manage_changelog).maybe(:bool)
-      optional(:changelog_location).maybe(:string)
-      optional(:changelog_marker).maybe(:string)
-
       # Thread count for parallel processing
       optional(:thread_count).maybe(:integer)
     end, T.untyped)

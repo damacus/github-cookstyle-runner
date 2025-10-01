@@ -33,11 +33,6 @@ use_cache: false
 cache_max_age: 7
 force_refresh: true
 
-# Changelog configuration
-manage_changelog: false
-changelog_location: CHANGELOG.test.md
-changelog_marker: "## Test Unreleased"
-
 # Processing configuration
 retry_count: 1
 thread_count: 1

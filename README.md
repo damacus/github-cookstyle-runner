@@ -24,13 +24,10 @@ Below are a list of variables, what they mean and example values
 | GCR_DESTINATION_REPO_TOPICS | `String` | Yes      | The topics that the destination repositories are tagged with to search for, Takes a csv, eg: `chef-cookbook,vscode`                                                           |
 | GCR_GIT_EMAIL               | `String` | Yes      | The E-mail address to use when creating the git commits                                                                                                                       |
 | GCR_GIT_NAME                | `String` | Yes      | The Name to use when creating the git commits                                                                                                                                 |
-| GCR_MANAGE_CHANGELOG        | `String` | Yes      | Should we be managing the changelog, set to `0` for no, `1` for yes                                                                                                           |
 | GITHUB_APP_ID               | `String` | Yes      | The GitHub App ID for authentication |
 | GITHUB_APP_INSTALLATION_ID  | `String` | Yes      | The installation ID for the GitHub App |
 | GITHUB_APP_PRIVATE_KEY      | `String` | Yes      | The PEM-encoded private key for the GitHub App |
 | GCR_BRANCH_NAME             | `String` | No       | The name of the branch to create if changes are required, defaults to `automated/cookstyle`                                                                                   |
-| GCR_CHANGELOG_LOCATION      | `String` | No       | The location of the change log to update relative to the root of the repo, defaults to `CHANGELOG.md`                                                                         |
-| GCR_CHANGELOG_MARKER        | `String` | No       | The string to use as the update point in the changelog, if not found it will be added before the next subtitle of `##`                                                        |
 | GCR_DEFAULT_GIT_BRANCH      | `String` | No       | The name of the default branch, if not set this will default to `main`                                                                                                        |
 | GCR_PULL_REQUEST_LABELS     | `String` | No       | The labels to apply to the Pull Request, Takes a csv, eg: `tech-debt,automated`, defaults to no labels                                                                        |
 | GCR_PULL_REQUEST_TITLE      | `String` | No       | The title to apply to the Pull Request, defaults to `Automated PR: Cookstyle Changes`                                                                                         |
@@ -119,7 +116,6 @@ The application supports flexible repository filtering options:
 
 - Automatic branch creation and management
 - Detailed PR descriptions with cookstyle output
-- Changelog updates with configurable markers
 - Label support
 - Support for manual fix PRs with detailed instructions
 

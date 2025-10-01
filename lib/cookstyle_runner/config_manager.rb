@@ -44,9 +44,6 @@ module CookstyleRunner
       use_cache = settings.use_cache || true
       force_refresh = settings.force_refresh || false
       retry_count = settings.retry_count || 3
-      manage_changelog = settings.manage_changelog || true
-      changelog_location = settings.changelog_location || 'CHANGELOG.md'
-      changelog_marker = settings.changelog_marker || '## Unreleased'
       create_manual_fix_issues = settings.create_manual_fix_issues || true
 
       log_message = <<~SUMMARY
@@ -63,9 +60,6 @@ module CookstyleRunner
         Cache Max Age: #{cache_age_days} days
         Force Refresh: #{force_refresh ? 'Yes' : 'No'}
         Retry Count: #{retry_count}
-        Manage Changelog: #{manage_changelog ? 'Yes' : 'No'}
-        Changelog Location: #{changelog_location}
-        Changelog Marker: #{changelog_marker}
         Filter Repos: #{filter_repos}
         Create Manual Fix Issues: #{create_manual_fix_issues ? 'Yes' : 'No'}
         ---------------------
