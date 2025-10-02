@@ -2,6 +2,7 @@
 # typed: true
 
 begin
+  require 'pathname'
   require 'config'
   require 'dry-schema'
   require 'logger'
@@ -79,6 +80,17 @@ ConfigGem.setup do |config|
   local_config = File.join(File.dirname(__FILE__), '..', 'settings', 'local.yml')
   settings_files << local_config if File.exist?(local_config)
 
+  # Configure environment variable handling
+  # Use a separator that won't conflict with our setting names
+  config.use_env = true
+  config.env_prefix = 'GCR'
+  config.env_separator = '__' # Use double underscore to avoid conflicts
+  config.env_converter = :downcase
+  config.env_parse_values = false # Don't parse as JSON
+
+  # Don't fail on missing settings - we'll validate what we need later
+  config.fail_on_missing = false
+
   # Log which files are being loaded
   settings_files.each do |file|
     if File.exist?(file)
@@ -90,24 +102,6 @@ ConfigGem.setup do |config|
 
   # Load the configuration files
   config.load_and_set_settings(*settings_files)
-
-  # Load environment variables from ENV
-  config.use_env = true
-
-  # Prefix for environment variables
-  config.env_prefix = 'GCR'
-
-  # What string to use as separator for nested options
-  config.env_separator = '_'
-
-  # Convert environment variable values to the proper type
-  config.env_converter = :downcase
-
-  # Parse environment variable values as JSON
-  config.env_parse_values = true
-
-  # Don't fail on missing env vars - we'll validate what we need later
-  config.fail_on_missing = false
 end
 
 # Load the validator after config is initialized

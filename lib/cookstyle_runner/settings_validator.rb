@@ -12,6 +12,15 @@ module CookstyleRunner
       # @return [Array<String>] Array of error messages (empty if valid)
       def validate(settings)
         settings_hash = settings.to_h
+        # Convert symbol keys to strings for Dry::Schema::Params
+        settings_hash = settings_hash.transform_keys(&:to_s)
+
+        # Debug output
+        if ENV['DEBUG']
+          warn "Settings hash keys: #{settings_hash.keys.inspect}"
+          warn "Settings hash: #{settings_hash.inspect}"
+        end
+
         result = schema.call(settings_hash)
 
         if result.success?

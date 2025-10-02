@@ -1,7 +1,41 @@
 # frozen_string_literal: true
 
+# VCR helpers
+#
+# Re-recording cassettes:
+#   VCR_RECORD_MODE=all bundle exec rspec spec/integration
+#
+# Allow real HTTP traffic (dangerous outside of cassette recording):
+#   VCR_ALLOW_HTTP=true bundle exec rspec spec/integration
+#
+# Enable VCR debug logging:
+#   VCR_DEBUG=true bundle exec rspec spec/integration
+
 require 'vcr'
 require 'webmock/rspec'
+
+module VCRSupport
+  ALLOWED_RECORD_MODES = %w[once none new_episodes all].freeze
+
+  module_function
+
+  def record_mode
+    raw_mode = ENV.fetch('VCR_RECORD_MODE', 'once').downcase
+    symbolized = raw_mode.to_sym
+    return symbolized if ALLOWED_RECORD_MODES.include?(raw_mode)
+
+    warn "[VCR] Unknown record mode '#{raw_mode}', falling back to :once"
+    :once
+  end
+
+  def allow_http_connections?
+    ENV.fetch('VCR_ALLOW_HTTP', 'false').casecmp('true').zero?
+  end
+
+  def debug?
+    ENV.fetch('VCR_DEBUG', 'false').casecmp('true').zero?
+  end
+end
 
 VCR.configure do |c|
   # Where to store cassettes
@@ -19,28 +53,37 @@ VCR.configure do |c|
   c.filter_sensitive_data('<GITHUB_APP_ID>') { ENV.fetch('GCR_GITHUB_APP_ID', nil) }
   c.filter_sensitive_data('<GITHUB_APP_INSTALLATION_ID>') { ENV.fetch('GCR_GITHUB_APP_INSTALLATION_ID', nil) }
   c.filter_sensitive_data('<GITHUB_APP_PRIVATE_KEY>') do
-    ENV['GCR_GITHUB_APP_PRIVATE_KEY']&.gsub("\n", '\n')
+    ENV['GCR_GITHUB_APP_PRIVATE_KEY']&.gsub("\n", '\\n')
   end
 
   # Allow connections to localhost (for test servers)
   c.ignore_localhost = true
 
   # Allow real HTTP connections when no cassette is active (useful for recording)
-  c.allow_http_connections_when_no_cassette = false
+  c.allow_http_connections_when_no_cassette = VCRSupport.allow_http_connections?
 
   # Default cassette options
   c.default_cassette_options = {
-    record: :once,                    # Record new interactions once, then replay
+    record: VCRSupport.record_mode,   # Controlled via VCR_RECORD_MODE
     match_requests_on: %i[method uri body],
     allow_playback_repeats: true,
     serialize_with: :json,            # Use JSON for better readability
     decode_compressed_response: true  # Decode gzipped responses
   }
 
-  # Debug mode (uncomment for troubleshooting)
-  # c.debug_logger = File.open('vcr_debug.log', 'w')
+  c.debug_logger = File.open('tmp/vcr_debug.log', 'w') if VCRSupport.debug?
 end
 
 # Configure WebMock
-# Only allow localhost - VCR will handle GitHub API calls
-WebMock.disable_net_connect!(allow_localhost: true)
+if VCRSupport.allow_http_connections?
+  WebMock.allow_net_connect!
+else
+  # Only allow localhost - VCR will handle GitHub API calls
+  WebMock.disable_net_connect!(allow_localhost: true)
+end
+
+at_exit do
+  next unless VCRSupport.debug?
+
+  puts '[VCR] Debug log written to tmp/vcr_debug.log'
+end

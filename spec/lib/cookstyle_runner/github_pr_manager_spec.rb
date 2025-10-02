@@ -31,7 +31,8 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
 
   describe '#create_pull_request' do
     let(:repository) { 'test-org/test-cookbook' }
-    let(:branch) { 'main' }
+    let(:base_branch) { 'main' }
+    let(:head_branch) { 'cookstyle-fixes' }
     let(:title) { 'Fix Cookstyle violations' }
     let(:body) { 'This PR fixes cookstyle violations' }
     let(:pr_response) { double('PR', number: 123) }
@@ -42,20 +43,20 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     end
 
     it 'creates a pull request successfully' do
-      result = pr_manager.create_pull_request(repository, branch, title, body)
+      result = pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
       expect(result).to be true
       expect(github_client).to have_received(:create_pull_request).with(
         'test-org/test-cookbook',
-        'cookstyle-fixes',
         'main',
+        'cookstyle-fixes',
         'Fix Cookstyle violations',
         'This PR fixes cookstyle violations'
       )
     end
 
     it 'adds labels to the pull request' do
-      pr_manager.create_pull_request(repository, branch, title, body)
+      pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
       expect(github_client).to have_received(:add_labels_to_an_issue).with(
         'test-org/test-cookbook',
@@ -71,7 +72,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       end
 
       it 'returns false and logs error' do
-        result = pr_manager.create_pull_request(repository, branch, title, body)
+        result = pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
         expect(result).to be false
       end
@@ -81,7 +82,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       let(:repository) { 'https://github.com/test-org/test-cookbook' }
 
       it 'extracts repo name from URL' do
-        pr_manager.create_pull_request(repository, branch, title, body)
+        pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
         expect(github_client).to have_received(:create_pull_request).with(
           'test-org/test-cookbook',
@@ -97,7 +98,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       let(:repository) { 'test-cookbook' }
 
       it 'prepends owner to repo name' do
-        pr_manager.create_pull_request(repository, branch, title, body)
+        pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
         expect(github_client).to have_received(:create_pull_request).with(
           'sous-chefs/test-cookbook',

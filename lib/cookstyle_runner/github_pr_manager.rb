@@ -47,18 +47,19 @@ module CookstyleRunner
       @create_manual_fix_issues = T.let(settings.create_manual_fix_issues || true, T::Boolean)
     end
 
-    sig { params(repository: String, branch: String, title: String, body: String).returns(T::Boolean) }
-    def create_pull_request(repository, branch, title, body)
+    sig { params(repository: String, base_branch: String, head_branch: String, title: String, body: String).returns(T::Boolean) }
+    def create_pull_request(repository, base_branch, head_branch, title, body)
       repo_name = extract_repo_name(repository)
 
-      @logger.info("Creating PR for #{repo_name} with title: #{title}")
+      @logger.info("Creating PR for #{repo_name}: #{head_branch} -> #{base_branch}")
 
       begin
         # Use the GitHub client to create a PR
+        # Octokit signature: create_pull_request(repo, base, head, title, body)
         pr = @github_client.create_pull_request(
           repo_name,
-          @branch_name,
-          branch,
+          base_branch,
+          head_branch,
           title,
           body
         )

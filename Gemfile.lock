@@ -250,8 +250,8 @@ DEPENDENCIES
   tty-progressbar (~> 0.18)
   tty-prompt (~> 0.23)
   tty-spinner (~> 0.9)
-  vcr (~> 6.2)
-  webmock (~> 3.23)
+  vcr (~> 6.3)
+  webmock (~> 3.25)
 
 BUNDLED WITH
    2.6.5
