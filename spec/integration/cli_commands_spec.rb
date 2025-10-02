@@ -9,9 +9,8 @@ RSpec.describe 'CLI Commands', :integration do
 
   describe 'version command' do
     it 'displays version information' do
-      result = run_cookstyle_runner(command: 'version')
+      result = expect_successful_run(command: 'version')
 
-      expect(result).to be_success
       expect(result.stdout).to include('Cookstyle Runner')
       expect(result.stdout).to match(/v\d+\.\d+\.\d+/)
     end
@@ -19,9 +18,8 @@ RSpec.describe 'CLI Commands', :integration do
 
   describe 'help command' do
     it 'displays help information' do
-      result = run_cookstyle_runner(command: 'help')
+      result = expect_successful_run(command: 'help')
 
-      expect(result).to be_success
       expect(result.stdout).to include('Usage: cookstyle-runner')
       expect(result.stdout).to include('Commands:')
     end

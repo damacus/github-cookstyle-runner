@@ -44,6 +44,20 @@ module IntegrationHelpers
     cmd
   end
 
+  # Run the CLI and assert success, returning the result for additional checks
+  # @param command [String]
+  # @param args [Hash]
+  def expect_successful_run(command:, **args)
+    result = run_cookstyle_runner({ command: command }.merge(args))
+
+    aggregate_failures do
+      expect(result).to be_success
+      expect(result.stderr).to be_empty
+    end
+
+    result
+  end
+
   # Set up temporary git configuration for tests
   def with_temp_git_config
     # Get original git config using Open3 for proper error handling
