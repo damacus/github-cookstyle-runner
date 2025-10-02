@@ -28,6 +28,55 @@ module IntegrationHelpers
     )
   end
 
+  # Parse cache statistics from runner output
+  # @param output [String]
+  # @return [Hash{Symbol=>Integer}]
+  def extract_cache_stats(output)
+    stats = {}
+
+    output.each_line do |line|
+      clean_line = strip_ansi(line)
+      next unless clean_line.include?(':')
+
+      key, value = clean_line.split(':', 2).map(&:strip)
+      next unless key && value
+
+      normalized_key = key.downcase.gsub(' ', '_').to_sym
+
+      if normalized_key == :cache_directory
+        stats[normalized_key] = value
+      elsif numeric_value?(value)
+        stats[normalized_key] = parse_numeric(value)
+      end
+    end
+
+    stats
+  end
+
+  def extract_cache_directory(output)
+    output.each_line do |line|
+      clean_line = strip_ansi(line)
+      next unless clean_line.start_with?('  Cache Directory:')
+
+      return clean_line.split(':', 2)[1]&.strip
+    end
+
+    nil
+  end
+
+  def numeric_value?(value)
+    value.match?(/\A\d+(\.\d+)?%?\z/)
+  end
+
+  def parse_numeric(value)
+    numeric = value.delete('%')
+    numeric.include?('.') ? numeric.to_f : numeric.to_i
+  end
+
+  def strip_ansi(text)
+    text.gsub(/\e\[[\d;]*m/, '')
+  end
+
   # Build command line arguments from hash
   def build_command_args(args)
     cmd = [args[:command] || 'run']

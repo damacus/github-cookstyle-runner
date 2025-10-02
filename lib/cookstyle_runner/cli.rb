@@ -313,18 +313,30 @@ module CookstyleRunner
       settings = Object.const_get('Settings')
       cache = Cache.new(settings.cache_dir, Logger.new($stdout))
 
-      if cache.stats
-        stats = cache.stats.runtime_stats
-        puts "  Cache Directory: #{settings.cache_dir}"
-        puts pastel.green("  Hits: #{stats[:hits]}")
-        puts pastel.yellow("  Misses: #{stats[:misses]}")
-        puts pastel.cyan("  Stores: #{stats[:stores]}")
-        hit_rate = stats[:hit_rate].to_i
-        color = hit_rate > 50 ? :green : :yellow
-        puts pastel.decorate("  Hit Rate: #{hit_rate}%", color)
-      else
+      cache_stats = cache.stats
+
+      unless cache_stats
         puts pastel.yellow('  No cache statistics available')
+        return
       end
+
+      render_cache_status(cache_stats.runtime_stats, settings.cache_dir)
+    end
+
+    def render_cache_status(runtime_stats, cache_dir)
+      hits = runtime_stats.fetch('cache_hits', 0).to_i
+      misses = runtime_stats.fetch('cache_misses', 0).to_i
+      updates = runtime_stats.fetch('cache_updates', 0).to_i
+      hit_rate = runtime_stats.fetch('cache_hit_rate', 0).to_f
+
+      puts "  Cache Directory: #{cache_dir}"
+      puts pastel.green("  Cache Hits: #{hits}")
+      puts pastel.yellow("  Cache Misses: #{misses}")
+      puts pastel.cyan("  Cache Updates: #{updates}")
+
+      formatted_rate = format('%.2f', hit_rate)
+      color = hit_rate > 50 ? :green : :yellow
+      puts pastel.decorate("  Cache Hit Rate: #{formatted_rate}%", color)
     end
 
     def handle_error(error)
