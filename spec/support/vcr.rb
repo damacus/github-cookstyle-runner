@@ -15,7 +15,7 @@ VCR.configure do |c|
 
   # Filter sensitive data from cassettes
   c.filter_sensitive_data('<GITHUB_TOKEN>') { ENV.fetch('GITHUB_TOKEN', nil) }
-  c.filter_sensitive_data('<GITHUB_TOKEN>') { ENV.fetch('GCR_GITHUB_TOKEN', nil) }
+  c.filter_sensitive_data('<GCR_GITHUB_TOKEN>') { ENV.fetch('GCR_GITHUB_TOKEN', nil) }
   c.filter_sensitive_data('<GITHUB_APP_ID>') { ENV.fetch('GCR_GITHUB_APP_ID', nil) }
   c.filter_sensitive_data('<GITHUB_APP_INSTALLATION_ID>') { ENV.fetch('GCR_GITHUB_APP_INSTALLATION_ID', nil) }
   c.filter_sensitive_data('<GITHUB_APP_PRIVATE_KEY>') do
@@ -42,10 +42,5 @@ VCR.configure do |c|
 end
 
 # Configure WebMock
-WebMock.disable_net_connect!(
-  allow_localhost: true,
-  allow: [
-    'api.github.com',  # Allow during cassette recording
-    'github.com'       # Allow during cassette recording
-  ]
-)
+# Only allow localhost - VCR will handle GitHub API calls
+WebMock.disable_net_connect!(allow_localhost: true)

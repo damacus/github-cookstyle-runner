@@ -46,16 +46,20 @@ module IntegrationHelpers
 
   # Set up temporary git configuration for tests
   def with_temp_git_config
-    original_name = `git config --global user.name`.strip
-    original_email = `git config --global user.email`.strip
+    # Get original git config using Open3 for proper error handling
+    original_name, = Open3.capture3('git', 'config', '--global', 'user.name')
+    original_name = original_name.strip
+    original_email, = Open3.capture3('git', 'config', '--global', 'user.email')
+    original_email = original_email.strip
 
     system('git', 'config', '--global', 'user.name', 'Test User')
     system('git', 'config', '--global', 'user.email', 'test@example.com')
 
     yield
   ensure
-    system('git', 'config', '--global', 'user.name', original_name) if original_name
-    system('git', 'config', '--global', 'user.email', original_email) if original_email
+    # Restore original config if it was set (not empty)
+    system('git', 'config', '--global', 'user.name', original_name) unless original_name.empty?
+    system('git', 'config', '--global', 'user.email', original_email) unless original_email.empty?
   end
 
   # Clean up any test artifacts (branches, PRs, etc.)
