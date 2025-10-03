@@ -238,6 +238,7 @@ module CookstyleRunner
 
         pr_success = @pr_manager.create_pull_request(
           repo_full_name,
+          @configuration.default_branch,
           branch_name,
           @configuration.pr_title,
           format_pr_description(auto_correct_result['offense_details'])
@@ -263,8 +264,15 @@ module CookstyleRunner
       return result unless @pr_manager
 
       logger.info("Creating issue for #{result['manual_fixes']} manual fixes in #{repo_full_name}")
-      issue_result = create_manual_fix_issue(repo_full_name, result['offense_details'])
-      update_result_with_issue(result, issue_result, repo_full_name)
+      issue_success = create_manual_fix_issue(repo_full_name, result['offense_details'])
+
+      if issue_success
+        result['message'] = 'Created issue for manual fixes'
+        logger.info("Created issue for #{repo_full_name}")
+      else
+        result['error'] = 'Failed to create issue'
+        logger.error("Failed to create issue for #{repo_full_name}")
+      end
 
       result
     end
@@ -280,34 +288,13 @@ module CookstyleRunner
     end
 
     # Create a manual fix issue
-    sig { params(repo_full_name: String, offense_details: T::Hash[String, T.untyped]).returns(T.untyped) }
+    sig { params(repo_full_name: String, offense_details: T::Hash[String, T.untyped]).returns(T::Boolean) }
     def create_manual_fix_issue(repo_full_name, offense_details)
-      T.must(@pr_manager).create_issue(repo_full_name, {
-                                         'title' => 'Manual Cookstyle Fixes Required',
-                                         'body' => format_issue_description(offense_details),
-                                         'labels' => %w[cookstyle manual-fixes-required]
-                                       })
-    end
-
-    # Update result hash with issue information
-    sig do
-      params(
-        result: T::Hash[String, T.untyped],
-        issue_result: T::Hash[Symbol, T.untyped],
-        repo_full_name: String
-      ).returns(T::Hash[String, T.untyped])
-    end
-    def update_result_with_issue(result, issue_result, repo_full_name)
-      if issue_result[:success]
-        result['issue_url'] = issue_result[:url]
-        result['issue_number'] = issue_result[:number]
-        result['message'] = "Created issue ##{issue_result[:number]} for manual fixes"
-        logger.info("Created issue ##{issue_result[:number]} for #{repo_full_name}")
-      else
-        result['error'] = issue_result[:error]
-        logger.error("Failed to create issue for #{repo_full_name}: #{issue_result[:error]}")
-      end
-      result
+      T.must(@pr_manager).create_issue(
+        repo_full_name,
+        'Manual Cookstyle Fixes Required',
+        format_issue_description(offense_details)
+      )
     end
 
     # Update cache with processing results

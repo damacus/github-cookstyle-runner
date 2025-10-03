@@ -30,4 +30,6 @@ group :development, :test do
   gem 'sorbet'
   gem 'tapioca', require: false
   gem 'timecop'
+  gem 'vcr', '~> 6.3' # Record and replay HTTP interactions
+  gem 'webmock', '~> 3.25' # HTTP request stubbing
 end
