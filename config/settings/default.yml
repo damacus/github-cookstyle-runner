@@ -42,3 +42,6 @@ thread_count: 4
 log_level: INFO
 log_format: text # text or json
 log_debug_components: [] # List of components to enable debug logging for (e.g., ['git', 'cache'])
+
+# Output configuration
+output_format: text # text, table, or json

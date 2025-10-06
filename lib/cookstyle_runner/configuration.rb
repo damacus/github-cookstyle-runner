@@ -93,6 +93,10 @@ module CookstyleRunner
     sig { returns(T::Boolean) }
     attr_reader :create_manual_fix_issues
 
+    # Output configuration
+    sig { returns(String) }
+    attr_reader :output_format
+
     # Raw settings object from ConfigGem, primarily for debugging or direct access if needed
     sig { returns(::Config::Options) }
     attr_reader :settings
@@ -152,6 +156,9 @@ module CookstyleRunner
       @retry_count = T.let(@settings.retry_count, Integer)
       @thread_count = T.let(@settings.thread_count, Integer)
       @create_manual_fix_issues = T.let(@settings.create_manual_fix_issues, T::Boolean)
+
+      # Output configuration
+      @output_format = T.let(ENV.fetch('GCR_OUTPUT_FORMAT', @settings.output_format || 'text'), String)
 
       @logger.info('Configuration loaded and validated successfully.')
     end

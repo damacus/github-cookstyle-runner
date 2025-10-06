@@ -76,6 +76,9 @@ module CookstyleRunner
 
           # Thread count for parallel processing
           required(:thread_count).filled(:integer, gteq?: 1)
+
+          # Output format
+          optional(:output_format).filled(:string, included_in?: %w[text table json])
         end
       end
     end

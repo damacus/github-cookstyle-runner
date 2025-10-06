@@ -161,6 +161,17 @@ The application supports flexible repository filtering options:
 - Label support
 - Support for manual fix PRs with detailed instructions
 
+### CLI Output Formats
+
+- **Table**: Simple text-based list (default)
+- **Pretty**: Formatted tables with borders using `table_tennis`
+- **JSON**: Machine-readable output for scripting
+
+```bash
+# View repositories in pretty table format
+./bin/cookstyle-runner list --format pretty
+```
+
 ## Usage Examples
 
 ### Basic Usage

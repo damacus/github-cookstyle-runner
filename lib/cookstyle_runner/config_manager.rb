@@ -23,7 +23,8 @@ module CookstyleRunner
 
     # Log configuration summary
     # @param logger [Logger] Logger instance
-    def self.log_config_summary(logger)
+    # @param format [String] Output format (text, table, json)
+    def self.log_config_summary(logger, format: 'text')
       # Access settings via Object.const_get to avoid lint errors
       settings = Object.const_get('Settings')
 
@@ -46,7 +47,32 @@ module CookstyleRunner
       retry_count = settings.retry_count || 3
       create_manual_fix_issues = settings.create_manual_fix_issues || true
 
+      case format
+      when 'table'
+        log_config_summary_table(logger, owner, topics, branch_name, pr_title, issue_labels,
+                                 git_name, git_email, default_branch, cache_dir, use_cache,
+                                 cache_age_days, force_refresh, retry_count, filter_repos,
+                                 create_manual_fix_issues)
+      when 'json'
+        log_config_summary_json(logger, owner, topics, branch_name, pr_title, issue_labels,
+                                git_name, git_email, default_branch, cache_dir, use_cache,
+                                cache_age_days, force_refresh, retry_count, filter_repos,
+                                create_manual_fix_issues)
+      else
+        log_config_summary_text(logger, owner, topics, branch_name, pr_title, issue_labels,
+                                git_name, git_email, default_branch, cache_dir, use_cache,
+                                cache_age_days, force_refresh, retry_count, filter_repos,
+                                create_manual_fix_issues)
+      end
+    end
+
+    # rubocop:disable Metrics/ParameterLists
+    def self.log_config_summary_text(logger, owner, topics, branch_name, pr_title, issue_labels,
+                                     git_name, git_email, default_branch, cache_dir, use_cache,
+                                     cache_age_days, force_refresh, retry_count, filter_repos,
+                                     create_manual_fix_issues)
       log_message = <<~SUMMARY
+
         --- Configuration ---
         Destination Repo Owner: #{owner}
         Destination Repo Topics: #{topics}
@@ -67,6 +93,60 @@ module CookstyleRunner
 
       logger.info(log_message.strip)
     end
+
+    def self.log_config_summary_table(logger, owner, topics, branch_name, pr_title, issue_labels,
+                                      git_name, git_email, default_branch, cache_dir, use_cache,
+                                      cache_age_days, force_refresh, retry_count, filter_repos,
+                                      create_manual_fix_issues)
+      require_relative 'table_renderer'
+      config_data = {
+        'Repo Owner' => owner,
+        'Topics' => topics,
+        'Branch Name' => branch_name,
+        'PR Title' => pr_title,
+        'PR Labels' => issue_labels,
+        'Git Author' => "#{git_name} <#{git_email}>",
+        'Default Branch' => default_branch,
+        'Cache Dir' => cache_dir,
+        'Cache Enabled' => use_cache ? 'Yes' : 'No',
+        'Cache Max Age' => "#{cache_age_days} days",
+        'Force Refresh' => force_refresh ? 'Yes' : 'No',
+        'Retry Count' => retry_count.to_s,
+        'Filter Repos' => filter_repos,
+        'Manual Fix Issues' => create_manual_fix_issues ? 'Yes' : 'No'
+      }
+      logger.info("\n#{TableRenderer.render_summary(config_data)}")
+    end
+
+    def self.log_config_summary_json(logger, owner, topics, branch_name, pr_title, issue_labels,
+                                     git_name, git_email, default_branch, cache_dir, use_cache,
+                                     cache_age_days, force_refresh, retry_count, filter_repos,
+                                     create_manual_fix_issues)
+      require 'json'
+      config_data = {
+        configuration: {
+          repo_owner: owner,
+          topics: topics,
+          branch_name: branch_name,
+          pr_title: pr_title,
+          pr_labels: issue_labels,
+          git_author: {
+            name: git_name,
+            email: git_email
+          },
+          default_branch: default_branch,
+          cache_dir: cache_dir,
+          cache_enabled: use_cache,
+          cache_max_age_days: cache_age_days,
+          force_refresh: force_refresh,
+          retry_count: retry_count,
+          filter_repos: filter_repos,
+          create_manual_fix_issues: create_manual_fix_issues
+        }
+      }
+      logger.info("\n#{JSON.pretty_generate(config_data)}")
+    end
+    # rubocop:enable Metrics/ParameterLists
 
     # Setup cache directory
     def self.setup_cache_directory(cache_dir, logger)

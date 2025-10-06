@@ -94,4 +94,49 @@ RSpec.describe CookstyleRunner::CLI do
       expect(cli.options[:validate]).to be true
     end
   end
+
+  describe 'list command with format options' do
+    let(:repositories) { %w[repo1.git repo2.git repo3.git] }
+    let(:cli) { described_class.new(argv) }
+
+    before do
+      # Mock the internal method that fetches repositories
+      allow(cli).to receive(:fetch_repositories).and_return(repositories)
+    end
+
+    context 'with default format' do
+      let(:argv) { ['list'] }
+
+      it 'outputs table format' do
+        expect { cli.run }.to output(/Found 3 repositories/).to_stdout
+      end
+    end
+
+    context 'with json format' do
+      let(:argv) { ['list', '--format', 'json'] }
+
+      it 'outputs JSON format' do
+        expect { cli.run }.to output(/"repositories"/).to_stdout
+      end
+    end
+
+    context 'with table format' do
+      let(:argv) { ['list', '--format', 'table'] }
+
+      it 'outputs table format' do
+        # TableRenderer should be used for table format
+        allow(CookstyleRunner::TableRenderer).to receive(:render_repositories).and_call_original
+        cli.run
+        expect(CookstyleRunner::TableRenderer).to have_received(:render_repositories).with(repositories)
+      end
+    end
+
+    context 'with invalid format' do
+      let(:argv) { ['list', '--format', 'invalid'] }
+
+      it 'validates format option values' do
+        expect { cli.run }.to output(/Invalid format/).to_stdout
+      end
+    end
+  end
 end

@@ -80,7 +80,7 @@ module CookstyleRunner
       results = _process_repositories_in_parallel(repositories)
 
       # Process the collected results sequentially after parallel execution
-      reporter = CookstyleRunner::Reporter.new(@logger)
+      reporter = CookstyleRunner::Reporter.new(@logger, format: @configuration.output_format)
       processed_count, issues_found_count, skipped_count, error_count = reporter.aggregate_results(results)
 
       # --- Calculations for summary reporting ---
@@ -107,9 +107,8 @@ module CookstyleRunner
 
       # Log cache runtime statistics if cache is enabled
       if @configuration.use_cache && @cache&.stats
-        # Call instance method on the stats object within cache
         stats_hash = @cache.stats.runtime_stats
-        @logger.info("Cache Stats:\n#{PP.pp(stats_hash, +'')}")
+        reporter.cache_stats(stats_hash)
       end
 
       # Report created artifacts
@@ -119,6 +118,44 @@ module CookstyleRunner
 
       # Return appropriate exit code (e.g., non-zero if errors occurred)
       error_count.zero? && @artifact_creation_errors.empty? ? 0 : 1
+    end
+    # rubocop:enable Metrics/MethodLength
+
+    # Fetches repositories from GitHub and applies filtering based on config
+    # @return [Array<String>, nil] List of repository URLs or nil if none found/matched
+    # rubocop:disable Metrics/MethodLength
+    def fetch_and_filter_repositories
+      settings = Object.const_get('Settings')
+
+      # Use the GitHubAPI module to fetch repositories
+      repositories = GitHubAPI.fetch_repositories(
+        settings.owner,
+        logger,
+        settings.topics
+      )
+
+      if repositories.empty?
+        logger.error('No repositories found matching the initial criteria. Exiting.')
+        exit(1)
+      end
+
+      initial_count = repositories.length
+
+      # Apply repository filtering if specified using the RepositoryManager module
+      filter_repos = settings.filter_repos
+      if filter_repos && !filter_repos.empty?
+        filtered_repos = CookstyleRunner::RepositoryManager.filter_repositories(repositories, filter_repos, logger)
+        logger.info("Filtered from #{initial_count} to #{filtered_repos.length} repositories based on include/exclude lists.")
+        repositories = filtered_repos
+      end
+
+      if repositories.empty?
+        logger.error('No repositories remaining after filtering. Exiting.')
+        exit(1)
+      end
+
+      logger.info("Found #{repositories.length} repositories to process.")
+      repositories # Return the final list
     end
     # rubocop:enable Metrics/MethodLength
 
@@ -187,7 +224,7 @@ module CookstyleRunner
     def _setup_configuration
       _validate_settings
       @configuration = Configuration.new(logger)
-      ConfigManager.log_config_summary(logger)
+      ConfigManager.log_config_summary(logger, format: @configuration.output_format)
     end
 
     def _load_settings
@@ -228,44 +265,6 @@ module CookstyleRunner
       settings = Object.const_get('Settings')
       @pr_manager = GitHubPRManager.new(settings, @logger, @github_client)
     end
-
-    # Fetches repositories from GitHub and applies filtering based on config
-    # @return [Array<String>, nil] List of repository URLs or nil if none found/matched
-    # rubocop:disable Metrics/MethodLength
-    def fetch_and_filter_repositories
-      settings = Object.const_get('Settings')
-
-      # Use the GitHubAPI module to fetch repositories
-      repositories = GitHubAPI.fetch_repositories(
-        settings.owner,
-        logger,
-        settings.topics
-      )
-
-      if repositories.empty?
-        logger.error('No repositories found matching the initial criteria. Exiting.')
-        exit(1)
-      end
-
-      initial_count = repositories.length
-
-      # Apply repository filtering if specified using the RepositoryManager module
-      filter_repos = settings.filter_repos
-      if filter_repos && !filter_repos.empty?
-        filtered_repos = CookstyleRunner::RepositoryManager.filter_repositories(repositories, filter_repos, logger)
-        logger.info("Filtered from #{initial_count} to #{filtered_repos.length} repositories based on include/exclude lists.")
-        repositories = filtered_repos
-      end
-
-      if repositories.empty?
-        logger.error('No repositories remaining after filtering. Exiting.')
-        exit(1)
-      end
-
-      logger.info("Found #{repositories.length} repositories to process.")
-      repositories # Return the final list
-    end
-    # rubocop:enable Metrics/MethodLength
 
     # Process repositories in parallel
     def _process_repositories_in_parallel(repositories)

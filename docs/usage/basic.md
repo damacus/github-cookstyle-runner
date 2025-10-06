@@ -37,6 +37,60 @@ kubectl logs -f job/cookstyle-manual-run
 bundle exec ./bin/cookstyle-runner
 ```
 
+## CLI Commands
+
+### List Repositories
+
+View repositories that would be processed:
+
+```bash
+# Simple table format (default)
+./bin/cookstyle-runner list
+
+# Pretty table format with borders
+./bin/cookstyle-runner list --format pretty
+
+# JSON format for scripting
+./bin/cookstyle-runner list --format json
+```
+
+**Pretty table output example:**
+
+```text
+╭─────────────────────────╮
+│ Found 3 repositories    │
+├────┬────────────────────┤
+│  # │ Repository         │
+├────┼────────────────────┤
+│  1 │ apt                │
+│  2 │ nginx              │
+│  3 │ haproxy            │
+╰────┴────────────────────╯
+```
+
+### View Configuration
+
+```bash
+# Display current configuration
+./bin/cookstyle-runner config
+
+# Validate configuration
+./bin/cookstyle-runner config --validate
+```
+
+### Check Status
+
+```bash
+# View cache statistics (simple table)
+./bin/cookstyle-runner status
+
+# Pretty table format
+./bin/cookstyle-runner status --format pretty
+
+# JSON format for scripting
+./bin/cookstyle-runner status --format json
+```
+
 ## Understanding Output
 
 ### Startup

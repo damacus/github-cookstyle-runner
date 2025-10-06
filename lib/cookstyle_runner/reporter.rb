@@ -6,8 +6,9 @@ module CookstyleRunner
   class Reporter
     extend T::Sig
 
-    def initialize(logger)
+    def initialize(logger, format: 'text')
       @logger = logger
+      @format = format
     end
 
     # Aggregates results from parallel processing
@@ -59,6 +60,21 @@ module CookstyleRunner
     end
     def summary(total_repos:, processed_count:, issues_count: 0, skipped_count: 0, error_count: 0,
                 issues_created: 0, prs_created: 0, issue_errors: 0, pr_errors: 0)
+      case @format
+      when 'table'
+        summary_table(total_repos, processed_count, issues_count, skipped_count, error_count,
+                      issues_created, prs_created, issue_errors, pr_errors)
+      when 'json'
+        summary_json(total_repos, processed_count, issues_count, skipped_count, error_count,
+                     issues_created, prs_created, issue_errors, pr_errors)
+      else
+        summary_text(total_repos, processed_count, issues_count, skipped_count, error_count,
+                     issues_created, prs_created, issue_errors, pr_errors)
+      end
+    end
+
+    def summary_text(total_repos, processed_count, issues_count, skipped_count, error_count,
+                     issues_created, prs_created, issue_errors, pr_errors)
       summary = <<~SUMMARY
 
         --- Summary ---
@@ -77,6 +93,52 @@ module CookstyleRunner
       @logger.info(summary)
       summary
     end
+
+    def summary_table(total_repos, processed_count, issues_count, skipped_count, error_count,
+                      issues_created, prs_created, issue_errors, pr_errors)
+      require_relative 'table_renderer'
+      summary_data = {
+        'Total Repositories' => total_repos,
+        'Successfully Processed' => processed_count,
+        'Found Issues In' => "#{issues_count} repositories",
+        'Skipped' => "#{skipped_count} repositories",
+        'Errors' => "#{error_count} repositories"
+      }
+      artifact_data = {
+        'Issues Created' => issues_created,
+        'Pull Requests Created' => prs_created,
+        'Issue Creation Errors' => issue_errors,
+        'PR Creation Errors' => pr_errors
+      }
+      output = "\n#{TableRenderer.render_summary(summary_data)}"
+      output += "\n#{TableRenderer.render_summary(artifact_data)}"
+      @logger.info(output)
+      output
+    end
+
+    def summary_json(total_repos, processed_count, issues_count, skipped_count, error_count,
+                     issues_created, prs_created, issue_errors, pr_errors)
+      require 'json'
+      data = {
+        summary: {
+          total_repositories: total_repos,
+          successfully_processed: processed_count,
+          found_issues_in: issues_count,
+          skipped: skipped_count,
+          errors: error_count
+        },
+        artifacts: {
+          issues_created: issues_created,
+          pull_requests_created: prs_created,
+          issue_creation_errors: issue_errors,
+          pr_creation_errors: pr_errors
+        }
+      }
+      output = JSON.pretty_generate(data)
+      @logger.info(output)
+      output
+    end
+
     sig { params(created_artifacts: T::Array[Hash]).returns(T::Array[String]) }
     def created_artifacts(created_artifacts:)
       report = ["--- Created Artifacts (#{created_artifacts.size}) ---"]
@@ -116,6 +178,52 @@ module CookstyleRunner
       end
 
       report
+    end
+
+    # Report cache statistics
+    # @param stats_hash [Hash] Cache statistics hash
+    # @return [String] Formatted cache stats
+    def cache_stats(stats_hash)
+      case @format
+      when 'table'
+        cache_stats_table(stats_hash)
+      when 'json'
+        cache_stats_json(stats_hash)
+      else
+        cache_stats_text(stats_hash)
+      end
+    end
+
+    def cache_stats_text(stats_hash)
+      @logger.info('') # Empty line for spacing
+      output = "Cache Stats:\n"
+      stats_hash.each do |key, value|
+        output += "  #{key}: #{value}\n"
+      end
+      @logger.info(output.strip)
+      output
+    end
+
+    def cache_stats_table(stats_hash)
+      require_relative 'table_renderer'
+      formatted_stats = {
+        'Cache Hits' => stats_hash['cache_hits'] || 0,
+        'Cache Misses' => stats_hash['cache_misses'] || 0,
+        'Cache Updates' => stats_hash['cache_updates'] || 0,
+        'Cache Hit Rate' => "#{stats_hash['cache_hit_rate'] || 0}%",
+        'Time Saved (est.)' => "#{stats_hash['estimated_time_saved'] || 0}s",
+        'Runtime' => "#{stats_hash['runtime'] || 0}s"
+      }
+      output = "\n#{TableRenderer.render_summary(formatted_stats)}"
+      @logger.info(output)
+      output
+    end
+
+    def cache_stats_json(stats_hash)
+      require 'json'
+      output = "\n#{JSON.pretty_generate(cache_stats: stats_hash)}"
+      @logger.info(output)
+      output
     end
   end
 end
