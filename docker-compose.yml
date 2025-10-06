@@ -28,6 +28,11 @@ services:
     entrypoint: ["bundle", "exec", "rspec"]
     command: []
 
+  docs:
+    image: ghcr.io/mkdocs/mkdocs:latest
+    volumes:
+      - ./docs:/docs
+
 volumes:
   bundle_cache:
   cookstyle_cache:
