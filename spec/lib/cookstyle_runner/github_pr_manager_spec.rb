@@ -10,7 +10,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
   subject(:pr_manager) { described_class.new(settings, logger, github_client) }
 
   let(:logger) { Logger.new(StringIO.new) }
-  let(:github_client) { double('Octokit::Client') }
+  let(:github_client) { instance_double(Octokit::Client) }
   let(:settings) { Object.const_get('Settings') } # Use real Config::Options from test.yml
 
   describe '#initialize' do

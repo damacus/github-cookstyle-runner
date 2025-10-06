@@ -5,7 +5,6 @@ require 'logger'
 require 'fileutils'
 require 'open3'
 
-# Module for repository management operations
 module CookstyleRunner
   # Module for repository management operations
   module RepositoryManager

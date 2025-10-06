@@ -109,20 +109,33 @@ module IntegrationHelpers
 
   # Set up temporary git configuration for tests
   def with_temp_git_config
-    # Get original git config using Open3 for proper error handling
-    original_name, = Open3.capture3('git', 'config', '--global', 'user.name')
-    original_name = original_name.strip
-    original_email, = Open3.capture3('git', 'config', '--global', 'user.email')
-    original_email = original_email.strip
+    original_name = get_git_config('user.name')
+    original_email = get_git_config('user.email')
 
-    system('git', 'config', '--global', 'user.name', 'Test User')
-    system('git', 'config', '--global', 'user.email', 'test@example.com')
+    set_git_config('user.name', 'Test User')
+    set_git_config('user.email', 'test@example.com')
 
     yield
   ensure
-    # Restore original config if it was set (not empty)
-    system('git', 'config', '--global', 'user.name', original_name) unless original_name.empty?
-    system('git', 'config', '--global', 'user.email', original_email) unless original_email.empty?
+    restore_git_config('user.name', original_name)
+    restore_git_config('user.email', original_email)
+  end
+
+  def get_git_config(key)
+    stdout, = Open3.capture3('git', 'config', '--global', key)
+    stdout.strip
+  end
+
+  def set_git_config(key, value)
+    _, stderr, status = Open3.capture3('git', 'config', '--global', key, value)
+    raise "Failed to set git #{key}: #{stderr.strip}" unless status.success?
+  end
+
+  def restore_git_config(key, value)
+    return if value.nil? || value.empty?
+
+    _, stderr, status = Open3.capture3('git', 'config', '--global', key, value)
+    warn "Warning: Failed to restore git #{key}: #{stderr.strip}" unless status.success?
   end
 
   # Clean up any test artifacts (branches, PRs, etc.)
