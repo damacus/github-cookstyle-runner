@@ -409,4 +409,127 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
       end
     end
   end
+
+  describe '.extract_offenses' do
+    context 'when parsed_json is nil' do
+      it 'returns an empty array' do
+        expect(described_class.extract_offenses(nil)).to eq([])
+      end
+    end
+
+    context 'when parsed_json is empty' do
+      it 'returns an empty array' do
+        expect(described_class.extract_offenses({})).to eq([])
+      end
+    end
+
+    context 'when parsed_json has no files' do
+      it 'returns an empty array' do
+        expect(described_class.extract_offenses(clean_json)).to eq([])
+      end
+    end
+
+    context 'when parsed_json has offenses' do
+      let(:detailed_offenses_json) do
+        {
+          'files' => [
+            {
+              'path' => '/path/to/file.rb',
+              'offenses' => [
+                {
+                  'severity' => 'convention',
+                  'message' => 'Style/StringLiterals: Prefer single-quoted strings',
+                  'cop_name' => 'Style/StringLiterals',
+                  'corrected' => false,
+                  'correctable' => true,
+                  'location' => { 'line' => 10, 'column' => 5 }
+                },
+                {
+                  'severity' => 'error',
+                  'message' => 'Syntax error detected',
+                  'cop_name' => 'Lint/Syntax',
+                  'corrected' => false,
+                  'correctable' => false,
+                  'location' => { 'start_line' => 15, 'start_column' => 3 }
+                }
+              ]
+            }
+          ]
+        }
+      end
+
+      it 'returns an array of offense hashes' do
+        offenses = described_class.extract_offenses(detailed_offenses_json)
+
+        expect(offenses).to be_an(Array)
+        expect(offenses.length).to eq(2)
+      end
+
+      it 'correctly maps first offense attributes' do
+        first_offense = described_class.extract_offenses(detailed_offenses_json)[0]
+
+        expect(first_offense[:path]).to eq('/path/to/file.rb')
+        expect(first_offense[:line]).to eq(10)
+        expect(first_offense[:column]).to eq(5)
+        expect(first_offense[:severity]).to eq('convention')
+        expect(first_offense[:cop_name]).to eq('Style/StringLiterals')
+        expect(first_offense[:message]).to eq('Style/StringLiterals: Prefer single-quoted strings')
+        expect(first_offense[:corrected]).to be false
+        expect(first_offense[:correctable]).to be true
+      end
+
+      it 'correctly maps second offense attributes with start_line/start_column' do
+        second_offense = described_class.extract_offenses(detailed_offenses_json)[1]
+
+        expect(second_offense[:path]).to eq('/path/to/file.rb')
+        expect(second_offense[:line]).to eq(15)
+        expect(second_offense[:column]).to eq(3)
+        expect(second_offense[:severity]).to eq('error')
+        expect(second_offense[:cop_name]).to eq('Lint/Syntax')
+        expect(second_offense[:correctable]).to be false
+      end
+    end
+
+    context 'when parsed_json has multiple files with offenses' do
+      let(:multi_file_json) do
+        {
+          'files' => [
+            {
+              'path' => 'file1.rb',
+              'offenses' => [
+                {
+                  'severity' => 'convention',
+                  'message' => 'Test message',
+                  'cop_name' => 'TestCop',
+                  'corrected' => false,
+                  'correctable' => true,
+                  'location' => { 'line' => 1, 'column' => 1 }
+                }
+              ]
+            },
+            {
+              'path' => 'file2.rb',
+              'offenses' => [
+                {
+                  'severity' => 'warning',
+                  'message' => 'Another test',
+                  'cop_name' => 'AnotherCop',
+                  'corrected' => true,
+                  'correctable' => true,
+                  'location' => { 'line' => 2, 'column' => 2 }
+                }
+              ]
+            }
+          ]
+        }
+      end
+
+      it 'extracts offenses from all files' do
+        offenses = described_class.extract_offenses(multi_file_json)
+        expect(offenses.length).to eq(2)
+        expect(offenses[0][:path]).to eq('file1.rb')
+        expect(offenses[1][:path]).to eq('file2.rb')
+      end
+    end
+  end
 end
