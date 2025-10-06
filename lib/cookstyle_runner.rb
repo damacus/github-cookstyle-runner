@@ -126,11 +126,10 @@ module CookstyleRunner
 
     # Sets up the application logger
     def _setup_logger
-      settings = Object.const_get('Settings')
-      log_level_str = ENV.fetch('GCR_LOG_LEVEL', settings.log_level.to_s).upcase
+      log_level_str = ENV.fetch('GCR_LOG_LEVEL', Settings.log_level.to_s).upcase
       log_level = _parse_log_level(log_level_str)
-      log_format = _get_log_format(settings)
-      debug_components = _get_debug_components(settings)
+      log_format = _get_log_format(Settings)
+      debug_components = _get_debug_components(Settings)
 
       @logger = CookstyleRunner::Logger.new(
         $stdout,
@@ -197,8 +196,7 @@ module CookstyleRunner
     end
 
     def _validate_settings
-      settings = Object.const_get('Settings')
-      errors = SettingsValidator.validate(settings)
+      errors = SettingsValidator.validate(Settings)
       return if errors.empty?
 
       errors.each { |error| logger.error("Configuration error: #{error}") }
@@ -206,8 +204,7 @@ module CookstyleRunner
     end
 
     def _setup_cache
-      settings = Object.const_get('Settings')
-      cache_dir = settings.cache_dir
+      cache_dir = Settings.cache_dir
       @cache = Cache.new(cache_dir, logger)
     end
 
@@ -215,7 +212,7 @@ module CookstyleRunner
       @context_manager = ContextManager.instance
 
       # Pass the Settings object to the context manager instead of a hash
-      @context_manager.set_global_config(Object.const_get('Settings'), @logger)
+      @context_manager.set_global_config(Settings, @logger)
     end
 
     # Sets up the GitHub client for API operations
@@ -225,21 +222,18 @@ module CookstyleRunner
     end
 
     def _setup_pr_manager
-      settings = Object.const_get('Settings')
-      @pr_manager = GitHubPRManager.new(settings, @logger, @github_client)
+      @pr_manager = GitHubPRManager.new(Settings, @logger, @github_client)
     end
 
     # Fetches repositories from GitHub and applies filtering based on config
     # @return [Array<String>, nil] List of repository URLs or nil if none found/matched
     # rubocop:disable Metrics/MethodLength
     def fetch_and_filter_repositories
-      settings = Object.const_get('Settings')
-
       # Use the GitHubAPI module to fetch repositories
       repositories = GitHubAPI.fetch_repositories(
-        settings.owner,
+        Settings.owner,
         logger,
-        settings.topics
+        Settings.topics
       )
 
       if repositories.empty?
