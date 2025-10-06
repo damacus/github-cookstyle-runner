@@ -270,7 +270,7 @@ RSpec.describe CookstyleRunner::Authentication do
   describe '.authenticated_url' do
     let(:owner) { 'sous-chefs' }
     let(:repo_name) { 'apt' }
-    let(:logger) { Logger.new(StringIO.new) }
+    let(:logger) { CookstyleRunner::Logger.new(StringIO.new) }
 
     context 'with PAT authentication' do
       before do

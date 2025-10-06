@@ -49,7 +49,7 @@ RSpec.describe 'PR and Issue Creation', :integration do
 
   describe 'GitHubPRManager' do
     let(:settings) { Object.const_get('Settings') }
-    let(:logger) { Logger.new($stdout, level: Logger::ERROR) }
+    let(:logger) { CookstyleRunner::Logger.new($stdout, level: Logger::ERROR) }
     let(:github_client) { instance_double(Octokit::Client) }
     let(:pr_manager) { CookstyleRunner::GitHubPRManager.new(settings, logger, github_client) }
     let(:labels) { %w[cookstyle automated] }
