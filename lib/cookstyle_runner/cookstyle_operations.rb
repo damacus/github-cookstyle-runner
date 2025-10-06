@@ -314,5 +314,43 @@ module CookstyleRunner
         {}
       end
     end
+
+    # Extracts offense data from parsed Cookstyle JSON output.
+    # @param parsed_json [Hash, nil] The parsed JSON output from Cookstyle.
+    # @return [Array<Hash>] Array of offense hashes with structured data.
+    def self.extract_offenses(parsed_json)
+      return [] if parsed_json.nil? || parsed_json.empty?
+      return [] unless parsed_json['files']
+
+      offenses = []
+      parsed_json['files'].each do |file_data|
+        next unless file_data['offenses']
+
+        file_data['offenses'].each do |offense_data|
+          offenses << _build_offense_hash(file_data['path'], offense_data)
+        end
+      end
+
+      offenses
+    end
+
+    # Builds a structured offense hash from file and offense data.
+    # @param file_path [String] Path to the file containing the offense.
+    # @param offense_data [Hash] The offense data from Cookstyle output.
+    # @return [Hash] Structured offense hash.
+    private_class_method def self._build_offense_hash(file_path, offense_data)
+      location = offense_data['location'] || {}
+
+      {
+        path: file_path,
+        line: location['line'] || location['start_line'],
+        column: location['column'] || location['start_column'],
+        severity: offense_data['severity'],
+        cop_name: offense_data['cop_name'],
+        message: offense_data['message'],
+        corrected: offense_data['corrected'] || false,
+        correctable: offense_data['correctable'] || false
+      }
+    end
   end
 end
