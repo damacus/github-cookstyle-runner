@@ -47,11 +47,22 @@ module CookstyleRunner
         report_run = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: false)
         report = report_run[:report]
 
+        # Ensure report_run and its parsed_json are valid before proceeding
+        unless report_run && report_run[:parsed_json] && report
+          logger.error('Missing parsed_json or report from the initial report run.')
+          return DEFAULT_ERROR_RETURN
+        end
+
         if report.num_auto.positive?
           # Run 2: Autocorrect mode
           autocorrect_run = _execute_cookstyle_and_process(context, logger, cmd, autocorrect: true)
-          # Update the report variable only if the autocorrect run was successful and returned a report
-          report = autocorrect_run[:report]
+          # Update the report variable only if the autocorrect run was successful and returned a valid report
+          if autocorrect_run && autocorrect_run[:report] && !autocorrect_run[:report].error
+            report = autocorrect_run[:report]
+          else
+            logger.error('Autocorrect run failed or returned invalid report.')
+            return DEFAULT_ERROR_RETURN
+          end
         elsif report.num_manual.positive?
           logger.debug("Initial run found no auto-correctable offenses (num_auto: #{report.num_auto}). Skipping autocorrect.")
           logger.debug("#{report.num_manual} issues will be created for #{context.repo_name}.")
@@ -60,12 +71,6 @@ module CookstyleRunner
         logger.error("*** Caught exception in run_cookstyle: #{e.message} ***")
         logger.debug(T.must(e.backtrace).join("\n"))
 
-        return DEFAULT_ERROR_RETURN
-      end
-
-      # Ensure report_run and its parsed_json are valid before returning
-      unless report_run && report_run[:parsed_json]
-        logger.error('Missing parsed_json from the initial report run.')
         return DEFAULT_ERROR_RETURN
       end
 

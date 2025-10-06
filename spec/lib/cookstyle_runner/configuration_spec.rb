@@ -84,14 +84,14 @@ RSpec.describe CookstyleRunner::Configuration do
       # Test against the actual loaded configuration values
       expect(config_instance.owner).to eq('sous-chefs')
       expect(config_instance.github_api_endpoint).to eq('https://api.github.com')
-      expect(config_instance.branch_name).to eq('cookstyle-fixes')
+      expect(config_instance.branch_name).to eq('cookstyle/fixes')
       expect(config_instance.cache_max_age).to eq(7)
     end
 
     it 'correctly handles array values' do
       # Test against the actual loaded configuration values
       expect(config_instance.topics).to be_an(Array)
-      expect(config_instance.topics).to include('chef', 'cookbook')
+      expect(config_instance.topics).to include('chef-cookbook')
       expect(config_instance.issue_labels).to include('cookstyle', 'automated')
     end
   end

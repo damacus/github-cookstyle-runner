@@ -2,6 +2,7 @@
 
 require 'spec_helper'
 require 'cookstyle_runner/cookstyle_operations'
+require 'cookstyle_runner/git'
 require 'logger'
 
 RSpec.describe CookstyleRunner::CookstyleOperations do
@@ -314,6 +315,98 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
       expect(report.error).to be true
       expect(report.status).to eq(:has_issues)
       expect(report.changes_committed).to be true
+    end
+  end
+
+  describe '.run_cookstyle' do
+    let(:logger) { instance_double(Logger, debug: nil, error: nil, info: nil) }
+    let(:context) { instance_double(CookstyleRunner::Git::RepoContext, repo_name: 'test-repo', repo_dir: '/tmp/test-repo') }
+    let(:cmd) { instance_double(TTY::Command) }
+
+    before do
+      allow(TTY::Command).to receive(:new).and_return(cmd)
+    end
+
+    context 'when cookstyle command fails with exit status 2' do
+      let(:failed_result) do
+        instance_double(
+          TTY::Command::Result,
+          exit_status: 2,
+          out: '',
+          err: 'Error: unrecognized cop or department Naming/PredicateMethod found in /app/.rubocop_todo.yml'
+        )
+      end
+
+      it 'returns DEFAULT_ERROR_RETURN when cookstyle fails' do
+        allow(cmd).to receive(:run!).and_return(failed_result)
+
+        result = described_class.run_cookstyle(context, logger)
+
+        expect(result[:parsed_json]).to be_nil
+        expect(result[:report]).to be_a(CookstyleRunner::Report)
+        expect(result[:report].error).to be true
+      end
+
+      it 'logs error details when cookstyle fails' do
+        allow(cmd).to receive(:run!).and_return(failed_result)
+
+        described_class.run_cookstyle(context, logger)
+
+        expect(logger).to have_received(:error).with('Cookstyle command failed unexpectedly.')
+        expect(logger).to have_received(:error).with('Exit Status: 2')
+        expect(logger).to have_received(:error).with(/unrecognized cop/)
+      end
+    end
+
+    context 'when cookstyle returns invalid JSON' do
+      let(:invalid_json_result) do
+        instance_double(
+          TTY::Command::Result,
+          exit_status: 0,
+          out: 'not valid json',
+          err: ''
+        )
+      end
+
+      it 'returns DEFAULT_ERROR_RETURN when JSON parsing fails' do
+        allow(cmd).to receive(:run!).and_return(invalid_json_result)
+
+        result = described_class.run_cookstyle(context, logger)
+
+        expect(result[:parsed_json]).to be_nil
+        expect(result[:report]).to be_a(CookstyleRunner::Report)
+        expect(result[:report].error).to be true
+      end
+
+      it 'logs missing parsed_json error' do
+        allow(cmd).to receive(:run!).and_return(invalid_json_result)
+
+        described_class.run_cookstyle(context, logger)
+
+        expect(logger).to have_received(:error).with(/Missing parsed_json/)
+      end
+    end
+
+    context 'when cookstyle succeeds with no offenses' do
+      let(:clean_result) do
+        instance_double(
+          TTY::Command::Result,
+          exit_status: 0,
+          out: clean_json.to_json,
+          err: ''
+        )
+      end
+
+      it 'returns parsed results with no offenses' do
+        allow(cmd).to receive(:run!).and_return(clean_result)
+
+        result = described_class.run_cookstyle(context, logger)
+
+        expect(result[:parsed_json]).to eq(clean_json)
+        expect(result[:report].num_auto).to eq(0)
+        expect(result[:report].num_manual).to eq(0)
+        expect(result[:report].error).to be false
+      end
     end
   end
 end

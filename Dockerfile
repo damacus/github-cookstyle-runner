@@ -24,7 +24,10 @@ COPY Gemfile* ./
 RUN bundle install --jobs $(nproc) --retry 3
 
 # Copy application code (can be overridden by volume mount)
-COPY . .
+COPY bin /app/bin
+COPY config /app/config
+COPY lib /app/lib
+
 
 # Default entrypoint for running the application
 ENTRYPOINT ["/app/bin/cookstyle-runner"]

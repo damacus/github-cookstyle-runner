@@ -1,7 +1,9 @@
 # frozen_string_literal: true
+# typed: false
 
 require 'spec_helper'
 require 'cookstyle_runner/github_pr_manager'
+require 'octokit'
 require 'logger'
 require 'stringio'
 
@@ -22,7 +24,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     it 'sets instance variables from settings' do
       # Values from config/settings (default.yml or test.yml)
       expect(pr_manager.owner).to eq('sous-chefs')
-      expect(pr_manager.branch_name).to eq('cookstyle-fixes')
+      expect(pr_manager.branch_name).to eq('cookstyle/fixes')
       expect(pr_manager.pr_title).to eq('Cookstyle Fixes')
       expect(pr_manager.issue_labels).to eq(%w[cookstyle automated])
       expect(pr_manager.create_manual_fix_issues).to be true
@@ -31,31 +33,35 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
 
   describe '#create_pull_request' do
     let(:repository) { 'test-org/test-cookbook' }
-    let(:branch) { 'main' }
+    let(:base_branch) { 'main' }
+    let(:head_branch) { 'cookstyle-fixes' }
     let(:title) { 'Fix Cookstyle violations' }
     let(:body) { 'This PR fixes cookstyle violations' }
     let(:pr_response) { double('PR', number: 123) }
 
     before do
-      allow(github_client).to receive(:create_pull_request).and_return(pr_response)
-      allow(github_client).to receive(:add_labels_to_an_issue)
+      allow(github_client).to receive_messages(
+        pull_requests: [],
+        create_pull_request: pr_response,
+        add_labels_to_an_issue: nil
+      )
     end
 
     it 'creates a pull request successfully' do
-      result = pr_manager.create_pull_request(repository, branch, title, body)
+      result = pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
       expect(result).to be true
       expect(github_client).to have_received(:create_pull_request).with(
         'test-org/test-cookbook',
-        'cookstyle-fixes',
         'main',
+        'cookstyle-fixes',
         'Fix Cookstyle violations',
         'This PR fixes cookstyle violations'
       )
     end
 
     it 'adds labels to the pull request' do
-      pr_manager.create_pull_request(repository, branch, title, body)
+      pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
       expect(github_client).to have_received(:add_labels_to_an_issue).with(
         'test-org/test-cookbook',
@@ -71,7 +77,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       end
 
       it 'returns false and logs error' do
-        result = pr_manager.create_pull_request(repository, branch, title, body)
+        result = pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
         expect(result).to be false
       end
@@ -81,7 +87,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       let(:repository) { 'https://github.com/test-org/test-cookbook' }
 
       it 'extracts repo name from URL' do
-        pr_manager.create_pull_request(repository, branch, title, body)
+        pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
         expect(github_client).to have_received(:create_pull_request).with(
           'test-org/test-cookbook',
@@ -97,7 +103,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       let(:repository) { 'test-cookbook' }
 
       it 'prepends owner to repo name' do
-        pr_manager.create_pull_request(repository, branch, title, body)
+        pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
         expect(github_client).to have_received(:create_pull_request).with(
           'sous-chefs/test-cookbook',

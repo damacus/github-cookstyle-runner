@@ -2,24 +2,21 @@ services:
   app:
     build: .
     volumes:
-      - .:/app
+      # - .:/app
       - bundle_cache:/usr/local/bundle
       - cookstyle_cache:/app/.cache
+      - ./config/settings/local.yml:/app/config/settings/local.yml
     environment:
       - BUNDLE_PATH=/usr/local/bundle
       - BUNDLE_APP_CONFIG=/usr/local/bundle
-      - GCR_DESTINATION_REPO_OWNER=sous-chefs
-      - GCR_BRANCH_NAME=automated/cookstyle-fixes
-      - GCR_DESTINATION_REPO_TOPICS=chef-cookbook
-      - GCR_LOG_LEVEL=DEBUG
-      - GCR_USE_CACHE=1
-      - GCR_CACHE_DIR=/app/.cache
-      - GCR_THREAD_COUNT=1
       - GITHUB_TOKEN=${GITHUB_TOKEN}
-      - GCR_FILTER_REPOS=elasticsearch,aws,docker,nginx
 
   test:
     extends: app
+    volumes:
+      - ./spec:/app/spec
+      - ./config:/app/config
+      - ./lib:/app/lib
     environment:
       - BUNDLE_PATH=/usr/local/bundle
       - BUNDLE_APP_CONFIG=/usr/local/bundle

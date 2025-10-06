@@ -125,7 +125,7 @@ module CookstyleRunner
       @github_app_id = T.let(@settings.github_app_id, T.nilable(String))
       @github_app_installation_id = T.let(@settings.github_app_installation_id, T.nilable(String))
       @github_app_private_key = T.let(@settings.github_app_private_key, T.nilable(String))
-      @github_api_endpoint = T.let(@settings.github_api_endpoint, String)
+      @github_api_endpoint = T.let(@settings.github_api_endpoint || 'https://api.github.com', String)
 
       # Repository configuration
       @owner = T.let(@settings.owner, String)
@@ -139,8 +139,8 @@ module CookstyleRunner
       @default_branch = T.let(@settings.default_branch, String)
 
       # Git author configuration
-      @git_name = T.let(@settings.git_name, String)
-      @git_email = T.let(@settings.git_email, String)
+      @git_name = T.let(@settings.git_name || 'Cookstyle Runner', String)
+      @git_email = T.let(@settings.git_email || 'cookstyle-runner@example.com', String)
 
       # Cache configuration
       @cache_dir = T.let(@settings.cache_dir, String)

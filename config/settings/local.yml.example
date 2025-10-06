@@ -24,3 +24,19 @@
 # Cache configuration
 # cache_dir: /path/to/your/cache
 # use_cache: true
+
+owner: sous-chefs
+topics:
+  - chef-cookbook
+filter_repos: [ruby_rbenv]
+
+branch_name: cookstyle/fixes
+
+pr_title: "Cookstyle Fixes"
+create_manual_fix_issues: false
+default_branch: main
+cache_max_age: 1
+force_refresh: true
+
+git_name: Dan Webb
+git_email: damacus@users.noreply.github.com
