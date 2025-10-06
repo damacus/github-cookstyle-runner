@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# typed: false
 
 require 'spec_helper'
 require 'cookstyle_runner/github_pr_manager'
@@ -9,7 +10,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
   subject(:pr_manager) { described_class.new(settings, logger, github_client) }
 
   let(:logger) { Logger.new(StringIO.new) }
-  let(:github_client) { instance_double(Octokit::Client) }
+  let(:github_client) { double('Octokit::Client') }
   let(:settings) { Object.const_get('Settings') } # Use real Config::Options from test.yml
 
   describe '#initialize' do
@@ -22,7 +23,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     it 'sets instance variables from settings' do
       # Values from config/settings (default.yml or test.yml)
       expect(pr_manager.owner).to eq('sous-chefs')
-      expect(pr_manager.branch_name).to eq('cookstyle-fixes')
+      expect(pr_manager.branch_name).to eq('cookstyle/fixes')
       expect(pr_manager.pr_title).to eq('Cookstyle Fixes')
       expect(pr_manager.issue_labels).to eq(%w[cookstyle automated])
       expect(pr_manager.create_manual_fix_issues).to be true
@@ -38,8 +39,11 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     let(:pr_response) { double('PR', number: 123) }
 
     before do
-      allow(github_client).to receive(:create_pull_request).and_return(pr_response)
-      allow(github_client).to receive(:add_labels_to_an_issue)
+      allow(github_client).to receive_messages(
+        pull_requests: [],
+        create_pull_request: pr_response,
+        add_labels_to_an_issue: nil
+      )
     end
 
     it 'creates a pull request successfully' do

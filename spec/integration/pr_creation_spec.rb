@@ -60,8 +60,11 @@ RSpec.describe 'PR and Issue Creation', :integration do
       let(:create_args) { [test_repo, 'main', 'cookstyle-fixes', 'Test PR', 'Test body'] }
 
       before do
-        allow(github_client).to receive(:create_pull_request).and_return(pull_request_response)
-        allow(github_client).to receive(:add_labels_to_an_issue)
+        allow(github_client).to receive_messages(
+          pull_requests: [],
+          create_pull_request: pull_request_response,
+          add_labels_to_an_issue: nil
+        )
       end
 
       it 'creates the pull request and applies labels' do

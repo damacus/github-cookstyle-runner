@@ -259,10 +259,11 @@ RSpec.describe CookstyleRunner::Git do
     it 'adds and commits changes when changes exist' do
       allow(status).to receive_messages(changed: ['file.rb'], added: [], deleted: [])
       allow(repo).to receive(:add).with(all: true)
-      allow(repo).to receive(:commit).with('test commit')
+      commit_result = 'commit_sha_abc123'
+      allow(repo).to receive(:commit).with('test commit').and_return(commit_result)
 
       result = described_class.add_and_commit_changes(context, 'test commit')
-      expect(result).to be true
+      expect(result).to eq(commit_result)
       expect(repo).to have_received(:add).with(all: true)
       expect(repo).to have_received(:commit).with('test commit')
     end
@@ -326,7 +327,7 @@ RSpec.describe CookstyleRunner::Git do
     end
 
     it 'creates and checks out new branch when branch does not exist' do
-      allow(repo).to receive(:checkout).and_raise(Git::GitExecuteError.new('branch not found'))
+      allow(repo).to receive(:checkout).and_raise(Git::Error.new('branch not found'))
       branch = instance_double(Git::Branch)
       allow(repo).to receive(:branch).with('new-branch').and_return(branch)
       allow(branch).to receive(:checkout)

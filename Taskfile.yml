@@ -6,6 +6,11 @@ tasks:
     cmds:
       - docker compose build app
 
+  run:
+    desc: Run the Docker container
+    cmds:
+      - docker compose run --build --rm --remove-orphans app run
+
   test:
     desc: Run tests in Docker container with isolated environment
     cmds:

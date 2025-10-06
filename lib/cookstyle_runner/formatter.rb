@@ -34,13 +34,21 @@ module CookstyleRunner
     def self.format_pr_description(offense_details)
       pr_body = issue_header
 
+      files_with_correctable = []
       offense_details['files']&.each do |file|
+        # Only include files that have correctable offenses
+        correctable_offenses = file['offenses']&.select { |o| o['correctable'] } || []
+        next if correctable_offenses.empty?
+
+        files_with_correctable << file
         pr_body += "* **#{file['path']}**: "
-        pr_body += file['offenses'].map { |o| o['cop_name'] }.uniq.join(', ')
+        pr_body += correctable_offenses.map { |o| o['cop_name'] }.uniq.join(', ')
         pr_body += "\n"
       end
 
-      pr_body += format_summary(offense_details, false)
+      # Create a modified offense_details with only correctable files for the summary
+      summary_details = offense_details.merge('files' => files_with_correctable)
+      pr_body += format_summary(summary_details, false)
       pr_body
     end
 

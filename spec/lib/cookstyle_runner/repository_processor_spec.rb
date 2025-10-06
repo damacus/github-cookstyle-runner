@@ -79,20 +79,20 @@ RSpec.describe CookstyleRunner::RepositoryProcessor, :integration do
       )
 
       # Stub Cookstyle to return no offenses
+      clean_report = CookstyleRunner::Report.new(num_auto: 0, num_manual: 0)
       allow(CookstyleRunner::CookstyleOperations).to receive(:run_cookstyle)
         .and_return(
-          issue_count: 0,
-          auto_correctable_count: 0,
-          manual_fixes_count: 0,
-          offense_details: {}
+          parsed_json: { 'files' => [], 'summary' => { 'offense_count' => 0 } },
+          report: clean_report
         )
 
       # Process repository - since pr_manager is nil, no PRs/issues will be created
       result = processor.process_repository(repo_name, repo_url)
 
       # Verify the result indicates processing was successful
-      expect(result['state']).to eq('processed')
-      expect(result['issues_found']).to be false
+      # The method returns symbol keys, not string keys
+      expect(result[:status]).to eq(:no_issues)
+      expect(result[:repo_name]).to eq(repo_name)
     end
   end
 end

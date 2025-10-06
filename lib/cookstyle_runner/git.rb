@@ -127,7 +127,7 @@ module CookstyleRunner
       repo = ::Git.open(context.repo_dir)
       repo.checkout(branch)
       true
-    rescue ::Git::GitExecuteError
+    rescue ::Git::Error
       context.logger.info("Branch #{branch} not found, creating new branch.")
       repo.branch(branch).checkout
       true
@@ -162,14 +162,16 @@ module CookstyleRunner
     end
 
     # Add and commit local changes
-    def self.add_and_commit_changes(context, commit_message)
+    def self.add_and_commit_changes(context, commit_message, git_config: {})
       return false unless changes_to_commit?(context)
+
+      setup_git_config_from_hash(git_config, context.logger)
 
       repo = ::Git.open(context.repo_dir)
       repo.add(all: true)
-      repo.commit(commit_message)
+      commit_result = repo.commit(commit_message)
       context.logger.debug("Committed changes locally with message: #{commit_message}")
-      true
+      commit_result
     rescue StandardError => e
       context.logger.error("Failed to add and commit local changes: #{e.message}")
       false
@@ -225,6 +227,18 @@ module CookstyleRunner
     rescue StandardError => e
       logger.error("Failed to configure git user: #{e.message}")
       false
+    end
+
+    # Setup git config from hash if credentials are provided
+    sig { params(git_config: T::Hash[Symbol, T.untyped], logger: Logger).void }
+    private_class_method def self.setup_git_config_from_hash(git_config, logger)
+      return unless git_config[:git_user_name] && git_config[:git_user_email]
+
+      setup_git_config(
+        user_name: git_config[:git_user_name],
+        user_email: git_config[:git_user_email],
+        logger: logger
+      )
     end
 
     # Helper method to delete, create, and checkout a branch

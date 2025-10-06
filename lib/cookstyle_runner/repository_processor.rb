@@ -119,7 +119,9 @@ module CookstyleRunner
       # Add the time taken to the result
       result['time_taken'] = Time.now - start_time
       logger.info("Finished processing #{repo_name} in #{result['time_taken'].round(2)}s")
-      result
+
+      # Convert to symbol keys for reporter compatibility
+      convert_result_to_symbols(result, repo_name)
     end
 
     private
@@ -172,7 +174,16 @@ module CookstyleRunner
         repo_dir: repo_dir
       )
 
-      CookstyleOperations.run_cookstyle(context, logger)
+      result = CookstyleOperations.run_cookstyle(context, logger)
+      report = result[:report]
+
+      # Transform the result to match expected format
+      {
+        issue_count: report.total_correctable,
+        auto_correctable_count: report.num_auto,
+        manual_fixes_count: report.num_manual,
+        offense_details: result[:parsed_json]
+      }
     end
 
     # Handle issues found in the repository by creating PR or issue
@@ -211,7 +222,11 @@ module CookstyleRunner
         repo_dir: repo_dir
       )
 
-      auto_correct_result = CookstyleOperations.run_cookstyle(context, logger)
+      # Run cookstyle with autocorrect to fix issues
+      CookstyleOperations.run_cookstyle(context, logger)
+
+      # Generate PR description from the ORIGINAL offense details (before auto-correction)
+      pr_description = format_pr_description(result['offense_details'])
 
       # Commit changes and create PR
       begin
@@ -226,22 +241,23 @@ module CookstyleRunner
           repo_dir: repo_dir
         )
 
-        # Add and commit changes
-        Git.add_and_commit_changes(context, commit_message)
-        # Create branch and push
+        # Prepare git configuration
         git_config = {
           branch_name: branch_name,
           git_user_name: @configuration.git_name,
           git_user_email: @configuration.git_email
         }
+
+        Git.add_and_commit_changes(context, commit_message, git_config: git_config)
         Git.create_branch(context, git_config, logger)
+        Git.push_branch(context, branch_name)
 
         pr_success = @pr_manager.create_pull_request(
           repo_full_name,
           @configuration.default_branch,
           branch_name,
           @configuration.pr_title,
-          format_pr_description(auto_correct_result['offense_details'])
+          pr_description
         )
 
         if pr_success
@@ -303,6 +319,26 @@ module CookstyleRunner
 
       @cache_manager.update(repo_name, commit_sha, had_issues, result, processing_time)
       logger.debug("Updated cache for #{repo_name}")
+    end
+
+    # Convert result hash to symbol keys for reporter compatibility
+    sig { params(result: T::Hash[String, T.untyped], repo_name: String).returns(T::Hash[String, T.untyped]) }
+    def convert_result_to_symbols(result, repo_name)
+      status = if result['state'] == 'processed'
+                 result['issues_found'] ? :issues_found : :no_issues
+               elsif result['state'] == 'skipped'
+                 :skipped
+               else
+                 :error # Treat error and unknown states as errors
+               end
+
+      {
+        repo_name: repo_name,
+        status: status,
+        error_message: result['error'],
+        message: result['message'],
+        time_taken: result['time_taken']
+      }
     end
   end
 end
