@@ -48,13 +48,12 @@ VCR.configure do |c|
   c.configure_rspec_metadata!
 
   # Filter sensitive data from cassettes
-  c.filter_sensitive_data('<GITHUB_TOKEN>') { ENV.fetch('GITHUB_TOKEN', nil) }
-  c.filter_sensitive_data('<GCR_GITHUB_TOKEN>') { ENV.fetch('GCR_GITHUB_TOKEN', nil) }
-  c.filter_sensitive_data('<GITHUB_APP_ID>') { ENV.fetch('GCR_GITHUB_APP_ID', nil) }
-  c.filter_sensitive_data('<GITHUB_APP_INSTALLATION_ID>') { ENV.fetch('GCR_GITHUB_APP_INSTALLATION_ID', nil) }
-  c.filter_sensitive_data('<GITHUB_APP_PRIVATE_KEY>') do
-    ENV['GCR_GITHUB_APP_PRIVATE_KEY']&.gsub("\n", '\\n')
-  end
+  # Only filter if the environment variable is actually set
+  c.filter_sensitive_data('<GITHUB_TOKEN>') { ENV['GITHUB_TOKEN'] } if ENV['GITHUB_TOKEN']
+  c.filter_sensitive_data('<GCR_GITHUB_TOKEN>') { ENV['GCR_GITHUB_TOKEN'] } if ENV['GCR_GITHUB_TOKEN']
+  c.filter_sensitive_data('<GITHUB_APP_ID>') { ENV['GCR_GITHUB_APP_ID'] } if ENV['GCR_GITHUB_APP_ID']
+  c.filter_sensitive_data('<GITHUB_APP_INSTALLATION_ID>') { ENV['GCR_GITHUB_APP_INSTALLATION_ID'] } if ENV['GCR_GITHUB_APP_INSTALLATION_ID']
+  c.filter_sensitive_data('<GITHUB_APP_PRIVATE_KEY>') { ENV['GCR_GITHUB_APP_PRIVATE_KEY'].gsub("\n", '\\n') } if ENV['GCR_GITHUB_APP_PRIVATE_KEY']
 
   # Allow connections to localhost (for test servers)
   c.ignore_localhost = true
