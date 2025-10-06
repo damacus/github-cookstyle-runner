@@ -3,6 +3,7 @@
 
 require 'spec_helper'
 require 'cookstyle_runner/github_pr_manager'
+require 'octokit'
 require 'logger'
 require 'stringio'
 
