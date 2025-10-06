@@ -324,10 +324,10 @@ module CookstyleRunner
     end
 
     def render_cache_status(runtime_stats, cache_dir)
-      hits = runtime_stats.fetch('cache_hits', runtime_stats.fetch(:cache_hits, 0)).to_i
-      misses = runtime_stats.fetch('cache_misses', runtime_stats.fetch(:cache_misses, 0)).to_i
-      updates = runtime_stats.fetch('cache_updates', runtime_stats.fetch(:cache_updates, 0)).to_i
-      hit_rate = runtime_stats.fetch('cache_hit_rate', runtime_stats.fetch(:cache_hit_rate, 0)).to_f
+      hits = runtime_stats.fetch('cache_hits', 0).to_i
+      misses = runtime_stats.fetch('cache_misses', 0).to_i
+      updates = runtime_stats.fetch('cache_updates', 0).to_i
+      hit_rate = runtime_stats.fetch('cache_hit_rate', 0).to_f
 
       puts "  Cache Directory: #{cache_dir}"
       puts pastel.green("  Cache Hits: #{hits}")
