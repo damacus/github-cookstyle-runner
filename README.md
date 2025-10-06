@@ -2,6 +2,38 @@
 
 This application is designed to run cookstyle against repositories found by a topic in a GitHub organization and issue pull requests with the changes. It features multi-threading, intelligent caching, and comprehensive error handling.
 
+## Documentation
+
+📚 **[View Full Documentation](https://damacus.github.io/github-cookstyle-runner/)**
+
+- [Installation Guide](https://damacus.github.io/github-cookstyle-runner/installation/) - Docker Compose and Kubernetes setup
+- [Configuration Reference](https://damacus.github.io/github-cookstyle-runner/configuration/) - All environment variables and options
+- [Usage Guide](https://damacus.github.io/github-cookstyle-runner/usage/basic/) - How to run and use the application
+- [Troubleshooting](https://damacus.github.io/github-cookstyle-runner/usage/troubleshooting/) - Common issues and solutions
+- [Contributing](https://damacus.github.io/github-cookstyle-runner/development/contributing/) - Development setup and guidelines
+
+## Quick Start
+
+### Docker Compose
+
+```bash
+# Create docker-compose.yml (see Installation Guide for full example)
+docker-compose up
+```
+
+### Kubernetes CronJob
+
+```bash
+# Apply manifests (see Installation Guide for full examples)
+kubectl apply -f secrets.yaml
+kubectl apply -f configmap.yaml
+kubectl apply -f cronjob.yaml
+```
+
+## Installation
+
+For detailed installation instructions including Kubernetes (CronJob) and docker-compose setups, see the [Installation Guide](https://damacus.github.io/github-cookstyle-runner/installation/).
+
 ## User Permissions
 
 - It is recommended to use a github bot account when using this application
@@ -54,6 +86,16 @@ Below are a list of variables, what they mean and example values
 | GCR_THREAD_COUNT  | `Integer` | No       | Number of threads to use for parallel processing (default: number of CPU cores)                                  |
 | GCR_RETRY_COUNT   | `Integer` | No       | Number of retry attempts for repository processing before giving up (default: 3)                                 |
 | GCR_DEBUG_MODE    | `Boolean` | No       | Enable verbose debug logging (default: disabled, set to `1` to enable)                                           |
+
+### Logging Configuration
+
+| Name                        | Type     | Required | Description                                                                                                      |
+|-----------------------------|----------|----------|------------------------------------------------------------------------------------------------------------------|
+| GCR_LOG_LEVEL               | `String` | No       | Log level: DEBUG, INFO, WARN, ERROR, FATAL (default: INFO)                                                      |
+| GCR_LOG_FORMAT              | `String` | No       | Log format: text or json (default: text)                                                                         |
+| GCR_LOG_DEBUG_COMPONENTS    | `String` | No       | Comma-separated list of components for debug logging (e.g., `git,cache,api`)                                    |
+
+For detailed logging configuration, see [Logging Documentation](docs/logging.md).
 
 ### Pull Request Configuration
 

@@ -1,0 +1,81 @@
+site_name: GitHub Cookstyle Runner
+site_description: Automated Cookstyle runner for GitHub repositories
+site_author: Damacus
+site_url: https://damacus.github.io/github-cookstyle-runner
+
+repo_name: damacus/github-cookstyle-runner
+repo_url: https://github.com/damacus/github-cookstyle-runner
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Installation:
+      - Getting Started: installation/index.md
+      - Docker Compose: installation/docker-compose.md
+      - Kubernetes: installation/kubernetes.md
+  - Configuration:
+      - Overview: configuration/index.md
+      - Environment Variables: configuration/environment-variables.md
+      - Advanced Options: configuration/advanced.md
+  - Usage:
+      - Basic Usage: usage/basic.md
+      - Advanced Features: usage/advanced.md
+      - Troubleshooting: usage/troubleshooting.md
+  - Development:
+      - Contributing: development/contributing.md
+      - Architecture: development/architecture.md
+  - Changelog: CHANGELOG.md
