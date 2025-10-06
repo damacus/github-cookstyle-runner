@@ -35,6 +35,7 @@ require 'config'
 require_relative '../config/initializers/config'
 
 # Then load the rest of the application files
+require_relative 'cookstyle_runner/logger'
 require_relative 'cookstyle_runner/git'
 require_relative 'cookstyle_runner/github_api'
 require_relative 'cookstyle_runner/repository_manager'
@@ -59,6 +60,7 @@ module CookstyleRunner
 
     # Initializes the application with a logger and configuration
     def initialize
+      _load_settings
       _setup_logger
       _setup_configuration
       _setup_cache
@@ -124,24 +126,65 @@ module CookstyleRunner
 
     # Sets up the application logger
     def _setup_logger
-      log_level_str = ENV.fetch('GCR_LOG_LEVEL', 'INFO').upcase
+      settings = Object.const_get('Settings')
+      log_level_str = ENV.fetch('GCR_LOG_LEVEL', settings.log_level.to_s).upcase
       log_level = _parse_log_level(log_level_str)
-      @logger = Logger.new($stdout, level: log_level)
-      logger.info("Log level set to: #{log_level_str}") # Log the *requested* level for clarity
+      log_format = _get_log_format(settings)
+      debug_components = _get_debug_components(settings)
+
+      @logger = CookstyleRunner::Logger.new(
+        $stdout,
+        level: log_level,
+        format: log_format,
+        components: debug_components
+      )
+
+      _log_logger_info(log_level_str, log_format, debug_components)
     end
 
     # Parse a log level string into a Logger constant
     # @param level_str [String] The log level string (e.g., 'INFO', 'DEBUG')
     # @return [Integer] The corresponding Logger constant value
     def _parse_log_level(level_str)
-      Logger.const_get(level_str)
+      ::Logger.const_get(level_str)
     rescue NameError
       logger&.warn("Invalid log level '#{level_str}', defaulting to INFO.")
-      Logger::INFO
+      ::Logger::INFO
+    end
+
+    # Get log format from ENV or settings
+    def _get_log_format(settings)
+      format_value = ENV.fetch('GCR_LOG_FORMAT', settings.log_format).to_s.strip
+      format_value = 'text' if format_value.empty?
+      format_value.downcase.to_sym
+    end
+
+    # Get debug components from ENV or settings
+    def _get_debug_components(settings)
+      env_components = ENV.fetch('GCR_LOG_DEBUG_COMPONENTS', nil)
+
+      components = if env_components
+                     env_components.split(',').map(&:strip)
+                   else
+                     Array(settings.log_debug_components).map(&:to_s)
+                   end
+
+      components.compact!
+      components.reject!(&:empty?)
+
+      components
+    end
+
+    # Log logger initialization info
+    def _log_logger_info(log_level_str, log_format, debug_components)
+      logger.info("Log level set to: #{log_level_str}")
+      logger.info("Log format: #{log_format}")
+      return if debug_components.empty?
+
+      logger.info("Debug components: #{debug_components.join(', ')}")
     end
 
     def _setup_configuration
-      _load_settings
       _validate_settings
       @configuration = Configuration.new(logger)
       ConfigManager.log_config_summary(logger)

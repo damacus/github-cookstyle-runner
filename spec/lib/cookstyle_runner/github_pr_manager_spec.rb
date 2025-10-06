@@ -4,13 +4,12 @@
 require 'spec_helper'
 require 'cookstyle_runner/github_pr_manager'
 require 'octokit'
-require 'logger'
 require 'stringio'
 
 RSpec.describe CookstyleRunner::GitHubPRManager do
   subject(:pr_manager) { described_class.new(settings, logger, github_client) }
 
-  let(:logger) { Logger.new(StringIO.new) }
+  let(:logger) { CookstyleRunner::Logger.new(StringIO.new, level: Logger::INFO) }
   let(:github_client) { instance_double(Octokit::Client) }
   let(:settings) { Object.const_get('Settings') } # Use real Config::Options from test.yml
 

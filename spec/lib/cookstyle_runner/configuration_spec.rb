@@ -2,12 +2,11 @@
 
 require 'spec_helper'
 require 'cookstyle_runner/configuration'
-require 'logger'
 
 RSpec.describe CookstyleRunner::Configuration do
   subject(:config_instance) { described_class.new(logger) }
 
-  let(:logger) { Logger.new(StringIO.new) }
+  let(:logger) { CookstyleRunner::Logger.new(StringIO.new, level: Logger::INFO) }
 
   # Load expected values from test.yml
   let(:test_config_values) do

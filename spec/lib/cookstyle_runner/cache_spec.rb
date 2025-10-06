@@ -8,7 +8,7 @@ require 'json'
 RSpec.describe CookstyleRunner::Cache do
   let(:cache_dir) { File.join(Dir.tmpdir, 'cookstyle-runner-test', 'cache') }
   let(:cache_file) { File.join(cache_dir, 'cache.json') }
-  let(:logger) { Logger.new(StringIO.new) }
+  let(:logger) { CookstyleRunner::Logger.new(StringIO.new, level: Logger::INFO) }
   let(:repo_name) { 'test/repo' }
   let(:commit_sha) { '0123456789abcdef0123456789abcdef01234567' }
   let(:cache) { described_class.new(cache_dir, logger) }

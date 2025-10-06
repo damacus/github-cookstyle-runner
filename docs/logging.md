@@ -19,19 +19,7 @@ Example JSON output:
 {"timestamp":"2025-10-06T15:44:36+01:00","level":"DEBUG","message":"Cache hit","component":"cache","repo":"my-repo"}
 ```
 
-### 2. **Log Rotation**
-
-Prevent log files from growing indefinitely by enabling rotation:
-
-Configuration in `config/settings/default.yml`:
-
-```yaml
-log_rotation_enabled: true
-log_rotation_max_size: 1048576  # 1MB in bytes
-log_rotation_max_files: 5       # Keep 5 rotated files
-```
-
-### 3. **Component-Level Debug Logging**
+### 2. **Component-Level Debug Logging**
 
 Enable debug logging for specific components without flooding logs:
 
@@ -75,9 +63,6 @@ In `config/settings/default.yml`:
 # Logging configuration
 log_level: INFO
 log_format: text # text or json
-log_rotation_enabled: false
-log_rotation_max_size: 1048576 # 1MB in bytes
-log_rotation_max_files: 5
 log_debug_components: [] # List of components to enable debug logging for
 ```
 
@@ -154,10 +139,6 @@ end
    - Easier to parse and aggregate
    - Better for log management tools (ELK, Splunk, etc.)
 
-4. **Enable log rotation for long-running processes**:
-   - Prevents disk space issues
-   - Keeps logs manageable
-
 ## Troubleshooting
 
 ### Logs are too verbose
@@ -176,13 +157,3 @@ Enable component-specific debug logging:
 export GCR_LOG_LEVEL=DEBUG
 export GCR_LOG_DEBUG_COMPONENTS=git,cache
 ```
-
-### Logs not rotating
-
-Ensure rotation is enabled in configuration:
-
-```yaml
-log_rotation_enabled: true
-```
-
-Note: Rotation only works when logging to a file, not stdout.

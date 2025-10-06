@@ -8,7 +8,6 @@ require 'cookstyle_runner/context_manager'
 require 'cookstyle_runner/github_pr_manager'
 require 'cookstyle_runner/cache'
 require 'octokit'
-require 'logger'
 require 'tmpdir'
 require 'fileutils'
 require 'ostruct'
@@ -22,7 +21,7 @@ require 'ostruct'
 # All other logic is covered by unit tests. External dependencies are stubbed. Keep these tests simple and maintainable.
 
 RSpec.describe CookstyleRunner::RepositoryProcessor, :integration do
-  let(:logger) { Logger.new(StringIO.new) }
+  let(:logger) { CookstyleRunner::Logger.new(StringIO.new, level: Logger::INFO) }
   let(:github_token) { 'mock_gh_token' }
   let(:cache_manager) { nil }
   let(:pr_manager) { nil }

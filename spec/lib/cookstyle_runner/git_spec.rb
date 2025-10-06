@@ -2,12 +2,11 @@
 
 require 'spec_helper'
 require 'cookstyle_runner/git'
-require 'logger'
 require 'stringio'
 require 'git'
 
 RSpec.describe CookstyleRunner::Git do
-  let(:logger) { Logger.new(StringIO.new) }
+  let(:logger) { CookstyleRunner::Logger.new(StringIO.new, level: Logger::INFO) }
   let(:context) do
     CookstyleRunner::Git::RepoContext.new(
       repo_name: 'test-cookbook',
