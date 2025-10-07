@@ -110,7 +110,6 @@ module CookstyleRunner
     end
     # rubocop:enable Metrics/MethodLength
 
-    # rubocop:disable Metrics/MethodLength
     def run_command
       setup_environment
 
@@ -119,51 +118,30 @@ module CookstyleRunner
         return 0
       end
 
-      puts pastel.yellow('Dry run mode - no changes will be made') if options[:dry_run]
-
       apply_cli_options
 
       repos = options[:repos] || []
-      unless repos.empty?
-        ENV['GCR_FILTER_REPOS'] = repos.join(',')
-        puts pastel.cyan("Running on specific repositories: #{repos.join(', ')}")
-      end
+      ENV['GCR_FILTER_REPOS'] = repos.join(',') unless repos.empty?
 
       app = Application.new
-      exit_code = app.run
-
-      if exit_code.zero?
-        puts pastel.green("\n✓ Cookstyle run completed successfully")
-      else
-        puts pastel.red("\n✗ Cookstyle run completed with errors")
-      end
-
-      exit_code
+      app.run
     end
-    # rubocop:enable Metrics/MethodLength
 
     def list_command
       setup_environment
+      apply_cli_options
 
       if options[:help]
         show_list_help
         return 0
       end
 
-      # Apply CLI options including format
-      ENV['GCR_OUTPUT_FORMAT'] = options[:format] if options[:format]
-
-      puts pastel.cyan('Fetching repositories...')
-
       app = Application.new
       repositories = fetch_repositories(app)
 
-      if repositories.empty?
-        puts pastel.yellow('No repositories found matching criteria')
-        return 0
-      end
+      return 0 if repositories.empty?
 
-      display_repositories(repositories, options[:format] || 'json')
+      display_repositories(app.logger, repositories, options[:format] || 'json')
       0
     end
 
@@ -190,14 +168,16 @@ module CookstyleRunner
 
     def status_command
       setup_environment
+      apply_cli_options
 
       if options[:help]
         show_status_help
         return 0
       end
 
+      app = Application.new
       format = options[:format] || 'table'
-      display_cache_status(format)
+      display_cache_status(app.logger, format)
       0
     end
 
@@ -244,39 +224,31 @@ module CookstyleRunner
       app.fetch_and_filter_repositories
     end
 
-    def display_repositories(repositories, format)
-      return display_invalid_format(format) unless VALID_FORMATS.include?(format)
+    def display_repositories(logger, repositories, format)
+      return display_invalid_format(logger, format) unless VALID_FORMATS.include?(format)
 
       case format
       when 'json'
-        display_repositories_json(repositories)
-      when 'table'
-        display_repositories_table(repositories)
-      when 'text'
-        display_repositories_text(repositories)
+        display_repositories_json(logger, repositories)
+      when 'table', 'text'
+        display_repositories_text(logger, repositories)
       end
     end
 
-    def display_invalid_format(format)
-      puts pastel.red("Invalid format: #{format}")
-      puts "Valid formats are: #{VALID_FORMATS.join(', ')}"
+    def display_invalid_format(logger, format)
+      logger.error("Invalid format: #{format}")
+      logger.error("Valid formats are: #{VALID_FORMATS.join(', ')}")
     end
 
-    def display_repositories_json(repositories)
-      require 'json'
-      puts JSON.pretty_generate(repositories: repositories)
+    def display_repositories_json(logger, repositories)
+      logger.info('Repository list', repositories: repositories)
     end
 
-    def display_repositories_table(repositories)
-      # Table format now uses same output as text (SemanticLogger handles formatting)
-      display_repositories_text(repositories)
-    end
-
-    def display_repositories_text(repositories)
-      puts pastel.green("\nFound #{repositories.length} repositories:")
+    def display_repositories_text(logger, repositories)
+      logger.info("Found #{repositories.length} repositories:")
       repositories.each_with_index do |repo, index|
         repo_name = File.basename(repo, '.git')
-        puts "  #{index + 1}. #{repo_name}"
+        logger.info("  #{index + 1}. #{repo_name}")
       end
     end
 
@@ -340,8 +312,8 @@ module CookstyleRunner
       1
     end
 
-    def display_cache_status(format = 'json')
-      return display_invalid_format(format) unless VALID_FORMATS.include?(format)
+    def display_cache_status(logger, format = 'json')
+      return display_invalid_format(logger, format) unless VALID_FORMATS.include?(format)
 
       require_relative 'cache'
 
@@ -352,14 +324,14 @@ module CookstyleRunner
       cache_stats = cache.stats
 
       unless cache_stats
-        puts pastel.yellow('  No cache statistics available')
+        logger.warn('No cache statistics available')
         return
       end
 
-      render_cache_status(cache_stats.runtime_stats, settings.cache_dir, format)
+      render_cache_status(logger, cache_stats.runtime_stats, settings.cache_dir, format)
     end
 
-    def render_cache_status(runtime_stats, cache_dir, format)
+    def render_cache_status(logger, runtime_stats, cache_dir, format)
       hits = runtime_stats.fetch('cache_hits', 0).to_i
       misses = runtime_stats.fetch('cache_misses', 0).to_i
       updates = runtime_stats.fetch('cache_updates', 0).to_i
@@ -367,41 +339,29 @@ module CookstyleRunner
 
       case format
       when 'json'
-        render_cache_status_json(cache_dir, hits, misses, updates, hit_rate)
-      when 'table'
-        render_cache_status_table(cache_dir, hits, misses, updates, hit_rate)
-      when 'text'
-        render_cache_status_text(cache_dir, hits, misses, updates, hit_rate)
+        render_cache_status_json(logger, cache_dir, hits, misses, updates, hit_rate)
+      when 'table', 'text'
+        render_cache_status_text(logger, cache_dir, hits, misses, updates, hit_rate)
       end
     end
 
-    def render_cache_status_text(cache_dir, hits, misses, updates, hit_rate)
-      puts pastel.cyan('Cache Status:')
-      puts "  Cache Directory: #{cache_dir}"
-      puts pastel.green("  Cache Hits: #{hits}")
-      puts pastel.yellow("  Cache Misses: #{misses}")
-      puts pastel.cyan("  Cache Updates: #{updates}")
-
+    def render_cache_status_text(logger, cache_dir, hits, misses, updates, hit_rate)
+      logger.info('Cache Status:')
+      logger.info("  Cache Directory: #{cache_dir}")
+      logger.info("  Cache Hits: #{hits}")
+      logger.info("  Cache Misses: #{misses}")
+      logger.info("  Cache Updates: #{updates}")
       formatted_rate = format('%.2f', hit_rate)
-      color = hit_rate > 50 ? :green : :yellow
-      puts pastel.decorate("  Cache Hit Rate: #{formatted_rate}%", color)
+      logger.info("  Cache Hit Rate: #{formatted_rate}%")
     end
 
-    def render_cache_status_table(cache_dir, hits, misses, updates, hit_rate)
-      # Table format now uses same output as text (SemanticLogger handles formatting)
-      render_cache_status_text(cache_dir, hits, misses, updates, hit_rate)
-    end
-
-    def render_cache_status_json(cache_dir, hits, misses, updates, hit_rate)
-      require 'json'
-      data = {
-        cache_directory: cache_dir,
-        cache_hits: hits,
-        cache_misses: misses,
-        cache_updates: updates,
-        cache_hit_rate: hit_rate
-      }
-      puts JSON.pretty_generate(data)
+    def render_cache_status_json(logger, cache_dir, hits, misses, updates, hit_rate)
+      logger.info('Cache status',
+                  cache_directory: cache_dir,
+                  cache_hits: hits,
+                  cache_misses: misses,
+                  cache_updates: updates,
+                  cache_hit_rate: hit_rate)
     end
 
     def handle_error(error)
