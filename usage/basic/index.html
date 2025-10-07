@@ -795,6 +795,66 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cli-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-cookstyle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Cookstyle
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version Information
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      List Repositories
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      View Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check Status
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#understanding-output" class="md-nav__link">
     <span class="md-ellipsis">
       Understanding Output
@@ -974,6 +1034,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Global Options
+    </span>
+  </a>
   
 </li>
       
@@ -1246,6 +1315,66 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cli-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      CLI Commands
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#run-cookstyle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Cookstyle
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#version-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      Version Information
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      List Repositories
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#view-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      View Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check Status
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#understanding-output" class="md-nav__link">
     <span class="md-ellipsis">
       Understanding Output
@@ -1429,6 +1558,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Global Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#exit-codes" class="md-nav__link">
     <span class="md-ellipsis">
       Exit Codes
@@ -1492,37 +1630,105 @@
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Or with bundle</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>bundle<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>./bin/cookstyle-runner
 </code></pre></div>
+<h2 id="cli-commands">CLI Commands<a class="headerlink" href="#cli-commands" title="Permanent link">&para;</a></h2>
+<h3 id="run-cookstyle">Run Cookstyle<a class="headerlink" href="#run-cookstyle" title="Permanent link">&para;</a></h3>
+<p>Run Cookstyle on repositories:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Run on all configured repositories</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>./bin/cookstyle-runner<span class="w"> </span>run
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Run on specific repositories</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>./bin/cookstyle-runner<span class="w"> </span>run<span class="w"> </span>repo1<span class="w"> </span>repo2
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Dry run mode (preview only)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>./bin/cookstyle-runner<span class="w"> </span>run<span class="w"> </span>--dry-run
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Force cache refresh</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>./bin/cookstyle-runner<span class="w"> </span>run<span class="w"> </span>--force
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># Use specific number of threads</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>./bin/cookstyle-runner<span class="w"> </span>run<span class="w"> </span>--threads<span class="w"> </span><span class="m">8</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="c1"># Disable cache for this run</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>./bin/cookstyle-runner<span class="w"> </span>run<span class="w"> </span>--no-cache
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="c1"># Output format options</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>./bin/cookstyle-runner<span class="w"> </span>run<span class="w"> </span>--format<span class="w"> </span>json<span class="w">   </span><span class="c1"># Structured JSON logs</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>./bin/cookstyle-runner<span class="w"> </span>run<span class="w"> </span>--format<span class="w"> </span>text<span class="w">   </span><span class="c1"># Human-readable colored logs (default)</span>
+<a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>./bin/cookstyle-runner<span class="w"> </span>run<span class="w"> </span>--format<span class="w"> </span>table<span class="w">  </span><span class="c1"># Same as text</span>
+</code></pre></div>
+<h3 id="version-information">Version Information<a class="headerlink" href="#version-information" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Display version information</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>./bin/cookstyle-runner<span class="w"> </span>version
+</code></pre></div>
+<h3 id="list-repositories">List Repositories<a class="headerlink" href="#list-repositories" title="Permanent link">&para;</a></h3>
+<p>View repositories that would be processed:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Text format (default) - simple list</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>./bin/cookstyle-runner<span class="w"> </span>list
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Table format - formatted output</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>./bin/cookstyle-runner<span class="w"> </span>list<span class="w"> </span>--format<span class="w"> </span>table
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># JSON format for scripting</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>./bin/cookstyle-runner<span class="w"> </span>list<span class="w"> </span>--format<span class="w"> </span>json
+</code></pre></div>
+<p><strong>Table output example:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Found 3 repositories:
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  1. apt
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>  2. nginx
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  3. haproxy
+</code></pre></div>
+<h3 id="view-configuration">View Configuration<a class="headerlink" href="#view-configuration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Display current configuration</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>./bin/cookstyle-runner<span class="w"> </span>config
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Validate configuration only</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>./bin/cookstyle-runner<span class="w"> </span>config<span class="w"> </span>--validate
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Show help for config command</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>./bin/cookstyle-runner<span class="w"> </span>config<span class="w"> </span>--help
+</code></pre></div>
+<h3 id="check-status">Check Status<a class="headerlink" href="#check-status" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># View cache statistics (table format - default)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>./bin/cookstyle-runner<span class="w"> </span>status
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Text format</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>./bin/cookstyle-runner<span class="w"> </span>status<span class="w"> </span>--format<span class="w"> </span>text
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># JSON format for scripting</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>./bin/cookstyle-runner<span class="w"> </span>status<span class="w"> </span>--format<span class="w"> </span>json
+</code></pre></div>
 <h2 id="understanding-output">Understanding Output<a class="headerlink" href="#understanding-output" title="Permanent link">&para;</a></h2>
 <h3 id="startup">Startup<a class="headerlink" href="#startup" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>[INFO] GitHub Cookstyle Runner starting...
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>[INFO] Configuration loaded successfully
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>[INFO] GitHub App authenticated
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>[INFO] Cache loaded: 15 entries
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>[INFO] Thread count: 4
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>[INFO] Cache max age: 7 days
+<p>The application uses structured logging with timestamps and log levels:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>2025-01-15 10:30:00.123 INFO  [CookstyleRunner] GitHub Cookstyle Runner starting...
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>2025-01-15 10:30:00.234 INFO  [Configuration] Configuration loaded successfully
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>2025-01-15 10:30:00.345 INFO  [Authentication] GitHub App authenticated
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>2025-01-15 10:30:00.456 INFO  [Cache] Cache loaded: 15 entries
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>2025-01-15 10:30:00.567 INFO  [Configuration] Thread count: 4
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>2025-01-15 10:30:00.678 INFO  [Configuration] Cache max age: 7 days
 </code></pre></div>
 <h3 id="repository-processing">Repository Processing<a class="headerlink" href="#repository-processing" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>[INFO] Found 23 repositories matching topics: chef-cookbook
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>[INFO] Processing repositories...
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>[INFO] [1/23] Processing: sous-chefs/apt
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>[INFO] [1/23] Cloning repository...
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>[INFO] [1/23] Running Cookstyle...
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>[INFO] [1/23] Found 3 offenses (1 auto-correctable, 2 manual)
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>[INFO] [1/23] Creating pull request...
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>[INFO] [1/23] ✓ Pull request created: #42
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>[INFO] [2/23] Processing: sous-chefs/nginx
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>[INFO] [2/23] ✓ No offenses found (cached)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>2025-01-15 10:30:01.123 INFO  [RepositoryFetcher] Found 23 repositories matching topics: chef-cookbook
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>2025-01-15 10:30:01.234 INFO  [RepositoryProcessor] Processing repositories...
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>2025-01-15 10:30:01.345 INFO  [RepositoryProcessor] [1/23] Processing: sous-chefs/apt
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>2025-01-15 10:30:01.456 INFO  [GitOperations] [1/23] Cloning repository...
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>2025-01-15 10:30:05.567 INFO  [CookstyleOperations] [1/23] Running Cookstyle...
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>2025-01-15 10:30:10.678 INFO  [CookstyleOperations] [1/23] Found 3 offenses (1 auto-correctable, 2 manual)
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>2025-01-15 10:30:10.789 INFO  [PullRequestManager] [1/23] Creating pull request...
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>2025-01-15 10:30:11.890 INFO  [PullRequestManager] [1/23] ✓ Pull request created: #42
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>2025-01-15 10:30:12.001 INFO  [RepositoryProcessor] [2/23] Processing: sous-chefs/nginx
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>2025-01-15 10:30:12.112 INFO  [Cache] [2/23] ✓ No offenses found (cached)
 </code></pre></div>
 <h3 id="completion">Completion<a class="headerlink" href="#completion" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>[INFO] Processing complete
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>[INFO] Summary:
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>[INFO]   Total repositories: 23
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>[INFO]   Processed: 23
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>[INFO]   Skipped (cached): 15
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>[INFO]   Pull requests created: 5
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>[INFO]   Issues created: 2
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>[INFO]   Errors: 0
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>[INFO] Cache saved: 23 entries
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>2025-01-15 10:35:00.123 INFO  [RepositoryProcessor] Processing complete
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>2025-01-15 10:35:00.234 INFO  [RepositoryProcessor] Summary:
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>2025-01-15 10:35:00.345 INFO  [RepositoryProcessor]   Total repositories: 23
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>2025-01-15 10:35:00.456 INFO  [RepositoryProcessor]   Processed: 23
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>2025-01-15 10:35:00.567 INFO  [RepositoryProcessor]   Skipped (cached): 15
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>2025-01-15 10:35:00.678 INFO  [RepositoryProcessor]   Pull requests created: 5
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>2025-01-15 10:35:00.789 INFO  [RepositoryProcessor]   Issues created: 2
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>2025-01-15 10:35:00.890 INFO  [RepositoryProcessor]   Errors: 0
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>2025-01-15 10:35:01.001 INFO  [Cache] Cache saved: 23 entries
 </code></pre></div>
 <h2 id="common-workflows">Common Workflows<a class="headerlink" href="#common-workflows" title="Permanent link">&para;</a></h2>
 <h3 id="first-run">First Run<a class="headerlink" href="#first-run" title="Permanent link">&para;</a></h3>
@@ -1547,76 +1753,94 @@
 <p><strong>Expected time</strong>: Seconds for cached repos, 2-5 minutes for changed repos</p>
 <h3 id="force-refresh">Force Refresh<a class="headerlink" href="#force-refresh" title="Permanent link">&para;</a></h3>
 <p>To reprocess all repositories:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Docker Compose</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>docker-compose<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">GCR_FORCE_REFRESH</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>cookstyle-runner
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Kubernetes</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>kubectl<span class="w"> </span><span class="nb">set</span><span class="w"> </span>env<span class="w"> </span>cronjob/cookstyle-runner<span class="w"> </span><span class="nv">GCR_FORCE_REFRESH</span><span class="o">=</span><span class="m">1</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>kubectl<span class="w"> </span>create<span class="w"> </span>job<span class="w"> </span>--from<span class="o">=</span>cronjob/cookstyle-runner<span class="w"> </span>cookstyle-force-refresh
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>kubectl<span class="w"> </span><span class="nb">set</span><span class="w"> </span>env<span class="w"> </span>cronjob/cookstyle-runner<span class="w"> </span>GCR_FORCE_REFRESH-<span class="w">  </span><span class="c1"># Remove after</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Docker Compose</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>docker-compose<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">GCR_FORCE_REFRESH</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>cookstyle-runner
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Kubernetes</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>kubectl<span class="w"> </span><span class="nb">set</span><span class="w"> </span>env<span class="w"> </span>cronjob/cookstyle-runner<span class="w"> </span><span class="nv">GCR_FORCE_REFRESH</span><span class="o">=</span><span class="m">1</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>kubectl<span class="w"> </span>create<span class="w"> </span>job<span class="w"> </span>--from<span class="o">=</span>cronjob/cookstyle-runner<span class="w"> </span>cookstyle-force-refresh
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>kubectl<span class="w"> </span><span class="nb">set</span><span class="w"> </span>env<span class="w"> </span>cronjob/cookstyle-runner<span class="w"> </span>GCR_FORCE_REFRESH-<span class="w">  </span><span class="c1"># Remove after</span>
 </code></pre></div>
 <h2 id="pull-request-output">Pull Request Output<a class="headerlink" href="#pull-request-output" title="Permanent link">&para;</a></h2>
 <h3 id="auto-correctable-issues">Auto-Correctable Issues<a class="headerlink" href="#auto-correctable-issues" title="Permanent link">&para;</a></h3>
 <p>When Cookstyle finds auto-correctable issues, a PR is created with:</p>
 <p><strong>Title</strong>: <code>Automated PR: Cookstyle Changes</code></p>
 <p><strong>Body</strong>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="gu">## Cookstyle Auto-Corrections</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>This PR contains automatic fixes from Cookstyle.
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="gu">### Summary</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Total Offenses**</span>: 5
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Auto-Corrected**</span>: 5
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="gu">### Files Changed</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="k">-</span><span class="w"> </span><span class="sb">`recipes/default.rb`</span>: 3 offenses
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="k">-</span><span class="w"> </span><span class="sb">`recipes/install.rb`</span>: 2 offenses
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="gu">### Cookstyle Version</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>7.32.1
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>
-<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>---
-<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="ge">*This PR was automatically created by the GitHub Cookstyle Runner*</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="gu">## Cookstyle Auto-Corrections</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>This PR contains automatic fixes from Cookstyle.
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="gu">### Summary</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Total Offenses**</span>: 5
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="k">-</span><span class="w"> </span><span class="gs">**Auto-Corrected**</span>: 5
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="gu">### Files Changed</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="k">-</span><span class="w"> </span><span class="sb">`recipes/default.rb`</span>: 3 offenses
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="k">-</span><span class="w"> </span><span class="sb">`recipes/install.rb`</span>: 2 offenses
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="gu">### Cookstyle Version</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>7.32.1
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>---
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="ge">*This PR was automatically created by the GitHub Cookstyle Runner*</span>
 </code></pre></div>
 <h3 id="manual-fix-issues">Manual Fix Issues<a class="headerlink" href="#manual-fix-issues" title="Permanent link">&para;</a></h3>
 <p>When <code>GCR_CREATE_MANUAL_FIX_PRS=1</code>, PRs are created for manual fixes with detailed instructions:</p>
 <p><strong>Title</strong>: <code>Cookstyle: Manual Fixes Required</code></p>
 <p><strong>Body</strong>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="gu">## Cookstyle Manual Fixes Required</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>The following issues require manual intervention:
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="gu">### test/integration/default/default_spec.rb</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="gs">**Line 1**</span>: Chef/Deprecations/ResourceWithoutUnifiedTrue
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="k">&gt; </span><span class="ge">Set `unified_mode true` in your custom resources</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="gu">### recipes/config.rb</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="gs">**Line 45**</span>: Chef/Correctness/InvalidPlatformHelper
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="k">&gt; </span><span class="ge">Use valid platform helper methods</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>---
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="ge">*This PR was automatically created by the GitHub Cookstyle Runner*</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="gu">## Cookstyle Manual Fixes Required</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>The following issues require manual intervention:
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="gu">### test/integration/default/default_spec.rb</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="gs">**Line 1**</span>: Chef/Deprecations/ResourceWithoutUnifiedTrue
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="k">&gt; </span><span class="ge">Set `unified_mode true` in your custom resources</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="gu">### recipes/config.rb</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="gs">**Line 45**</span>: Chef/Correctness/InvalidPlatformHelper
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="k">&gt; </span><span class="ge">Use valid platform helper methods</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>---
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="ge">*This PR was automatically created by the GitHub Cookstyle Runner*</span>
 </code></pre></div>
 <h2 id="processing-specific-repositories">Processing Specific Repositories<a class="headerlink" href="#processing-specific-repositories" title="Permanent link">&para;</a></h2>
 <h3 id="single-repository">Single Repository<a class="headerlink" href="#single-repository" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>docker-compose<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">GCR_FILTER_REPOS</span><span class="o">=</span>apt<span class="w"> </span>cookstyle-runner
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>docker-compose<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">GCR_FILTER_REPOS</span><span class="o">=</span>apt<span class="w"> </span>cookstyle-runner
 </code></pre></div>
 <h3 id="multiple-repositories">Multiple Repositories<a class="headerlink" href="#multiple-repositories" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>docker-compose<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">GCR_FILTER_REPOS</span><span class="o">=</span>apt,nginx,haproxy<span class="w"> </span>cookstyle-runner
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>docker-compose<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </span><span class="nv">GCR_FILTER_REPOS</span><span class="o">=</span>apt,nginx,haproxy<span class="w"> </span>cookstyle-runner
 </code></pre></div>
 <h2 id="monitoring-progress">Monitoring Progress<a class="headerlink" href="#monitoring-progress" title="Permanent link">&para;</a></h2>
 <h3 id="real-time-logs">Real-time Logs<a class="headerlink" href="#real-time-logs" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Docker Compose</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>docker-compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>cookstyle-runner
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Kubernetes</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>cookstyle-runner
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Docker Compose</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>docker-compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>cookstyle-runner
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="c1"># Kubernetes</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>cookstyle-runner
 </code></pre></div>
 <h3 id="check-github">Check GitHub<a class="headerlink" href="#check-github" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Pull Requests</strong>: Check your organization's repositories for new PRs</li>
 <li><strong>Issues</strong>: Check for new issues (if <code>GCR_CREATE_MANUAL_FIX_PRS=1</code>)</li>
 </ul>
+<h2 id="global-options">Global Options<a class="headerlink" href="#global-options" title="Permanent link">&para;</a></h2>
+<p>These options work with any command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Enable verbose output (DEBUG level)</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>./bin/cookstyle-runner<span class="w"> </span>&lt;command&gt;<span class="w"> </span>--verbose
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>./bin/cookstyle-runner<span class="w"> </span>&lt;command&gt;<span class="w"> </span>-v
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="c1"># Quiet mode (ERROR level only)</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>./bin/cookstyle-runner<span class="w"> </span>&lt;command&gt;<span class="w"> </span>--quiet
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>./bin/cookstyle-runner<span class="w"> </span>&lt;command&gt;<span class="w"> </span>-q
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="c1"># Set specific log level</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>./bin/cookstyle-runner<span class="w"> </span>&lt;command&gt;<span class="w"> </span>--log-level<span class="w"> </span>DEBUG
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>./bin/cookstyle-runner<span class="w"> </span>&lt;command&gt;<span class="w"> </span>--log-level<span class="w"> </span>WARN
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>
+<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="c1"># Show help for any command</span>
+<a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>./bin/cookstyle-runner<span class="w"> </span>&lt;command&gt;<span class="w"> </span>--help
+<a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>./bin/cookstyle-runner<span class="w"> </span>&lt;command&gt;<span class="w"> </span>-h
+</code></pre></div>
 <h2 id="exit-codes">Exit Codes<a class="headerlink" href="#exit-codes" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1672,7 +1896,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 6, 2025 16:01:56 UTC">October 6, 2025</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2025 22:22:07 UTC">October 7, 2025</span>
   </span>
 
     

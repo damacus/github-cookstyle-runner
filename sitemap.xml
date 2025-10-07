@@ -2,62 +2,70 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/CHANGELOG/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/INSTALLATION/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/logging/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
+    </url>
+    <url>
+         <loc>https://damacus.github.io/github-cookstyle-runner/structured-logging/</loc>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/configuration/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/configuration/advanced/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/configuration/environment-variables/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/development/architecture/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/development/contributing/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
+    </url>
+    <url>
+         <loc>https://damacus.github.io/github-cookstyle-runner/development/semantic-logger-patterns/</loc>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/installation/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/installation/docker-compose/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/installation/kubernetes/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/usage/advanced/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/usage/basic/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
     <url>
          <loc>https://damacus.github.io/github-cookstyle-runner/usage/troubleshooting/</loc>
-         <lastmod>2025-10-06</lastmod>
+         <lastmod>2025-10-07</lastmod>
     </url>
 </urlset>
