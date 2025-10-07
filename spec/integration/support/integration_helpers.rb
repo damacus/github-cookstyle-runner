@@ -37,6 +37,8 @@ module IntegrationHelpers
 
     output.each_line do |line|
       clean_line = strip_ansi(line)
+      # Remove SemanticLogger prefix if present (e.g., "2025-10-07 23:09:50.428434 I [11298:1240] CookstyleRunner::Application -- ")
+      clean_line = clean_line.sub(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\w+\s+\[\d+:\d+\]\s+\S+\s+--\s+/, '')
       next unless clean_line.include?(':')
 
       key, value = clean_line.split(':', 2).map(&:strip)
@@ -50,18 +52,18 @@ module IntegrationHelpers
         stats[normalized_key] = parse_numeric(value)
       end
     end
-
     stats
   end
 
   def extract_cache_directory(output)
     output.each_line do |line|
       clean_line = strip_ansi(line)
-      next unless clean_line.start_with?('  Cache Directory:')
+      # Remove SemanticLogger prefix if present
+      clean_line = clean_line.sub(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\w+\s+\[\d+:\d+\]\s+\S+\s+--\s+/, '')
+      next unless clean_line.start_with?('  Cache Directory:') || clean_line.start_with?('Cache Directory:')
 
-      return clean_line.split(':', 2)[1]&.strip
+      return clean_line.split(':', 2).last.strip
     end
-
     nil
   end
 

@@ -175,7 +175,7 @@ module CookstyleRunner
     def self.changes_to_commit?(context)
       repo = ::Git.open(context.repo_dir)
       changes = changes?(repo)
-      log.info("Changes to commit found for #{context.repo_name}: #{changes}")
+      log.debug("Changes to commit found for #{context.repo_name}: #{changes}")
       changes
     rescue ::Git::Error => e
       log.error("Failed to check for changes to commit: #{e.message}")
@@ -225,7 +225,7 @@ module CookstyleRunner
 
     def self.push_to_remote(repo, context, branch_name)
       repo.push('origin', branch_name, force: true)
-      log.info("Pushed changes to origin/#{branch_name} for #{context.repo_name}")
+      log.debug("Pushed changes to origin/#{branch_name} for #{context.repo_name}")
       true
     rescue StandardError => e
       log.error("Error pushing to origin/#{branch_name} for #{context.repo_name}: #{e.message}")
@@ -264,7 +264,7 @@ module CookstyleRunner
 
       repo.branch(branch_name).create
       repo.branch(branch_name).checkout
-      log.info("Created and checked out branch '#{branch_name}' locally.")
+      log.debug("Created and checked out branch '#{branch_name}' locally.")
     rescue ::Git::Error => e
       log.error("Failed to manage branch lifecycle for '#{branch_name}': #{e.message}")
       raise

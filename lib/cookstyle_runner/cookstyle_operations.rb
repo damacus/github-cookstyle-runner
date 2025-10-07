@@ -9,6 +9,34 @@ require_relative 'git'
 
 # Module for cookstyle operations
 module CookstyleRunner
+  # Custom printer for TTY::Command that logs to SemanticLogger at DEBUG level
+  class CommandPrinter < TTY::Command::Printers::Abstract
+    def initialize(logger)
+      @logger = logger
+      super($stdout)
+    end
+
+    def print_command_start(cmd, **)
+      @logger.debug("Running command: #{cmd.to_command}")
+    end
+
+    def print_command_exit(_cmd, status, runtime, **)
+      if status.zero?
+        @logger.debug("Command finished in #{runtime.round(3)}s with exit status #{status}")
+      else
+        @logger.warn("Command failed in #{runtime.round(3)}s with exit status #{status}")
+      end
+    end
+
+    def print_command_out_data(_cmd, *_args)
+      # Suppress stdout - we capture it separately
+    end
+
+    def print_command_err_data(_cmd, *_args)
+      # Suppress stderr - we capture it separately
+    end
+  end
+
   # Class for Cookstyle report
   class Report
     attr_reader :num_auto, :num_manual, :total_correctable, :pr_description, :issue_description, :error, :status, :changes_committed
@@ -45,7 +73,7 @@ module CookstyleRunner
     # @return [Hash] Contains :parsed_json (from first run) and :report (final state report) or DEFAULT_ERROR_RETURN.
     # rubocop:disable Metrics/MethodLength
     def self.run_cookstyle(context)
-      cmd = TTY::Command.new(pty: true)
+      cmd = TTY::Command.new(pty: true, printer: CommandPrinter.new(log))
       report = nil # Initialize report variable
       report_run = nil # Initialize report_run variable
 

@@ -3,6 +3,7 @@
 
 require 'spec_helper'
 require 'cookstyle_runner/cli'
+require 'semantic_logger'
 
 RSpec.describe CookstyleRunner::CLI do
   describe '#initialize' do
@@ -142,41 +143,51 @@ RSpec.describe CookstyleRunner::CLI do
   describe 'list command with format options' do
     let(:repositories) { %w[repo1.git repo2.git repo3.git] }
     let(:cli) { described_class.new(argv) }
+    let(:mock_app) { instance_double(CookstyleRunner::Application) }
+    let(:mock_logger) { instance_double(SemanticLogger::Logger) }
 
     before do
-      # Mock the internal method that fetches repositories
-      allow(cli).to receive(:fetch_repositories).and_return(repositories)
+      allow(CookstyleRunner::Application).to receive(:new).and_return(mock_app)
+      allow(mock_app).to receive_messages(
+        fetch_and_filter_repositories: repositories,
+        logger: mock_logger
+      )
+      allow(mock_logger).to receive_messages(info: nil, error: nil)
     end
 
     context 'with default format' do
       let(:argv) { ['list'] }
 
-      it 'outputs JSON format' do
-        expect { cli.run }.to output(/"repositories"/).to_stdout
+      it 'outputs repository list through logger' do
+        cli.run
+        expect(mock_logger).to have_received(:info).with('Repository list', repositories: repositories)
       end
     end
 
     context 'with json format' do
       let(:argv) { ['list', '--format', 'json'] }
 
-      it 'outputs JSON format' do
-        expect { cli.run }.to output(/"repositories"/).to_stdout
+      it 'outputs repository list through logger' do
+        cli.run
+        expect(mock_logger).to have_received(:info).with('Repository list', repositories: repositories)
       end
     end
 
     context 'with table format' do
       let(:argv) { ['list', '--format', 'table'] }
 
-      it 'outputs table format (same as text)' do
-        expect { cli.run }.to output(/Found/).to_stdout
+      it 'outputs repository list through logger' do
+        cli.run
+        expect(mock_logger).to have_received(:info).with('Found 3 repositories:')
       end
     end
 
     context 'with invalid format' do
       let(:argv) { ['list', '--format', 'invalid'] }
 
-      it 'validates format option values' do
-        expect { cli.run }.to output(/Invalid format/).to_stdout
+      it 'validates format option values through logger' do
+        cli.run
+        expect(mock_logger).to have_received(:error).with('Invalid format: invalid')
       end
     end
   end

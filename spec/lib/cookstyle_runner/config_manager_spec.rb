@@ -63,7 +63,7 @@ RSpec.describe CookstyleRunner::ConfigManager do
 
         event = capture_logger.events.first
         expect(event.message).to eq('Configuration loaded')
-        expect(event.level).to eq(:info)
+        expect(event.level).to eq(:debug)
         expect(event.payload).to be_a(Hash)
       end
 

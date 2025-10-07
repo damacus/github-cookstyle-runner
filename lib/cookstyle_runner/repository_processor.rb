@@ -57,7 +57,7 @@ module CookstyleRunner
     # Process a single repository
     def process_repository(repo_name, repo_url)
       start_time = Time.now
-      logger.info("Processing repository: #{repo_name}")
+      logger.debug("Processing repository: #{repo_name}")
 
       # Prepare result hash with defaults
       result = {

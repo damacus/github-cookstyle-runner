@@ -7,7 +7,7 @@ services:
       - ./config/settings/local.yml:/app/config/settings/local.yml
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
-      # - GCR_LOG_FORMAT=json
+      - GCR_LOG_FORMAT=color
 
   test:
     extends: app

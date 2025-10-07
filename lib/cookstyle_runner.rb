@@ -182,7 +182,7 @@ module CookstyleRunner
       # Get logger instance for this application
       @logger = SemanticLogger[self.class]
 
-      @logger.info('Logger initialized', level: log_level_str, format: log_format)
+      @logger.debug('Logger initialized', level: log_level_str, format: log_format)
     end
 
     # Parse a log level string into a SemanticLogger level symbol
@@ -275,11 +275,11 @@ module CookstyleRunner
     def _process_repositories_in_parallel(repositories)
       total_repos = repositories.length
       thread_count = [@configuration.thread_count, total_repos].min
-      logger.info('Starting parallel processing', payload: {
-                    total_repos: total_repos,
-                    thread_count: thread_count,
-                    action: 'process_repositories'
-                  })
+      logger.debug('Starting parallel processing', payload: {
+                     total_repos: total_repos,
+                     thread_count: thread_count,
+                     action: 'process_repositories'
+                   })
 
       repo_processor = _create_repository_processor
 

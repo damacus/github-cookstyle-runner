@@ -12,12 +12,12 @@ RSpec.describe 'Structured Logging Integration', :integration do
     it 'outputs structured logs with SemanticLogger' do
       result = run_cookstyle_runner(command: 'list', format: 'json')
 
-      # Should have SemanticLogger formatted log entries (timestamp, level, component)
-      log_lines = result.output.lines.grep(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)
+      # Should have JSON formatted log entries with timestamp, level, message
+      log_lines = result.output.lines.grep(/"timestamp":/)
       expect(log_lines).not_to be_empty
 
-      # Verify logs contain structured data (component, action)
-      expect(result.output).to include('component:').or include('action:')
+      # Verify logs contain structured JSON data
+      expect(result.output).to include('"level":').and include('"message":')
     end
   end
 
