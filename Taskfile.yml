@@ -146,3 +146,10 @@ tasks:
         # Clean up
         rm "$TEMP_ENV"
         echo "Debug session complete."
+
+  tapioca:
+    desc: Generate RBI files using Tapioca
+    cmds:
+      # - bin/tapioca annotations
+      - bin/tapioca gem --all
+      - bin/tapioca dsl
