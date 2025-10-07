@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# typed: false
+# typed: true
 
 # This file uses typed: false because Dry::Schema DSL methods can't be statically typed with Sorbet
 
