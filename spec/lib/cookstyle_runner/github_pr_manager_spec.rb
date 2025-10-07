@@ -7,16 +7,14 @@ require 'octokit'
 require 'stringio'
 
 RSpec.describe CookstyleRunner::GitHubPRManager do
-  subject(:pr_manager) { described_class.new(settings, logger, github_client) }
+  subject(:pr_manager) { described_class.new(settings, github_client) }
 
-  let(:logger) { CookstyleRunner::Logger.new(StringIO.new, level: Logger::INFO) }
   let(:github_client) { instance_double(Octokit::Client) }
   let(:settings) { Object.const_get('Settings') } # Use real Config::Options from test.yml
 
   describe '#initialize' do
-    it 'initializes with settings, logger, and github_client' do
+    it 'initializes with settings and github_client' do
       expect(pr_manager.settings).to eq(settings)
-      expect(pr_manager.logger).to eq(logger)
       expect(pr_manager.github_client).to eq(github_client)
     end
 

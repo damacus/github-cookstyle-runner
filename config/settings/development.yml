@@ -25,3 +25,7 @@ force_refresh: true
 
 git_name: Dan Webb
 git_email: damacus@users.noreply.github.com
+
+# Development-friendly output formats
+log_format: text
+output_format: text

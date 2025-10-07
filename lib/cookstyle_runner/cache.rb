@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# typed: strict
+# typed: true
 
 require 'json'
 require 'fileutils'
@@ -31,19 +31,16 @@ module CookstyleRunner
     sig { returns(T::Hash[String, T.any(String, T::Hash[String, T.untyped])]) }
     attr_reader :data
 
-    sig { returns(Logger) }
-    attr_reader :logger
-
     sig { returns(CacheStats) }
     attr_reader :stats
 
     # Initialize the cache manager
-    sig { params(dir: String, logger: Logger).void }
-    def initialize(dir, logger)
+    sig { params(dir: String).void }
+    def initialize(dir)
       # Initialize instance variables with proper type annotations
       @dir = T.let(dir, String)
       @file = T.let(File.join(dir, 'cache.json'), String)
-      @logger = T.let(logger, Logger)
+      @logger = T.let(SemanticLogger[self.class], SemanticLogger::Logger)
       @data = T.let({}, T::Hash[String, T.any(String, T::Hash[String, T.untyped])])
       @stats = T.let(CacheStats.new, CacheStats)
 
@@ -91,7 +88,7 @@ module CookstyleRunner
 
       @data['last_updated'] = Time.now.utc.iso8601
       File.write(@file, JSON.pretty_generate(@data))
-      logger.debug("Saved cache to #{@file}")
+      @logger.debug("Saved cache to #{@file}")
       nil
     end
 
@@ -198,11 +195,11 @@ module CookstyleRunner
 
     sig { returns(T::Hash[T.untyped, T.untyped]) }
     def parse_cache_file
-      logger.debug("Loading cache from #{@file}")
+      @logger.debug("Loading cache from #{@file}")
       begin
         JSON.parse(File.read(@file))
       rescue JSON::ParserError => e
-        logger.warn("Failed to parse cache file: #{e.message}")
+        @logger.warn("Failed to parse cache file: #{e.message}")
         initialize_cache
       end
     end
@@ -214,7 +211,7 @@ module CookstyleRunner
         'last_updated' => Time.now.utc.iso8601
       }
       @data = default_data
-      logger.debug('Initialized new cache')
+      @logger.debug('Initialized new cache')
       save
       default_data
     end

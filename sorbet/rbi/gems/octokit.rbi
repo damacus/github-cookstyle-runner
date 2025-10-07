@@ -7,12 +7,13 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/octokit/all/octokit.rbi
 #
-# octokit-6.1.1
+# octokit-10.0.0
 
 module Octokit
   def self.client; end
   def self.enterprise_admin_client; end
   def self.enterprise_management_console_client; end
+  def self.manage_ghes_client; end
   def self.method_missing(method_name, *args, &block); end
   def self.respond_to_missing?(method_name, include_private = nil); end
 end
@@ -99,6 +100,8 @@ class Octokit::NotAcceptable < Octokit::ClientError
 end
 class Octokit::Conflict < Octokit::ClientError
 end
+class Octokit::Deprecated < Octokit::ClientError
+end
 class Octokit::UnsupportedMediaType < Octokit::ClientError
 end
 class Octokit::UnprocessableEntity < Octokit::ClientError
@@ -145,6 +148,9 @@ module Octokit::Default
   def self.connection_options; end
   def self.default_media_type; end
   def self.login; end
+  def self.manage_ghes_endpoint; end
+  def self.manage_ghes_password; end
+  def self.manage_ghes_username; end
   def self.management_console_endpoint; end
   def self.management_console_password; end
   def self.middleware; end
@@ -215,6 +221,10 @@ module Octokit::Configurable
   def fetch_client_id_and_secret(overrides = nil); end
   def login; end
   def login=(arg0); end
+  def manage_ghes_endpoint; end
+  def manage_ghes_endpoint=(arg0); end
+  def manage_ghes_password=(arg0); end
+  def manage_ghes_username=(arg0); end
   def management_console_endpoint; end
   def management_console_endpoint=(arg0); end
   def management_console_password=(arg0); end
@@ -250,7 +260,7 @@ class Octokit::Gist
   def to_s; end
   def url; end
 end
-class Anonymous_Struct_1 < Struct
+class Anonymous_Struct_78 < Struct
   def limit; end
   def limit=(_); end
   def remaining; end
@@ -265,7 +275,7 @@ class Anonymous_Struct_1 < Struct
   def self.members; end
   def self.new(*arg0); end
 end
-class Octokit::RateLimit < Anonymous_Struct_1
+class Octokit::RateLimit < Anonymous_Struct_78
   def self.from_response(response); end
 end
 class Octokit::Repository
@@ -316,12 +326,15 @@ class Octokit::Client
   include Octokit::Client::ActionsWorkflows
   include Octokit::Client::Apps
   include Octokit::Client::Checks
+  include Octokit::Client::CodeScanning
+  include Octokit::Client::CodespacesSecrets
   include Octokit::Client::CommitBranches
   include Octokit::Client::CommitComments
   include Octokit::Client::CommitPulls
   include Octokit::Client::Commits
   include Octokit::Client::CommunityProfile
   include Octokit::Client::Contents
+  include Octokit::Client::DependabotSecrets
   include Octokit::Client::Deployments
   include Octokit::Client::Downloads
   include Octokit::Client::Emojis
@@ -345,7 +358,6 @@ class Octokit::Client
   include Octokit::Client::Organizations
   include Octokit::Client::Pages
   include Octokit::Client::Projects
-  include Octokit::Client::PubSubHubbub
   include Octokit::Client::PullRequests
   include Octokit::Client::RateLimit
   include Octokit::Client::Reactions
@@ -375,11 +387,21 @@ module Octokit::Client::ActionsArtifacts
   def workflow_run_artifacts(repo, workflow_run_id, options = nil); end
 end
 module Octokit::Client::ActionsSecrets
-  def create_or_update_secret(repo, name, options); end
-  def delete_secret(repo, name); end
-  def get_public_key(repo); end
-  def get_secret(repo, name); end
-  def list_secrets(repo); end
+  def create_or_update_actions_environment_secret(repo, environment, name, options); end
+  def create_or_update_actions_secret(repo, name, options); end
+  def create_or_update_org_actions_secret(org, name, options); end
+  def delete_actions_environment_secret(repo, environment, name); end
+  def delete_actions_secret(repo, name); end
+  def delete_org_actions_secret(org, name); end
+  def get_actions_environment_public_key(repo, environment); end
+  def get_actions_environment_secret(repo, environment, name); end
+  def get_actions_public_key(repo); end
+  def get_actions_secret(repo, name); end
+  def get_org_actions_public_key(org); end
+  def get_org_actions_secret(org, name); end
+  def list_actions_environment_secrets(repo, environment); end
+  def list_actions_secrets(repo); end
+  def list_org_actions_secrets(org); end
 end
 module Octokit::Client::ActionsWorkflows
   def list_workflows(repo, options = nil); end
@@ -413,27 +435,27 @@ end
 module Octokit::Client::Apps
   def add_repo_to_installation(installation, repo, options = nil); end
   def add_repository_to_app_installation(installation, repo, options = nil); end
-  def add_repository_to_integration_installation(installation, repo, options = nil); end
   def app(options = nil); end
+  def app_hook_delivery(delivery_id, options = nil); end
   def create_app_installation_access_token(installation, options = nil); end
   def create_installation_access_token(installation, options = nil); end
-  def create_integration_installation_access_token(installation, options = nil); end
   def delete_installation(installation, options = nil); end
+  def deliver_app_hook(delivery_id, options = nil); end
   def find_app_installations(options = nil); end
   def find_installation_repositories_for_user(installation, options = nil); end
   def find_installations(options = nil); end
-  def find_integration_installations(options = nil); end
   def find_organization_installation(organization, options = nil); end
   def find_repository_installation(repo, options = nil); end
   def find_user_installation(user, options = nil); end
   def find_user_installations(options = nil); end
   def installation(id, options = nil); end
+  def list_app_hook_deliveries(options = nil); end
   def list_app_installation_repositories(options = nil); end
+  def list_app_installations(options = nil); end
   def list_installation_repos(options = nil); end
-  def list_integration_installation_repositories(options = nil); end
+  def list_user_installations(options = nil); end
   def remove_repo_from_installation(installation, repo, options = nil); end
   def remove_repository_from_app_installation(installation, repo, options = nil); end
-  def remove_repository_from_integration_installation(installation, repo, options = nil); end
 end
 module Octokit::Client::Checks
   def check_run(repo, id, options = nil); end
@@ -450,6 +472,35 @@ module Octokit::Client::Checks
   def rerequest_check_suite(repo, id, options = nil); end
   def set_check_suite_preferences(repo, options = nil); end
   def update_check_run(repo, id, options = nil); end
+end
+module Octokit::Client::CodeScanning
+  def compress_sarif_data(file); end
+  def delete_code_scanning_analysis(repo, analysis_id, options = nil); end
+  def get_code_scanning_alert(repo, alert_number, options = nil); end
+  def get_code_scanning_analysis(repo, analysis_id, options = nil); end
+  def get_code_scanning_default_config(repo, options = nil); end
+  def get_codeql_database_for_repo(repo, language, options = nil); end
+  def get_sarif_upload_information(repo, sarif_id, options = nil); end
+  def list_code_scanning_alerts_for_org(org, options = nil); end
+  def list_code_scanning_alerts_for_repo(repo, options = nil); end
+  def list_code_scanning_analysis(repo, options = nil); end
+  def list_codeql_database_for_repo(repo, options = nil); end
+  def list_instances_of_code_scanning_alert(repo, alert_number, options = nil); end
+  def update_code_scanning_alert(repo, alert_number, state, reason, comment = nil, options = nil); end
+  def update_code_scanning_default_config(repo, state, query_suite = nil, languages = nil, options = nil); end
+  def upload_sarif_data(repo, file, sha, ref, options = nil); end
+end
+module Octokit::Client::CodespacesSecrets
+  def create_or_update_codespaces_secret(repo, name, options); end
+  def create_or_update_org_codespaces_secret(org, name, options); end
+  def delete_codespaces_secret(repo, name); end
+  def delete_org_codespaces_secret(org, name); end
+  def get_codespaces_public_key(repo); end
+  def get_codespaces_secret(repo, name); end
+  def get_org_codespaces_public_key(org); end
+  def get_org_codespaces_secret(org, name); end
+  def list_codespaces_secrets(repo); end
+  def list_org_codespaces_secrets(org); end
 end
 module Octokit::Client::Commits
   def commit(repo, sha, options = nil); end
@@ -504,6 +555,18 @@ module Octokit::Client::Downloads
   def download(repo, id, options = nil); end
   def downloads(repo, options = nil); end
   def list_downloads(repo, options = nil); end
+end
+module Octokit::Client::DependabotSecrets
+  def create_or_update_dependabot_secret(repo, name, options); end
+  def create_or_update_org_dependabot_secret(org, name, options); end
+  def delete_dependabot_secret(repo, name); end
+  def delete_org_dependabot_secret(org, name); end
+  def get_dependabot_public_key(repo); end
+  def get_dependabot_secret(repo, name); end
+  def get_org_dependabot_public_key(org); end
+  def get_org_dependabot_secret(org, name); end
+  def list_dependabot_secrets(repo); end
+  def list_org_dependabot_secrets(org); end
 end
 module Octokit::Client::Deployments
   def create_deployment(repo, ref, options = nil); end
@@ -795,23 +858,16 @@ module Octokit::Client::Projects
   def update_project_card(id, options = nil); end
   def update_project_column(id, name, options = nil); end
 end
-module Octokit::Client::PubSubHubbub
-  def pub_sub_hubbub_request(options = nil); end
-  def subscribe(topic, callback, secret = nil); end
-  def subscribe_service_hook(repo, service_name, service_arguments = nil, secret = nil); end
-  def unsubscribe(topic, callback); end
-  def unsubscribe_service_hook(repo, service_name); end
-end
 module Octokit::Client::PullRequests
   def close_pull_request(repo, number, options = nil); end
-  def create_pull_comment(repo, pull_id, body, commit_id, path, position, options = nil); end
+  def create_pull_comment(repo, pull_id, body, commit_id, path, line = nil, options = nil); end
   def create_pull_reply(repo, pull_id, body, comment_id, options = nil); end
   def create_pull_request(repo, base, head, title, body = nil, options = nil); end
-  def create_pull_request_comment(repo, pull_id, body, commit_id, path, position, options = nil); end
+  def create_pull_request_comment(repo, pull_id, body, commit_id, path, line = nil, options = nil); end
   def create_pull_request_comment_reply(repo, pull_id, body, comment_id, options = nil); end
   def create_pull_request_for_issue(repo, base, head, issue, options = nil); end
   def create_review_reply(repo, pull_id, body, comment_id, options = nil); end
-  def create_view_comment(repo, pull_id, body, commit_id, path, position, options = nil); end
+  def create_view_comment(repo, pull_id, body, commit_id, path, line = nil, options = nil); end
   def delete_pull_comment(repo, comment_id, options = nil); end
   def delete_pull_request_comment(repo, comment_id, options = nil); end
   def delete_review_comment(repo, comment_id, options = nil); end
@@ -857,10 +913,14 @@ module Octokit::Client::Reactions
   def create_issue_comment_reaction(repo, id, reaction, options = nil); end
   def create_issue_reaction(repo, number, reaction, options = nil); end
   def create_pull_request_review_comment_reaction(repo, id, reaction, options = nil); end
-  def delete_reaction(id, options = nil); end
+  def create_release_reaction(repo, release_id, reaction, options = nil); end
+  def delete_issue_comment_reaction(repo, comment_id, reaction_id, options = nil); end
+  def delete_issue_reaction(repo, issue_id, reaction_id, options = nil); end
+  def delete_release_reaction(repo, release_id, reaction_id, options = nil); end
   def issue_comment_reactions(repo, id, options = nil); end
   def issue_reactions(repo, number, options = nil); end
   def pull_request_review_comment_reactions(repo, id, options = nil); end
+  def release_reactions(repo, release_id, options = nil); end
 end
 module Octokit::Client::Refs
   def create_ref(repo, ref, sha, options = nil); end
@@ -902,6 +962,7 @@ module Octokit::Client::Repositories
   def add_collaborator(repo, collaborator, options = nil); end
   def add_deploy_key(repo, title, key, options = nil); end
   def all_repositories(options = nil); end
+  def automated_security_fixes_enabled?(repo, options = nil); end
   def branch(repo, branch, options = nil); end
   def branch_protection(repo, branch, options = nil); end
   def branches(repo, options = nil); end
@@ -921,11 +982,13 @@ module Octokit::Client::Repositories
   def delete_subscription(repo, options = nil); end
   def deploy_key(repo, id, options = nil); end
   def deploy_keys(repo, options = nil); end
+  def disable_automated_security_fixes(repo, options = nil); end
   def disable_vulnerability_alerts(repo, options = nil); end
   def dispatch_event(repo, event_type, options = nil); end
   def edit(repo, options = nil); end
   def edit_deploy_key(repo, id, options); end
   def edit_repository(repo, options = nil); end
+  def enable_automated_security_fixes(repo, options = nil); end
   def enable_vulnerability_alerts(repo, options = nil); end
   def fork(repo, options = nil); end
   def forks(repo, options = nil); end
@@ -1071,6 +1134,7 @@ module Octokit::Client::Users
   def follows?(*args); end
   def key(key_id, options = nil); end
   def keys(options = nil); end
+  def refresh_access_token(code, app_id = nil, app_secret = nil, options = nil); end
   def remove_email(email); end
   def remove_key(id, options = nil); end
   def starred(user = nil, options = nil); end
@@ -1178,4 +1242,35 @@ module Octokit::EnterpriseManagementConsoleClient::ManagementConsole
   def start_configuration; end
   def upgrade(license); end
   def upload_license(license, settings = nil); end
+end
+class Octokit::ManageGHESClient
+  def add_authorized_key(key); end
+  def authenticated_client; end
+  def authorized_keys; end
+  def basic_authenticated?; end
+  def config_check; end
+  def config_status; end
+  def delete_authorized_key(key); end
+  def edit_settings(settings); end
+  def endpoint; end
+  def get_authorized_keys; end
+  def get_settings; end
+  def initialize(options = nil); end
+  def manage_ghes_endpoint=(value); end
+  def manage_ghes_password=(value); end
+  def manage_ghes_username=(value); end
+  def remove_authorized_key(key); end
+  def root_site_admin_assumed?; end
+  def settings; end
+  def start_configuration; end
+  def upload_license(license); end
+  include Octokit::Configurable
+  include Octokit::Connection
+  include Octokit::ManageGHESClient::ManageAPI
+  include Octokit::Warnable
+end
+module Octokit::ManageGHESClient::ManageAPI
+  def configure_maintenance_mode(enabled, options = nil); end
+  def maintenance_mode; end
+  def set_maintenance_mode(enabled, options = nil); end
 end

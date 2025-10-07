@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 module IntegrationHelpers
@@ -86,6 +87,7 @@ module IntegrationHelpers
     cmd << '--no-cache' if args[:no_cache]
     cmd << '--threads' << args[:threads].to_s if args[:threads]
     cmd << '--verbose' if args[:verbose]
+    cmd << '--format' << args[:format] if args[:format]
 
     # Add repository arguments
     Array(args[:repos]).each { |repo| cmd << repo }

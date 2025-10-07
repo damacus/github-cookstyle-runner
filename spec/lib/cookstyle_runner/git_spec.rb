@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require 'spec_helper'
@@ -6,12 +7,10 @@ require 'stringio'
 require 'git'
 
 RSpec.describe CookstyleRunner::Git do
-  let(:logger) { CookstyleRunner::Logger.new(StringIO.new, level: Logger::INFO) }
   let(:context) do
     CookstyleRunner::Git::RepoContext.new(
       repo_name: 'test-cookbook',
       owner: 'test-org',
-      logger: logger,
       repo_dir: '/tmp/test-repo',
       repo_url: 'https://github.com/test-org/test-cookbook.git'
     )
@@ -21,7 +20,7 @@ RSpec.describe CookstyleRunner::Git do
     it 'initializes with required parameters' do
       expect(context.repo_name).to eq('test-cookbook')
       expect(context.owner).to eq('test-org')
-      expect(context.logger).to eq(logger)
+      expect(context.logger).to be_a(SemanticLogger::Logger)
       expect(context.repo_dir).to eq('/tmp/test-repo')
       expect(context.repo_url).to eq('https://github.com/test-org/test-cookbook.git')
     end
@@ -29,8 +28,7 @@ RSpec.describe CookstyleRunner::Git do
     it 'generates default repo_url from owner and repo_name' do
       ctx = CookstyleRunner::Git::RepoContext.new(
         repo_name: 'my-repo',
-        owner: 'my-org',
-        logger: logger
+        owner: 'my-org'
       )
       expect(ctx.repo_url).to eq('https://github.com/my-org/my-repo.git')
     end
@@ -40,7 +38,6 @@ RSpec.describe CookstyleRunner::Git do
         ctx = CookstyleRunner::Git::RepoContext.new(
           repo_name: 'my-repo',
           owner: 'my-org',
-          logger: logger,
           base_dir: tmpdir
         )
         expect(ctx.repo_dir).to eq(File.join(tmpdir, 'my-org', 'my-repo'))
@@ -51,7 +48,6 @@ RSpec.describe CookstyleRunner::Git do
       ctx = CookstyleRunner::Git::RepoContext.new(
         repo_name: 'test',
         owner: 'org',
-        logger: logger,
         github_token: 'token123',
         app_id: 'app456',
         installation_id: 789,
@@ -157,28 +153,36 @@ RSpec.describe CookstyleRunner::Git do
   describe '.latest_commit_sha' do
     let(:repo) { instance_double(Git::Base) }
     let(:head_object) { instance_double(Git::Object::Commit, sha: 'xyz789abc123') }
+    let(:test_context) do
+      CookstyleRunner::Git::RepoContext.new(
+        repo_name: 'test-repo',
+        owner: 'test-org',
+        repo_dir: '/tmp/repo'
+      )
+    end
 
     it 'returns the latest commit SHA' do
       allow(Git).to receive(:open).with('/tmp/repo').and_return(repo)
       allow(repo).to receive(:object).with('HEAD').and_return(head_object)
 
-      expect(described_class.latest_commit_sha('/tmp/repo', logger)).to eq('xyz789abc123')
+      expect(described_class.latest_commit_sha(test_context)).to eq('xyz789abc123')
     end
 
     it 'returns nil on error' do
       allow(Git).to receive(:open).and_raise(StandardError.new('test error'))
-      expect(described_class.latest_commit_sha('/tmp/repo', logger)).to be_nil
+      expect(described_class.latest_commit_sha(test_context)).to be_nil
     end
   end
 
   describe '.setup_git_config' do
+    let(:test_logger) { SemanticLogger['Test'] }
+
     it 'configures git user name and email' do
       allow(Git).to receive(:global_config)
 
       result = described_class.setup_git_config(
         user_name: 'Test User',
-        user_email: 'test@example.com',
-        logger: logger
+        user_email: 'test@example.com'
       )
       expect(result).to be true
       expect(Git).to have_received(:global_config).with('user.name', 'Test User')
@@ -190,8 +194,7 @@ RSpec.describe CookstyleRunner::Git do
 
       result = described_class.setup_git_config(
         user_name: 'Test User',
-        user_email: 'test@example.com',
-        logger: logger
+        user_email: 'test@example.com'
       )
       expect(result).to be false
     end
@@ -200,13 +203,13 @@ RSpec.describe CookstyleRunner::Git do
   describe '.authenticated_url' do
     it 'delegates to Authentication module' do
       allow(CookstyleRunner::Authentication).to receive(:authenticated_url)
-        .with('test-org', 'test-cookbook', logger)
+        .with('test-org', 'test-cookbook', described_class.log)
         .and_return('https://token@github.com/test-org/test-cookbook.git')
 
       result = described_class.authenticated_url(context)
       expect(result).to eq('https://token@github.com/test-org/test-cookbook.git')
       expect(CookstyleRunner::Authentication).to have_received(:authenticated_url)
-        .with('test-org', 'test-cookbook', logger)
+        .with('test-org', 'test-cookbook', described_class.log)
     end
 
     it 'exits on authentication failure' do
@@ -217,24 +220,25 @@ RSpec.describe CookstyleRunner::Git do
     end
   end
 
-  describe '.remove_origin_remote_if_exists' do
+  describe '.remove_existing_remote' do
     let(:repo) { instance_double(Git::Base) }
     let(:remote) { instance_double(Git::Remote, name: 'origin') }
 
     it 'removes existing remote' do
-      remote_obj = instance_double(Git::Remote, remove: true)
       allow(repo).to receive(:remotes).and_return([remote])
-      allow(repo).to receive(:remote).with('origin').and_return(remote_obj)
+      allow(repo).to receive(:remote).with('origin').and_return(remote)
+      allow(remote).to receive(:remove)
 
-      described_class.remove_origin_remote_if_exists(repo, 'origin', context)
+      described_class.remove_existing_remote(repo, 'origin')
       expect(repo).to have_received(:remote).with('origin')
+      expect(remote).to have_received(:remove)
     end
 
     it 'does nothing when remote does not exist' do
       allow(repo).to receive(:remotes).and_return([])
       allow(repo).to receive(:remote)
 
-      described_class.remove_origin_remote_if_exists(repo, 'origin', context)
+      described_class.remove_existing_remote(repo, 'origin')
       expect(repo).not_to have_received(:remote)
     end
   end
@@ -257,6 +261,8 @@ RSpec.describe CookstyleRunner::Git do
 
     it 'adds and commits changes when changes exist' do
       allow(status).to receive_messages(changed: ['file.rb'], added: [], deleted: [])
+      allow(described_class).to receive(:changes_to_commit?).with(context).and_return(true)
+      allow(described_class).to receive(:setup_git_config_from_hash)
       allow(repo).to receive(:add).with(all: true)
       commit_result = 'commit_sha_abc123'
       allow(repo).to receive(:commit).with('test commit').and_return(commit_result)
@@ -289,13 +295,16 @@ RSpec.describe CookstyleRunner::Git do
     it 'creates and checks out a new branch' do
       allow(Git).to receive(:global_config)
       allow(Git).to receive(:open).with(context.repo_dir).and_return(repo)
-      allow(repo).to receive(:branches).and_return([])
+      local_branches = []
+      branches_collection = double('branches') # rubocop:disable RSpec/VerifiedDoubles
+      allow(branches_collection).to receive(:local).and_return(local_branches)
+      allow(repo).to receive(:branches).and_return(branches_collection)
       branch = instance_double(Git::Branch)
       allow(repo).to receive(:branch).with('feature-branch').and_return(branch)
       allow(branch).to receive(:create)
       allow(branch).to receive(:checkout)
 
-      result = described_class.create_branch(context, config, logger)
+      result = described_class.create_branch(context, config)
       expect(result).to be true
       expect(branch).to have_received(:create)
       expect(branch).to have_received(:checkout)
@@ -305,7 +314,7 @@ RSpec.describe CookstyleRunner::Git do
       allow(Git).to receive(:global_config)
       allow(Git).to receive(:open).and_raise(Git::Error.new('branch error'))
 
-      result = described_class.create_branch(context, config, logger)
+      result = described_class.create_branch(context, config)
       expect(result).to be false
     end
   end

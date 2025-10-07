@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require 'spec_helper'
@@ -7,7 +8,7 @@ require_relative 'support/integration_helpers'
 RSpec.describe 'PR and Issue Creation', :integration do
   include IntegrationHelpers
 
-  let(:test_repo) { 'sous-chefs/test-repo' }
+  let(:test_repo) { 'test-owner/test-repo' }
 
   describe 'creating pull requests for auto-correctable fixes' do
     # TODO: Record VCR cassette for this test
@@ -49,10 +50,9 @@ RSpec.describe 'PR and Issue Creation', :integration do
 
   describe 'GitHubPRManager' do
     let(:settings) { Object.const_get('Settings') }
-    let(:logger) { CookstyleRunner::Logger.new($stdout, level: Logger::ERROR) }
     let(:github_client) { instance_double(Octokit::Client) }
-    let(:pr_manager) { CookstyleRunner::GitHubPRManager.new(settings, logger, github_client) }
-    let(:labels) { %w[cookstyle automated] }
+    let(:pr_manager) { CookstyleRunner::GitHubPRManager.new(settings, github_client) }
+    let(:labels) { settings.issue_labels }
 
     describe '#create_pull_request' do
       let(:pull_request_response) { Struct.new(:number).new(123) }

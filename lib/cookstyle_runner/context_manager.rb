@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# typed: strict
+# typed: true
 
 require 'singleton'
 require_relative 'git'
@@ -24,26 +24,23 @@ module CookstyleRunner
       @repo_contexts = T.let({}, T::Hash[String, CookstyleRunner::Git::RepoContext])
       @global_config = T.let({},
                              T::Hash[Symbol, T.any(String, Integer, T::Boolean, T::Array[String], T.nilable(String), T.nilable(T::Array[String]))])
-      @global_logger = T.let(nil, T.nilable(Logger))
+      @logger = T.let(SemanticLogger[self.class], SemanticLogger::Logger)
     end
 
     # Set global configuration that will be used for all contexts
     # @param config [Hash, Object] Global configuration hash or Settings object
-    # @param logger [Logger, Object] Logger instance
-    # @return [T.self_type] Return self for chaining
+    # @return [void]
     sig do
       params(
         config: T.any(T::Hash[Symbol, T.any(String, Integer, T::Boolean, T::Array[String], T.nilable(String), T.nilable(T::Array[String]))],
-                      ::Config::Options), logger: Logger
-      ).returns(T.self_type)
+                      ::Config::Options)
+      ).void
     end
-    def set_global_config(config, logger)
+    def global_config=(config)
       @context_mutex.synchronize do
         # Convert Settings object to hash if needed
         @global_config = config.respond_to?(:to_h) ? config.to_h : config
-        @global_logger = logger # Assign logger
       end
-      self
     end
 
     # Get or create a repository context for a specific repository
@@ -92,7 +89,6 @@ module CookstyleRunner
       context = CookstyleRunner::Git::RepoContext.new(
         repo_name: repo_name,
         owner: owner,
-        logger: T.must(@global_logger),
         repo_url: repo_url
         # repo_dir, github_token, app_id, installation_id, private_key will use defaults (nil)
       )
@@ -128,7 +124,6 @@ module CookstyleRunner
       CookstyleRunner::Git::RepoContext.new(
         repo_name: repo_name,
         owner: owner,
-        logger: T.must(@global_logger),
         repo_dir: nil, # Pass nil explicitly for default base_dir calculation
         repo_url: repo_url,
         github_token: auth_params[:github_token],

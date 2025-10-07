@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/rspec-expectations/all/rspec-expectations.rbi
 #
-# rspec-expectations-3.13.4
+# rspec-expectations-3.13.5
 
 module RSpec
 end
@@ -340,8 +340,6 @@ module RSpec::Expectations::Syntax
   def warn_about_should_unless_configured(method_name); end
 end
 class BasicObject
-  def should(matcher = nil, message = nil, &block); end
-  def should_not(matcher = nil, message = nil, &block); end
 end
 class RSpec::Expectations::Configuration
   def add_should_and_should_not_to(*modules); end
@@ -367,7 +365,7 @@ end
 module RSpec::Expectations::Configuration::NullBacktraceFormatter
   def self.format_backtrace(backtrace); end
 end
-class InvalidName___Class_0x00___Differ_3
+class InvalidName___Class_0x00___Differ_80
 end
 module RSpec::Expectations::ExpectationHelper
   def self.check_message(msg); end
@@ -850,7 +848,7 @@ class RSpec::Matchers::BuiltIn::Exist < RSpec::Matchers::BuiltIn::BaseMatcher
   def initialize(*expected); end
   def matches?(actual); end
 end
-class Anonymous_Struct_4 < Struct
+class Anonymous_Struct_81 < Struct
   def actual; end
   def actual=(_); end
   def expected; end
@@ -861,7 +859,7 @@ class Anonymous_Struct_4 < Struct
   def self.members; end
   def self.new(*arg0); end
 end
-class RSpec::Matchers::BuiltIn::Exist::ExistenceTest < Anonymous_Struct_4
+class RSpec::Matchers::BuiltIn::Exist::ExistenceTest < Anonymous_Struct_81
   def actual_exists?; end
   def deprecated(predicate, actual); end
   def existence_values; end
@@ -1027,7 +1025,7 @@ module RSpec::Matchers::BuiltIn::CaptureStderr
   def self.capture(block); end
   def self.name; end
 end
-class Anonymous_Struct_5 < Struct
+class Anonymous_Struct_82 < Struct
   def name; end
   def name=(_); end
   def self.[](*arg0); end
@@ -1038,7 +1036,7 @@ class Anonymous_Struct_5 < Struct
   def stream; end
   def stream=(_); end
 end
-class RSpec::Matchers::BuiltIn::CaptureStreamToTempfile < Anonymous_Struct_5
+class RSpec::Matchers::BuiltIn::CaptureStreamToTempfile < Anonymous_Struct_82
   def capture(block); end
 end
 class RSpec::Matchers::BuiltIn::RaiseError

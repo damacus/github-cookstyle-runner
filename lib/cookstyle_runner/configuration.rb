@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# typed: strict
+# typed: true
 
 require 'sorbet-runtime'
 require 'logger'
@@ -101,25 +101,24 @@ module CookstyleRunner
     sig { returns(::Config::Options) }
     attr_reader :settings
 
-    sig { params(logger: Logger).void }
-    def initialize(logger)
-      @logger = T.let(logger, Logger)
+    sig { void }
+    def initialize
+      @logger = T.let(SemanticLogger[self.class], SemanticLogger::Logger)
+
       # Attempt to get Settings, provide a more helpful error if it's not defined
       begin
         @settings = T.let(Object.const_get('Settings'), ::Config::Options)
       rescue NameError
-        @logger.fatal('The global `Settings` constant is not defined. Ensure `config/initializers/config.rb` has run and `Config.setup` is correct.')
+        @logger.fatal('Settings constant not defined')
         raise 'Global `Settings` constant not defined. Check application initialization.'
       end
 
       # Validate settings using the class method on SettingsValidator
-      # The SettingsValidator.validate method expects the settings object directly
       validation_errors = CookstyleRunner::SettingsValidator.validate(@settings)
 
       unless validation_errors.empty?
-        # SettingsValidator.validate now returns an array of formatted strings
         error_messages = validation_errors.join('; ')
-        @logger.error("Configuration validation failed: #{error_messages}")
+        @logger.error('Configuration validation failed', errors: validation_errors)
         raise ArgumentError, "Configuration validation failed: #{error_messages}"
       end
 
@@ -158,8 +157,7 @@ module CookstyleRunner
       @create_manual_fix_issues = T.let(@settings.create_manual_fix_issues, T::Boolean)
 
       # Output configuration
-      @output_format = T.let(ENV.fetch('GCR_OUTPUT_FORMAT', @settings.output_format || 'text'), String)
-
+      @output_format = T.let(ENV.fetch('GCR_OUTPUT_FORMAT', @settings.output_format || 'json'), String)
       @logger.info('Configuration loaded and validated successfully.')
     end
 

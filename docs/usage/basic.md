@@ -39,33 +39,64 @@ bundle exec ./bin/cookstyle-runner
 
 ## CLI Commands
 
+### Run Cookstyle
+
+Run Cookstyle on repositories:
+
+```bash
+# Run on all configured repositories
+./bin/cookstyle-runner run
+
+# Run on specific repositories
+./bin/cookstyle-runner run repo1 repo2
+
+# Dry run mode (preview only)
+./bin/cookstyle-runner run --dry-run
+
+# Force cache refresh
+./bin/cookstyle-runner run --force
+
+# Use specific number of threads
+./bin/cookstyle-runner run --threads 8
+
+# Disable cache for this run
+./bin/cookstyle-runner run --no-cache
+
+# Output format options
+./bin/cookstyle-runner run --format json   # Structured JSON logs
+./bin/cookstyle-runner run --format text   # Human-readable colored logs (default)
+./bin/cookstyle-runner run --format table  # Same as text
+```
+
+### Version Information
+
+```bash
+# Display version information
+./bin/cookstyle-runner version
+```
+
 ### List Repositories
 
 View repositories that would be processed:
 
 ```bash
-# Simple table format (default)
+# Text format (default) - simple list
 ./bin/cookstyle-runner list
 
-# Pretty table format with borders
-./bin/cookstyle-runner list --format pretty
+# Table format - formatted output
+./bin/cookstyle-runner list --format table
 
 # JSON format for scripting
 ./bin/cookstyle-runner list --format json
 ```
 
-**Pretty table output example:**
+**Table output example:**
 
 ```text
-╭─────────────────────────╮
-│ Found 3 repositories    │
-├────┬────────────────────┤
-│  # │ Repository         │
-├────┼────────────────────┤
-│  1 │ apt                │
-│  2 │ nginx              │
-│  3 │ haproxy            │
-╰────┴────────────────────╯
+Found 3 repositories:
+  1. apt
+  2. nginx
+  3. haproxy
 ```
 
 ### View Configuration
@@ -74,18 +105,21 @@ View repositories that would be processed:
 # Display current configuration
 ./bin/cookstyle-runner config
 
-# Validate configuration
+# Validate configuration only
 ./bin/cookstyle-runner config --validate
+
+# Show help for config command
+./bin/cookstyle-runner config --help
 ```
 
 ### Check Status
 
 ```bash
-# View cache statistics (simple table)
+# View cache statistics (table format - default)
 ./bin/cookstyle-runner status
 
-# Pretty table format
-./bin/cookstyle-runner status --format pretty
+# Text format
+./bin/cookstyle-runner status --format text
 
 # JSON format for scripting
 ./bin/cookstyle-runner status --format json
@@ -95,42 +129,44 @@ View repositories that would be processed:
 
 ### Startup
 
+The application uses structured logging with timestamps and log levels:
+
 ```text
-[INFO] GitHub Cookstyle Runner starting...
-[INFO] Configuration loaded successfully
-[INFO] GitHub App authenticated
-[INFO] Cache loaded: 15 entries
-[INFO] Thread count: 4
-[INFO] Cache max age: 7 days
+2025-01-15 10:30:00.123 INFO  [CookstyleRunner] GitHub Cookstyle Runner starting...
+2025-01-15 10:30:00.234 INFO  [Configuration] Configuration loaded successfully
+2025-01-15 10:30:00.345 INFO  [Authentication] GitHub App authenticated
+2025-01-15 10:30:00.456 INFO  [Cache] Cache loaded: 15 entries
+2025-01-15 10:30:00.567 INFO  [Configuration] Thread count: 4
+2025-01-15 10:30:00.678 INFO  [Configuration] Cache max age: 7 days
 ```
 
 ### Repository Processing
 
 ```text
-[INFO] Found 23 repositories matching topics: chef-cookbook
-[INFO] Processing repositories...
-[INFO] [1/23] Processing: sous-chefs/apt
-[INFO] [1/23] Cloning repository...
-[INFO] [1/23] Running Cookstyle...
-[INFO] [1/23] Found 3 offenses (1 auto-correctable, 2 manual)
-[INFO] [1/23] Creating pull request...
-[INFO] [1/23] ✓ Pull request created: #42
-[INFO] [2/23] Processing: sous-chefs/nginx
-[INFO] [2/23] ✓ No offenses found (cached)
+2025-01-15 10:30:01.123 INFO  [RepositoryFetcher] Found 23 repositories matching topics: chef-cookbook
+2025-01-15 10:30:01.234 INFO  [RepositoryProcessor] Processing repositories...
+2025-01-15 10:30:01.345 INFO  [RepositoryProcessor] [1/23] Processing: sous-chefs/apt
+2025-01-15 10:30:01.456 INFO  [GitOperations] [1/23] Cloning repository...
+2025-01-15 10:30:05.567 INFO  [CookstyleOperations] [1/23] Running Cookstyle...
+2025-01-15 10:30:10.678 INFO  [CookstyleOperations] [1/23] Found 3 offenses (1 auto-correctable, 2 manual)
+2025-01-15 10:30:10.789 INFO  [PullRequestManager] [1/23] Creating pull request...
+2025-01-15 10:30:11.890 INFO  [PullRequestManager] [1/23] ✓ Pull request created: #42
+2025-01-15 10:30:12.001 INFO  [RepositoryProcessor] [2/23] Processing: sous-chefs/nginx
+2025-01-15 10:30:12.112 INFO  [Cache] [2/23] ✓ No offenses found (cached)
 ```
 
 ### Completion
 
 ```text
-[INFO] Processing complete
-[INFO] Summary:
-[INFO]   Total repositories: 23
-[INFO]   Processed: 23
-[INFO]   Skipped (cached): 15
-[INFO]   Pull requests created: 5
-[INFO]   Issues created: 2
-[INFO]   Errors: 0
-[INFO] Cache saved: 23 entries
+2025-01-15 10:35:00.123 INFO  [RepositoryProcessor] Processing complete
+2025-01-15 10:35:00.234 INFO  [RepositoryProcessor] Summary:
+2025-01-15 10:35:00.345 INFO  [RepositoryProcessor]   Total repositories: 23
+2025-01-15 10:35:00.456 INFO  [RepositoryProcessor]   Processed: 23
+2025-01-15 10:35:00.567 INFO  [RepositoryProcessor]   Skipped (cached): 15
+2025-01-15 10:35:00.678 INFO  [RepositoryProcessor]   Pull requests created: 5
+2025-01-15 10:35:00.789 INFO  [RepositoryProcessor]   Issues created: 2
+2025-01-15 10:35:00.890 INFO  [RepositoryProcessor]   Errors: 0
+2025-01-15 10:35:01.001 INFO  [Cache] Cache saved: 23 entries
 ```
 
 ## Common Workflows
@@ -258,6 +294,28 @@ kubectl logs -f -l app=cookstyle-runner
 
 - **Pull Requests**: Check your organization's repositories for new PRs
 - **Issues**: Check for new issues (if `GCR_CREATE_MANUAL_FIX_PRS=1`)
+
+## Global Options
+
+These options work with any command:
+
+```bash
+# Enable verbose output (DEBUG level)
+./bin/cookstyle-runner <command> --verbose
+./bin/cookstyle-runner <command> -v
+
+# Quiet mode (ERROR level only)
+./bin/cookstyle-runner <command> --quiet
+./bin/cookstyle-runner <command> -q
+
+# Set specific log level
+./bin/cookstyle-runner <command> --log-level DEBUG
+./bin/cookstyle-runner <command> --log-level WARN
+
+# Show help for any command
+./bin/cookstyle-runner <command> --help
+./bin/cookstyle-runner <command> -h
+```
 
 ## Exit Codes
 

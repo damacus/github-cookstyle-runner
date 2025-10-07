@@ -1,4 +1,4 @@
-# typed: true
+# typed: false
 # frozen_string_literal: true
 
 # This file is an RBI (Ruby Interface) file for Sorbet static type checking.

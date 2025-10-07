@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require 'spec_helper'
@@ -95,6 +96,49 @@ RSpec.describe CookstyleRunner::CLI do
     end
   end
 
+  describe 'run command with format options' do
+    let(:cli) { described_class.new(argv) }
+
+    context 'with json format' do
+      let(:argv) { ['run', '--format', 'json'] }
+
+      it 'sets GCR_LOG_FORMAT environment variable to json' do
+        # Mock Application to prevent actual execution
+        app_double = instance_double(CookstyleRunner::Application, run: 0)
+        allow(CookstyleRunner::Application).to receive(:new).and_return(app_double)
+
+        cli.send(:apply_cli_options)
+        expect(ENV.fetch('GCR_LOG_FORMAT', nil)).to eq('json')
+      end
+    end
+
+    context 'with text format' do
+      let(:argv) { ['run', '--format', 'text'] }
+
+      it 'sets GCR_LOG_FORMAT environment variable to color' do
+        # Mock Application to prevent actual execution
+        app_double = instance_double(CookstyleRunner::Application, run: 0)
+        allow(CookstyleRunner::Application).to receive(:new).and_return(app_double)
+
+        cli.send(:apply_cli_options)
+        expect(ENV.fetch('GCR_LOG_FORMAT', nil)).to eq('color')
+      end
+    end
+
+    context 'with table format' do
+      let(:argv) { ['run', '--format', 'table'] }
+
+      it 'sets GCR_LOG_FORMAT environment variable to color' do
+        # Mock Application to prevent actual execution
+        app_double = instance_double(CookstyleRunner::Application, run: 0)
+        allow(CookstyleRunner::Application).to receive(:new).and_return(app_double)
+
+        cli.send(:apply_cli_options)
+        expect(ENV.fetch('GCR_LOG_FORMAT', nil)).to eq('color')
+      end
+    end
+  end
+
   describe 'list command with format options' do
     let(:repositories) { %w[repo1.git repo2.git repo3.git] }
     let(:cli) { described_class.new(argv) }
@@ -107,8 +151,8 @@ RSpec.describe CookstyleRunner::CLI do
     context 'with default format' do
       let(:argv) { ['list'] }
 
-      it 'outputs table format' do
-        expect { cli.run }.to output(/Found 3 repositories/).to_stdout
+      it 'outputs JSON format' do
+        expect { cli.run }.to output(/"repositories"/).to_stdout
       end
     end
 
@@ -123,11 +167,8 @@ RSpec.describe CookstyleRunner::CLI do
     context 'with table format' do
       let(:argv) { ['list', '--format', 'table'] }
 
-      it 'outputs table format' do
-        # TableRenderer should be used for table format
-        allow(CookstyleRunner::TableRenderer).to receive(:render_repositories).and_call_original
-        cli.run
-        expect(CookstyleRunner::TableRenderer).to have_received(:render_repositories).with(repositories)
+      it 'outputs table format (same as text)' do
+        expect { cli.run }.to output(/Found/).to_stdout
       end
     end
 

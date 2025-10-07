@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/regexp_parser/all/regexp_parser.rbi
 #
-# regexp_parser-2.10.0
+# regexp_parser-2.11.3
 
 class Regexp
 end
@@ -101,6 +101,8 @@ class Regexp::Scanner
   def append_literal(data, ts, te); end
   def block; end
   def block=(arg0); end
+  def capturing_group_count; end
+  def capturing_group_count=(arg0); end
   def char_pos; end
   def char_pos=(arg0); end
   def collect_tokens; end
@@ -112,6 +114,7 @@ class Regexp::Scanner
   def emit_literal; end
   def emit_meta_control_sequence(data, ts, te, token); end
   def emit_options(text); end
+  def extract_encoding(input_object, options); end
   def free_spacing; end
   def free_spacing=(arg0); end
   def free_spacing?(input_object, options); end
@@ -123,10 +126,11 @@ class Regexp::Scanner
   def literal_run=(arg0); end
   def prev_token; end
   def prev_token=(arg0); end
+  def regexp_encoding; end
+  def regexp_encoding=(arg0); end
   def scan(input_object, options: nil, collect_tokens: nil, &block); end
   def self.long_prop_map; end
   def self.parse_prop_map(name); end
-  def self.posix_classes; end
   def self.scan(input_object, options: nil, collect_tokens: nil, &block); end
   def self.short_prop_map; end
   def set_depth; end
@@ -279,6 +283,8 @@ end
 class Regexp::Syntax::V3_1_0 < Regexp::Syntax::V2_6_3
 end
 class Regexp::Syntax::V3_2_0 < Regexp::Syntax::V3_1_0
+end
+class Regexp::Syntax::V3_5_0 < Regexp::Syntax::V3_2_0
 end
 class Regexp::Syntax::SyntaxError < Regexp::Parser::Error
 end
@@ -726,6 +732,9 @@ class Regexp::Expression::EscapeSequence::CodepointList < Regexp::Expression::Es
   def codepoint; end
   def codepoints; end
   def match_length; end
+end
+class Regexp::Expression::EscapeSequence::UTF8Hex < Regexp::Expression::EscapeSequence::Base
+  def codepoint; end
 end
 class Regexp::Expression::EscapeSequence::AbstractMetaControlSequence < Regexp::Expression::EscapeSequence::Base
   def control_sequence_to_s(control_sequence); end

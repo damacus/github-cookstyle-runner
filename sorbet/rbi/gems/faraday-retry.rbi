@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/faraday-retry/all/faraday-retry.rbi
 #
-# faraday-retry-2.3.1
+# faraday-retry-2.3.2
 
 module Faraday
 end
@@ -33,7 +33,7 @@ class Faraday::Retry::Middleware < Faraday::Middleware
   def rewind_files(body); end
   include Faraday::Retryable
 end
-class Anonymous_Faraday_Options_2 < Faraday::Options
+class Anonymous_Faraday_Options_79 < Faraday::Options
   def backoff_factor; end
   def backoff_factor=(_); end
   def exceptions; end
@@ -68,7 +68,7 @@ class Anonymous_Faraday_Options_2 < Faraday::Options
   def self.members; end
   def self.new(*arg0); end
 end
-class Faraday::Retry::Middleware::Options < Anonymous_Faraday_Options_2
+class Faraday::Retry::Middleware::Options < Anonymous_Faraday_Options_79
   def backoff_factor; end
   def exceptions; end
   def exhausted_retries_block; end

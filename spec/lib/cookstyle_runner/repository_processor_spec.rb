@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require 'spec_helper'
@@ -21,7 +22,6 @@ require 'ostruct'
 # All other logic is covered by unit tests. External dependencies are stubbed. Keep these tests simple and maintainable.
 
 RSpec.describe CookstyleRunner::RepositoryProcessor, :integration do
-  let(:logger) { CookstyleRunner::Logger.new(StringIO.new, level: Logger::INFO) }
   let(:github_token) { 'mock_gh_token' }
   let(:cache_manager) { nil }
   let(:pr_manager) { nil }
@@ -31,19 +31,20 @@ RSpec.describe CookstyleRunner::RepositoryProcessor, :integration do
   let(:pr_body) { 'Automated Cookstyle fixes applied by the Cookstyle Runner bot.' }
   let(:configuration) do
     # Use a real Configuration object for proper type checking
-    CookstyleRunner::Configuration.new(logger)
+    CookstyleRunner::Configuration.new
   end
   let(:tmp_dir) { Dir.mktmpdir }
   let(:octokit_client) { instance_double(Octokit::Client) }
+  let(:logger) { SemanticLogger['Test'] }
 
   before do
-    CookstyleRunner::ContextManager.instance.set_global_config({
-                                                                 owner: 'sous-chefs',
-                                                                 github_token: github_token,
-                                                                 app_id: nil,
-                                                                 installation_id: nil,
-                                                                 private_key: nil
-                                                               }, logger)
+    CookstyleRunner::ContextManager.instance.global_config = {
+      owner: 'sous-chefs',
+      github_token: github_token,
+      app_id: nil,
+      installation_id: nil,
+      private_key: nil
+    }
     allow(CookstyleRunner::Git).to receive(:clone_repo).and_return(true)
     allow(FileUtils).to receive(:remove_entry_secure).with(any_args)
   end
@@ -63,7 +64,6 @@ RSpec.describe CookstyleRunner::RepositoryProcessor, :integration do
     let(:processor) do
       described_class.new(
         configuration: configuration,
-        logger: logger,
         cache_manager: cache_manager,
         pr_manager: pr_manager,
         context_manager: context_manager

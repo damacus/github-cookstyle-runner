@@ -1,11 +1,10 @@
 # frozen_string_literal: true
-# typed: false
+# typed: true
 
 require 'pastel'
 require 'logger'
 require_relative '../cookstyle_runner'
 require_relative 'version'
-require_relative 'table_renderer'
 
 module CookstyleRunner
   # Custom exception for CLI argument errors
@@ -164,7 +163,7 @@ module CookstyleRunner
         return 0
       end
 
-      display_repositories(repositories, options[:format] || 'text')
+      display_repositories(repositories, options[:format] || 'json')
       0
     end
 
@@ -218,6 +217,12 @@ module CookstyleRunner
       ENV['GCR_THREAD_COUNT'] = options[:threads].to_s if options[:threads]
       ENV['GCR_CREATE_MANUAL_FIX_ISSUES'] = options[:create_issues].to_s if options.key?(:create_issues)
       ENV['GCR_OUTPUT_FORMAT'] = options[:format] if options[:format]
+
+      # Map format option to log format for run command
+      # json -> json, text/table -> color (human-readable with colors)
+      return unless options[:format]
+
+      ENV['GCR_LOG_FORMAT'] = options[:format] == 'json' ? 'json' : 'color'
     end
 
     # Validates that an argument is present and not a flag
@@ -263,7 +268,8 @@ module CookstyleRunner
     end
 
     def display_repositories_table(repositories)
-      puts TableRenderer.render_repositories(repositories)
+      # Table format now uses same output as text (SemanticLogger handles formatting)
+      display_repositories_text(repositories)
     end
 
     def display_repositories_text(repositories)
@@ -334,14 +340,14 @@ module CookstyleRunner
       1
     end
 
-    def display_cache_status(format = 'text')
+    def display_cache_status(format = 'json')
       return display_invalid_format(format) unless VALID_FORMATS.include?(format)
 
       require_relative 'cache'
 
       # Settings constant is dynamically loaded via config gem
       settings = Object.const_get('Settings')
-      cache = Cache.new(settings.cache_dir, Logger.new($stdout))
+      cache = Cache.new(settings.cache_dir)
 
       cache_stats = cache.stats
 
@@ -382,14 +388,8 @@ module CookstyleRunner
     end
 
     def render_cache_status_table(cache_dir, hits, misses, updates, hit_rate)
-      summary_data = {
-        'Cache Directory' => cache_dir,
-        'Cache Hits' => hits,
-        'Cache Misses' => misses,
-        'Cache Updates' => updates,
-        'Cache Hit Rate' => format('%.2f%%', hit_rate)
-      }
-      puts TableRenderer.render_summary(summary_data)
+      # Table format now uses same output as text (SemanticLogger handles formatting)
+      render_cache_status_text(cache_dir, hits, misses, updates, hit_rate)
     end
 
     def render_cache_status_json(cache_dir, hits, misses, updates, hit_rate)
@@ -444,13 +444,13 @@ module CookstyleRunner
       puts '  -f, --force         Force cache refresh'
       puts '  -t, --threads N     Number of parallel threads'
       puts '  --no-cache          Disable cache for this run'
-      puts '  --format FORMAT     Output format (text, table, json)'
+      puts '  --format FORMAT     Log output format: json (structured) or text/table (color)'
       puts "\nExamples:"
       puts '  cookstyle-runner run'
       puts '  cookstyle-runner run repo1 repo2'
       puts '  cookstyle-runner run --dry-run'
       puts '  cookstyle-runner run --force --threads 8'
-      puts '  cookstyle-runner run --format table'
+      puts '  cookstyle-runner run --format json'
     end
 
     def show_list_help

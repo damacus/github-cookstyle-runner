@@ -3,12 +3,9 @@ services:
     build: .
     volumes:
       # - .:/app
-      - bundle_cache:/usr/local/bundle
       - cookstyle_cache:/app/.cache
       - ./config/settings/local.yml:/app/config/settings/local.yml
     environment:
-      - BUNDLE_PATH=/usr/local/bundle
-      - BUNDLE_APP_CONFIG=/usr/local/bundle
       - GITHUB_TOKEN=${GITHUB_TOKEN}
 
   test:
@@ -18,8 +15,6 @@ services:
       - ./config:/app/config
       - ./lib:/app/lib
     environment:
-      - BUNDLE_PATH=/usr/local/bundle
-      - BUNDLE_APP_CONFIG=/usr/local/bundle
       # Clear GitHub credentials for testing
       - GITHUB_TOKEN=
       - GCR_GITHUB_APP_ID=

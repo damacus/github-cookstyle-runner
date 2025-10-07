@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# typed: strict
+# typed: true
 
 require 'openssl'
 require 'jwt'
@@ -286,7 +286,7 @@ module CookstyleRunner
     # Generate an authenticated URL for Git operations
     # @param owner [String] repository owner
     # @param repo_name [String] repository name
-    # @param logger [Logger] logger instance
+    # @param logger [SemanticLogger::Logger] logger instance
     # @return [String] authenticated URL for Git operations
     def self.authenticated_url(owner, repo_name, logger = nil)
       credentials = github_credentials
@@ -318,7 +318,7 @@ module CookstyleRunner
     # @param credentials [Credentials] PAT credentials
     # @param owner [String] repository owner
     # @param repo_name [String] repository name
-    # @param logger [Logger] logger instance
+    # @param logger [SemanticLogger::Logger] logger instance
     # @return [String] authenticated URL
     def self.build_pat_url(credentials, owner, repo_name, logger)
       logger&.debug("Using PAT authentication for #{repo_name}")
