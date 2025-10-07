@@ -30,6 +30,32 @@ kubectl apply -f configmap.yaml
 kubectl apply -f cronjob.yaml
 ```
 
+### CLI Commands
+
+The application provides several commands for different operations:
+
+```bash
+# Run Cookstyle on repositories
+./bin/cookstyle-runner run
+
+# List repositories that would be processed
+./bin/cookstyle-runner list
+
+# Display configuration
+./bin/cookstyle-runner config
+
+# Show cache status
+./bin/cookstyle-runner status
+
+# Display version
+./bin/cookstyle-runner version
+
+# Show help
+./bin/cookstyle-runner help
+```
+
+See the [Usage Guide](https://damacus.github.io/github-cookstyle-runner/usage/basic/) for detailed command documentation.
+
 ## Installation
 
 For detailed installation instructions including Kubernetes (CronJob) and docker-compose setups, see the [Installation Guide](https://damacus.github.io/github-cookstyle-runner/installation/).
@@ -89,11 +115,11 @@ Below are a list of variables, what they mean and example values
 
 ### Logging Configuration
 
-| Name                        | Type     | Required | Description                                                                                                      |
-|-----------------------------|----------|----------|------------------------------------------------------------------------------------------------------------------|
-| GCR_LOG_LEVEL               | `String` | No       | Log level: DEBUG, INFO, WARN, ERROR, FATAL (default: INFO)                                                      |
-| GCR_LOG_FORMAT              | `String` | No       | Log format: text or json (default: text)                                                                         |
-| GCR_LOG_DEBUG_COMPONENTS    | `String` | No       | Comma-separated list of components for debug logging (e.g., `git,cache,api`)                                    |
+| Name                     | Type     | Required | Description                                                                  |
+|--------------------------|----------|----------|------------------------------------------------------------------------------|
+| GCR_LOG_LEVEL            | `String` | No       | Log level: DEBUG, INFO, WARN, ERROR, FATAL (default: INFO)                   |
+| GCR_LOG_FORMAT           | `String` | No       | Log format: text or json (default: text)                                     |
+| GCR_LOG_DEBUG_COMPONENTS | `String` | No       | Comma-separated list of components for debug logging (e.g., `git,cache,api`) |
 
 For detailed logging configuration, see [Logging Documentation](docs/logging.md).
 
@@ -160,6 +186,20 @@ The application supports flexible repository filtering options:
 - Detailed PR descriptions with cookstyle output
 - Label support
 - Support for manual fix PRs with detailed instructions
+
+### CLI Output Formats
+
+- **Text**: Simple text-based list (default for `list` command)
+- **Table**: Formatted output with structure (default for `status` command)
+- **JSON**: Machine-readable output for scripting
+
+```bash
+# View repositories in table format
+./bin/cookstyle-runner list --format table
+
+# View cache status in JSON format
+./bin/cookstyle-runner status --format json
+```
 
 ## Usage Examples
 

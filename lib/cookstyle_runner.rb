@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# typed: true
 # frozen_string_literal: true
 
 # =============================================================================
@@ -23,6 +24,7 @@
 
 require 'English'
 require 'logger'
+require 'semantic_logger'
 require 'fileutils'
 require 'octokit'
 require 'json'
@@ -35,7 +37,6 @@ require 'config'
 require_relative '../config/initializers/config'
 
 # Then load the rest of the application files
-require_relative 'cookstyle_runner/logger'
 require_relative 'cookstyle_runner/git'
 require_relative 'cookstyle_runner/github_api'
 require_relative 'cookstyle_runner/repository_manager'
@@ -80,7 +81,7 @@ module CookstyleRunner
       results = _process_repositories_in_parallel(repositories)
 
       # Process the collected results sequentially after parallel execution
-      reporter = CookstyleRunner::Reporter.new(@logger)
+      reporter = CookstyleRunner::Reporter.new
       processed_count, issues_found_count, skipped_count, error_count = reporter.aggregate_results(results)
 
       # --- Calculations for summary reporting ---
@@ -107,9 +108,8 @@ module CookstyleRunner
 
       # Log cache runtime statistics if cache is enabled
       if @configuration.use_cache && @cache&.stats
-        # Call instance method on the stats object within cache
         stats_hash = @cache.stats.runtime_stats
-        @logger.info("Cache Stats:\n#{PP.pp(stats_hash, +'')}")
+        reporter.cache_stats(stats_hash)
       end
 
       # Report created artifacts
@@ -122,41 +122,90 @@ module CookstyleRunner
     end
     # rubocop:enable Metrics/MethodLength
 
+    # Fetches repositories from GitHub and applies filtering based on config
+    # @return [Array<String>, nil] List of repository URLs or nil if none found/matched
+    # rubocop:disable Metrics/MethodLength
+    def fetch_and_filter_repositories
+      settings = Object.const_get('Settings')
+
+      # Use the GitHubAPI module to fetch repositories
+      repositories = GitHubAPI.fetch_repositories(
+        settings.owner,
+        settings.topics
+      )
+
+      if repositories.empty?
+        logger.error('No repositories found', topics: settings.topics)
+        exit(1)
+      end
+
+      initial_count = repositories.length
+
+      # Apply repository filtering if specified using the RepositoryManager module
+      filter_repos = settings.filter_repos
+      if filter_repos && !filter_repos.empty?
+        filtered_repos = CookstyleRunner::RepositoryManager.filter_repositories(repositories, filter_repos, logger)
+        logger.info('Repositories filtered', initial_count: initial_count, filtered_count: filtered_repos.length, filters: filter_repos)
+        repositories = filtered_repos
+      end
+
+      if repositories.empty?
+        logger.error('No repositories after filtering', filters: filter_repos)
+        exit(1)
+      end
+
+      logger.info('Repositories ready for processing', count: repositories.length)
+      repositories # Return the final list
+    end
+    # rubocop:enable Metrics/MethodLength
+
     private
 
     # Sets up the application logger
     def _setup_logger
       settings = Object.const_get('Settings')
       log_level_str = ENV.fetch('GCR_LOG_LEVEL', settings.log_level.to_s).upcase
+      log_level_str = 'INFO' if log_level_str.empty?
       log_level = _parse_log_level(log_level_str)
       log_format = _get_log_format(settings)
-      debug_components = _get_debug_components(settings)
 
-      @logger = CookstyleRunner::Logger.new(
-        $stdout,
-        level: log_level,
-        format: log_format,
-        components: debug_components
-      )
+      # Set SemanticLogger default level
+      SemanticLogger.default_level = log_level
 
-      _log_logger_info(log_level_str, log_format, debug_components)
+      # Configure appender based on format
+      if log_format == :json
+        SemanticLogger.add_appender(io: $stdout, formatter: :json)
+      else
+        SemanticLogger.add_appender(io: $stdout, formatter: :color)
+      end
+
+      # Get logger instance for this application
+      @logger = SemanticLogger[self.class]
+
+      @logger.debug('Logger initialized', level: log_level_str, format: log_format)
     end
 
-    # Parse a log level string into a Logger constant
+    # Parse a log level string into a SemanticLogger level symbol
     # @param level_str [String] The log level string (e.g., 'INFO', 'DEBUG')
-    # @return [Integer] The corresponding Logger constant value
+    # @return [Symbol] The corresponding log level symbol
     def _parse_log_level(level_str)
-      ::Logger.const_get(level_str)
-    rescue NameError
-      logger&.warn("Invalid log level '#{level_str}', defaulting to INFO.")
-      ::Logger::INFO
+      level_str.downcase.to_sym
+    rescue StandardError
+      :info
     end
 
     # Get log format from ENV or settings
+    # Maps 'text' to 'color' for backward compatibility
     def _get_log_format(settings)
-      format_value = ENV.fetch('GCR_LOG_FORMAT', settings.log_format).to_s.strip
-      format_value = 'text' if format_value.empty?
-      format_value.downcase.to_sym
+      format_value = ENV.fetch('GCR_LOG_FORMAT', settings.log_format).to_s.strip.downcase
+
+      # Map legacy 'text' format to 'color'
+      format_value = 'color' if format_value == 'text' || format_value.empty?
+
+      # Validate format
+      format_value = 'json' unless %w[color json].include?(format_value)
+
+      format_value.to_sym
     end
 
     # Get debug components from ENV or settings
@@ -175,19 +224,10 @@ module CookstyleRunner
       components
     end
 
-    # Log logger initialization info
-    def _log_logger_info(log_level_str, log_format, debug_components)
-      logger.info("Log level set to: #{log_level_str}")
-      logger.info("Log format: #{log_format}")
-      return if debug_components.empty?
-
-      logger.info("Debug components: #{debug_components.join(', ')}")
-    end
-
     def _setup_configuration
       _validate_settings
-      @configuration = Configuration.new(logger)
-      ConfigManager.log_config_summary(logger)
+      @configuration = Configuration.new
+      ConfigManager.log_config_summary
     end
 
     def _load_settings
@@ -201,21 +241,23 @@ module CookstyleRunner
       errors = SettingsValidator.validate(settings)
       return if errors.empty?
 
-      errors.each { |error| logger.error("Configuration error: #{error}") }
+      logger.error('Configuration validation failed', payload: {
+                     errors: errors
+                   })
       raise "Invalid configuration: #{errors.join(', ')}"
     end
 
     def _setup_cache
       settings = Object.const_get('Settings')
       cache_dir = settings.cache_dir
-      @cache = Cache.new(cache_dir, logger)
+      @cache = Cache.new(cache_dir)
     end
 
     def _setup_context_manager
       @context_manager = ContextManager.instance
 
       # Pass the Settings object to the context manager instead of a hash
-      @context_manager.set_global_config(Object.const_get('Settings'), @logger)
+      @context_manager.global_config = Object.const_get('Settings')
     end
 
     # Sets up the GitHub client for API operations
@@ -226,52 +268,18 @@ module CookstyleRunner
 
     def _setup_pr_manager
       settings = Object.const_get('Settings')
-      @pr_manager = GitHubPRManager.new(settings, @logger, @github_client)
+      @pr_manager = GitHubPRManager.new(settings, @github_client)
     end
-
-    # Fetches repositories from GitHub and applies filtering based on config
-    # @return [Array<String>, nil] List of repository URLs or nil if none found/matched
-    # rubocop:disable Metrics/MethodLength
-    def fetch_and_filter_repositories
-      settings = Object.const_get('Settings')
-
-      # Use the GitHubAPI module to fetch repositories
-      repositories = GitHubAPI.fetch_repositories(
-        settings.owner,
-        logger,
-        settings.topics
-      )
-
-      if repositories.empty?
-        logger.error('No repositories found matching the initial criteria. Exiting.')
-        exit(1)
-      end
-
-      initial_count = repositories.length
-
-      # Apply repository filtering if specified using the RepositoryManager module
-      filter_repos = settings.filter_repos
-      if filter_repos && !filter_repos.empty?
-        filtered_repos = CookstyleRunner::RepositoryManager.filter_repositories(repositories, filter_repos, logger)
-        logger.info("Filtered from #{initial_count} to #{filtered_repos.length} repositories based on include/exclude lists.")
-        repositories = filtered_repos
-      end
-
-      if repositories.empty?
-        logger.error('No repositories remaining after filtering. Exiting.')
-        exit(1)
-      end
-
-      logger.info("Found #{repositories.length} repositories to process.")
-      repositories # Return the final list
-    end
-    # rubocop:enable Metrics/MethodLength
 
     # Process repositories in parallel
     def _process_repositories_in_parallel(repositories)
       total_repos = repositories.length
       thread_count = [@configuration.thread_count, total_repos].min
-      logger.info("Processing #{total_repos} repositories using #{thread_count} threads")
+      logger.debug('Starting parallel processing', payload: {
+                     total_repos: total_repos,
+                     thread_count: thread_count,
+                     action: 'process_repositories'
+                   })
 
       repo_processor = _create_repository_processor
 
@@ -285,7 +293,6 @@ module CookstyleRunner
     def _create_repository_processor
       RepositoryProcessor.new(
         configuration: @configuration,
-        logger: logger,
         cache_manager: @cache,
         pr_manager: @pr_manager,
         context_manager: @context_manager
@@ -295,7 +302,11 @@ module CookstyleRunner
     # Process a single repository
     def _process_single_repository(repo_processor, repo_url, current_count, total_repos)
       repo_name = File.basename(repo_url, '.git')
-      logger.debug("Processing repository #{current_count}/#{total_repos}: #{repo_name}")
+      logger.debug('Processing repository', payload: {
+                     repo_name: repo_name,
+                     current: current_count,
+                     total: total_repos
+                   })
       repo_processor.process_repository(repo_name, repo_url)
     end
   end

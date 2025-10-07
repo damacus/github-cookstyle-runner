@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/prism/all/prism.rbi
 #
-# prism-1.4.0
+# prism-1.5.1
 
 module Prism
   def self.dump(*arg0); end

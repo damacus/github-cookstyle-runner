@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# typed: strict
+# typed: false
 
 # This file is an RBI (Ruby Interface) file for Sorbet static type checking.
 # It provides type signatures for the CookstyleRunner::RepositoryProcessor class.

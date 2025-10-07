@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Added
+
+- Pretty table output format using `table_tennis` gem
+- `--format pretty` option for CLI list command
+- Enhanced table rendering with borders and zebra striping
+- Configuration validation for output_format setting
+
+### Changed
+
+- Updated `tty-progressbar` dependency to support `table_tennis`
+
 ## 2.0.0 - *2021-08-11*
 
 - Breaking Change: Defaults to looking for main branches, introduces new cli arg for setting default branch name

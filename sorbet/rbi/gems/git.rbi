@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/git/all/git.rbi
 #
-# git-3.0.0
+# git-4.0.5
 
 module Git
   def config(name = nil, value = nil); end
@@ -41,10 +41,11 @@ class Git::Base
   def apply_mail(file); end
   def archive(treeish, file = nil, opts = nil); end
   def branch(branch_name = nil); end
+  def branch?(branch); end
   def branches; end
   def cat_file(objectish); end
   def chdir; end
-  def checkout(*args, **options); end
+  def checkout(*, **); end
   def checkout_file(version, file); end
   def checkout_index(opts = nil); end
   def clean(opts = nil); end
@@ -53,11 +54,15 @@ class Git::Base
   def commit_tree(tree = nil, opts = nil); end
   def config(name = nil, value = nil, options = nil); end
   def current_branch; end
+  def default_paths(options); end
   def delete_tag(name); end
   def describe(committish = nil, opts = nil); end
   def diff(objectish = nil, obj2 = nil); end
+  def diff_name_status(objectish = nil, obj2 = nil); end
+  def diff_path_status(objectish = nil, obj2 = nil); end
+  def diff_stats(objectish = nil, obj2 = nil); end
   def dir; end
-  def each_conflict(&block); end
+  def each_conflict(&); end
   def fetch(remote = nil, opts = nil); end
   def gblob(objectish); end
   def gc; end
@@ -67,20 +72,23 @@ class Git::Base
   def ignored_files; end
   def index; end
   def initialize(options = nil); end
+  def initialize_components(options); end
   def is_branch?(branch); end
   def is_local_branch?(branch); end
   def is_remote_branch?(branch); end
   def lib; end
+  def local_branch?(branch); end
   def log(count = nil); end
   def ls_files(location = nil); end
   def ls_tree(objectish, opts = nil); end
   def merge(branch, message = nil, opts = nil); end
-  def merge_base(*args); end
+  def merge_base(*); end
   def object(objectish); end
   def pull(remote = nil, branch = nil, opts = nil); end
-  def push(*args, **options); end
+  def push(*, **); end
   def read_tree(treeish, opts = nil); end
   def remote(remote_name = nil); end
+  def remote_branch?(branch); end
   def remotes; end
   def remove(path = nil, opts = nil); end
   def remove_remote(name); end
@@ -97,25 +105,32 @@ class Git::Base
   def self.binary_version(binary_path); end
   def self.clone(repository_url, directory, options = nil); end
   def self.config; end
+  def self.execute_git_version(binary_path); end
+  def self.execute_rev_parse_toplevel(working_dir); end
   def self.init(directory = nil, options = nil); end
+  def self.initial_repository_path(options, default:, bare:); end
   def self.normalize_index(options); end
   def self.normalize_paths(options, default_working_directory: nil, default_repository: nil, bare: nil); end
   def self.normalize_repository(options, default:, bare: nil); end
   def self.normalize_working_directory(options, default:, bare: nil); end
   def self.open(working_dir, options = nil); end
+  def self.parse_version_string(raw_string); end
+  def self.process_rev_parse_result(result, status, working_dir); end
   def self.repository_default_branch(repository, options = nil); end
+  def self.resolve_gitdir_if_present(path, working_dir); end
   def self.root_of_worktree(working_dir); end
-  def set_index(index_file, check = nil); end
+  def set_index(index_file, check = nil, must_exist: nil); end
   def set_remote_url(name, url); end
-  def set_working(work_dir, check = nil); end
+  def set_working(work_dir, check = nil, must_exist: nil); end
+  def setup_logger(log_option); end
   def show(objectish = nil, path = nil); end
   def status; end
   def tag(tag_name); end
   def tags; end
   def update_ref(branch, commit); end
   def with_index(new_index); end
-  def with_temp_index(&blk); end
-  def with_temp_working(&blk); end
+  def with_temp_index(&); end
+  def with_temp_working(&); end
   def with_working(work_dir); end
   def worktree(dir, commitish = nil); end
   def worktrees; end
@@ -123,14 +138,14 @@ class Git::Base
   def write_tree; end
 end
 class Git::Path
-  def initialize(path, check_path = nil); end
+  def initialize(path, must_exist: nil); end
   def path; end
   def path=(arg0); end
   def readable?; end
   def to_s; end
   def writable?; end
 end
-class Git::Branch < Git::Path
+class Git::Branch
   def archive(file, opts = nil); end
   def check_if_create; end
   def checkout; end
@@ -138,7 +153,6 @@ class Git::Branch < Git::Path
   def create; end
   def current; end
   def delete; end
-  def determine_current; end
   def full; end
   def full=(arg0); end
   def gcommit; end
@@ -157,7 +171,7 @@ class Git::Branch < Git::Path
 end
 class Git::Branches
   def [](branch_name); end
-  def each(&block); end
+  def each(&); end
   def initialize(base); end
   def local; end
   def remote; end
@@ -197,14 +211,17 @@ end
 class Git::CommandLine
   def binary_path; end
   def build_git_cmd(args); end
+  def command_line_result(command, result, processed_out, processed_err, timeout); end
   def env; end
   def global_opts; end
   def initialize(env, binary_path, global_opts, logger); end
+  def log_result(result, command, processed_out, processed_err); end
   def logger; end
-  def post_process(raw_output, normalize, chomp); end
-  def post_process_all(raw_outputs, normalize, chomp); end
+  def post_process_output(result, normalize, chomp); end
   def process_result(result, normalize, chomp, timeout); end
-  def run(*args, normalize:, chomp:, merge:, out: nil, err: nil, chdir: nil, timeout: nil); end
+  def run(*, **options_hash); end
+  def run_with_capture(*args, **options_hash); end
+  def run_with_capture_options(**options_hash); end
 end
 class Git::Config
   def binary_path; end
@@ -215,26 +232,41 @@ class Git::Config
   def timeout; end
   def timeout=(arg0); end
 end
+class Git::DiffPathStatus
+  def each(&); end
+  def fetch_path_status; end
+  def initialize(base, from, to, path_limiter = nil); end
+  def to_h; end
+  include Enumerable
+end
+class Git::DiffStats
+  def deletions; end
+  def fetch_stats; end
+  def files; end
+  def initialize(base, from, to, path_limiter = nil); end
+  def insertions; end
+  def lines; end
+  def total; end
+end
 class Git::Diff
   def [](key); end
-  def cache_full; end
-  def cache_name_status; end
-  def cache_stats; end
   def deletions; end
-  def each(&block); end
+  def each(&); end
   def from; end
   def initialize(base, from = nil, to = nil); end
   def insertions; end
   def lines; end
   def name_status; end
-  def patch(file = nil); end
+  def patch; end
   def path(path); end
+  def path_status_provider; end
   def process_full; end
   def process_full_diff; end
   def size; end
   def stats; end
+  def stats_provider; end
   def to; end
-  def to_s(file = nil); end
+  def to_s; end
   include Enumerable
 end
 class Git::Diff::DiffFile
@@ -253,6 +285,16 @@ class Git::Diff::DiffFile
   def src=(arg0); end
   def type; end
   def type=(arg0); end
+end
+class Git::Diff::FullDiffParser
+  def append_to_current_file(line); end
+  def check_for_binary(line); end
+  def initialize(base, patch_text); end
+  def parse; end
+  def parse_file_mode_line(line); end
+  def parse_index_line(line); end
+  def process_line(line); end
+  def start_new_file(match, line); end
 end
 module Git::EncodingUtils
   def self.best_guess_encoding; end
@@ -273,9 +315,21 @@ class Git::EscapedPath
 end
 class Git::Index < Git::Path
 end
+class Git::ArgsBuilder
+  def build; end
+  def build_arg_for_option(config, value); end
+  def initialize(opts, option_map); end
+  def self.build(opts, option_map); end
+  def self.check_for_missing_required_option!(opts, config); end
+  def self.validate!(opts, option_map); end
+  def self.validate_configured_options!(opts, option_map); end
+  def self.validate_option_value!(opts, config); end
+  def self.validate_unsupported_keys!(opts, option_map); end
+end
 class Git::Lib
   def add(paths = nil, options = nil); end
   def apply(patch_file); end
+  def apply_gzip(file); end
   def apply_mail(patch_file); end
   def archive(sha, file = nil, opts = nil); end
   def assert_args_are_not_options(arg_name, *args); end
@@ -284,8 +338,14 @@ class Git::Lib
   def branch_delete(branch); end
   def branch_new(branch); end
   def branches_all; end
+  def build_args(opts, option_map); end
+  def build_checkout_positional_args(branch, opts); end
+  def build_files_hash(file_stats); end
+  def build_final_stats_hash(file_stats); end
+  def build_push_args(remote, branch, opts); end
+  def build_total_stats(file_stats); end
   def cat_file_commit(object); end
-  def cat_file_contents(object, &block); end
+  def cat_file_contents(object); end
   def cat_file_size(object); end
   def cat_file_tag(object); end
   def cat_file_type(object); end
@@ -295,7 +355,7 @@ class Git::Lib
   def checkout_index(opts = nil); end
   def clean(opts = nil); end
   def clone(repository_url, directory, opts = nil); end
-  def command(*args, out: nil, err: nil, normalize: nil, chomp: nil, merge: nil, chdir: nil, timeout: nil); end
+  def command(*, **options_hash); end
   def command_line; end
   def command_lines(cmd, *opts, chdir: nil); end
   def commit(message, opts = nil); end
@@ -314,15 +374,18 @@ class Git::Lib
   def diff_files; end
   def diff_full(obj1 = nil, obj2 = nil, opts = nil); end
   def diff_index(treeish); end
-  def diff_name_status(reference1 = nil, reference2 = nil, opts = nil); end
+  def diff_path_status(reference1 = nil, reference2 = nil, opts = nil); end
   def diff_stats(obj1 = nil, obj2 = nil, opts = nil); end
   def each_cat_file_header(data); end
   def empty?; end
   def env_overrides; end
+  def execute_grep_command(args); end
   def fetch(remote, opts); end
+  def format_branch_data(match_data); end
   def full_log_commits(opts = nil); end
   def full_tree(sha); end
   def gc; end
+  def get_branch_state(branch_name); end
   def git_dir; end
   def git_index_file; end
   def git_work_dir; end
@@ -334,6 +397,8 @@ class Git::Lib
   def ignored_files; end
   def init(opts = nil); end
   def initialize(base = nil, logger = nil); end
+  def initialize_from_base(base_object); end
+  def initialize_from_hash(base_hash); end
   def list_files(ref_dir); end
   def log_commits(opts = nil); end
   def log_common_options(opts); end
@@ -341,18 +406,30 @@ class Git::Lib
   def ls_files(location = nil); end
   def ls_remote(location = nil, opts = nil); end
   def ls_tree(sha, opts = nil); end
+  def match_branch_line(line, index, all_lines); end
   def meets_required_version?; end
   def merge(branch, message = nil, opts = nil); end
   def merge_base(*args); end
   def mv(file1, file2); end
   def name_rev(commit_ish); end
   def namerev(commit_ish); end
-  def object_contents(object, &block); end
+  def normalize_push_args(remote, branch, opts); end
+  def object_contents(object); end
   def object_size(object); end
   def object_type(object); end
+  def parse_archive_format_options(opts); end
+  def parse_branch_line(line, index, all_lines); end
   def parse_config(file); end
   def parse_config_list(lines); end
+  def parse_diff_path_status(args); end
+  def parse_diff_stats_output(lines); end
+  def parse_grep_output(lines); end
+  def parse_ls_remote_line(line); end
+  def parse_ls_remote_output(lines); end
+  def parse_stash_log_line(line, index); end
+  def parse_stat_lines(lines); end
   def process_commit_data(data, sha); end
+  def process_commit_headers(data); end
   def process_commit_log_data(data); end
   def process_tag_data(data, name); end
   def pull(remote = nil, branch = nil, opts = nil); end
@@ -373,26 +450,40 @@ class Git::Lib
   def rm(path = nil, opts = nil); end
   def self.warn_if_old_command(lib); end
   def show(objectish = nil, path = nil); end
+  def split_status_line(line); end
   def stash_apply(id = nil); end
   def stash_clear; end
   def stash_list; end
+  def stash_log_lines; end
   def stash_save(message); end
   def stashes_all; end
-  def tag(name, *opts); end
+  def tag(name, *args); end
   def tag_data(object); end
   def tag_sha(tag_name); end
   def tags; end
+  def temp_file_name; end
   def tree_depth(sha); end
   def unescape_quoted_path(path); end
   def unexpected_branch_line_error(lines, line, index); end
   def unmerged; end
   def untracked_files; end
   def update_ref(ref, commit); end
+  def validate_tag_options!(opts); end
   def worktree_add(dir, commitish = nil); end
   def worktree_prune; end
   def worktree_remove(dir); end
   def worktrees_all; end
+  def write_staged_content(path, stage, out_io); end
   def write_tree; end
+end
+class Git::Lib::RawLogParser
+  def finalize_commit; end
+  def initialize(lines); end
+  def parse; end
+  def process_line(line); end
+  def process_message_line(line); end
+  def process_metadata_line(line); end
+  def start_new_commit(sha); end
 end
 class Git::Lib::HeadState < Struct
   def name; end
@@ -409,19 +500,20 @@ class Git::Log
   def [](index); end
   def all; end
   def author(regex); end
-  def between(sha1, sha2 = nil); end
-  def check_log; end
+  def between(val1, val2 = nil); end
   def cherry; end
-  def dirty_log; end
-  def each(&block); end
+  def each(&); end
+  def execute; end
   def first; end
   def grep(regex); end
   def initialize(base, max_count = nil); end
   def last; end
-  def max_count(num_or_all); end
+  def max_count(num); end
+  def merges; end
   def object(objectish); end
   def path(path); end
-  def run_log; end
+  def run_log_if_dirty; end
+  def set_option(key, value); end
   def since(date); end
   def size; end
   def skip(num); end
@@ -429,14 +521,28 @@ class Git::Log
   def until(date); end
   include Enumerable
 end
+class Git::Log::Result < Data
+  def [](index); end
+  def commits; end
+  def each(&block); end
+  def last; end
+  def self.[](*arg0); end
+  def self.inspect; end
+  def self.members; end
+  def self.new(*arg0); end
+  def size; end
+  def to_s; end
+  include Enumerable
+end
 class Git::Object
   def self.new(base, objectish, type = nil, is_tag = nil); end
+  def self.new_tag(base, objectish); end
 end
 class Git::Object::AbstractObject
   def archive(file = nil, opts = nil); end
   def blob?; end
   def commit?; end
-  def contents(&block); end
+  def contents(&); end
   def contents_array; end
   def diff(objectish); end
   def grep(string, path_limiter = nil, opts = nil); end
@@ -481,6 +587,7 @@ class Git::Object::Commit < Git::Object::AbstractObject
   def committer_date; end
   def date; end
   def diff_parent; end
+  def from_data(data); end
   def gtree; end
   def initialize(base, sha, init = nil); end
   def message; end
@@ -492,14 +599,14 @@ end
 class Git::Object::Tag < Git::Object::AbstractObject
   def annotated?; end
   def check_tag; end
-  def initialize(base, sha, name); end
+  def initialize(base, sha, name = nil); end
   def message; end
   def name; end
   def name=(arg0); end
   def tag?; end
   def tagger; end
 end
-class Git::Remote < Git::Path
+class Git::Remote
   def branch(branch = nil); end
   def fetch(opts = nil); end
   def fetch_opts; end
@@ -519,25 +626,18 @@ class Git::Status
   def [](file); end
   def added; end
   def added?(file); end
-  def case_aware_include?(cased_hash, downcased_hash, file); end
   def changed; end
   def changed?(file); end
-  def construct_status; end
   def deleted; end
   def deleted?(file); end
-  def downcase_keys(hash); end
-  def each(&block); end
-  def fetch_added; end
-  def fetch_modified; end
-  def fetch_untracked; end
+  def downcased_keys(collection_name); end
+  def each(&); end
+  def file_in_collection?(collection_name, file_path); end
   def ignore_case?; end
   def initialize(base); end
-  def lc_added; end
-  def lc_changed; end
-  def lc_deleted; end
-  def lc_untracked; end
   def pretty; end
   def pretty_file(file); end
+  def select_files(&block); end
   def untracked; end
   def untracked?(file); end
   include Enumerable
@@ -546,24 +646,24 @@ class Git::Status::StatusFile
   def blob(type = nil); end
   def initialize(base, hash); end
   def mode_index; end
-  def mode_index=(arg0); end
   def mode_repo; end
-  def mode_repo=(arg0); end
   def path; end
-  def path=(arg0); end
   def sha_index; end
-  def sha_index=(arg0); end
   def sha_repo; end
-  def sha_repo=(arg0); end
   def stage; end
-  def stage=(arg0); end
   def type; end
-  def type=(arg0); end
   def untracked; end
-  def untracked=(arg0); end
+end
+class Git::Status::StatusFileFactory
+  def construct_files; end
+  def fetch_all_files_data; end
+  def initialize(base); end
+  def merge_head_diffs(files); end
+  def merge_modified_files(files); end
+  def merge_untracked_files(files); end
 end
 class Git::Stash
-  def initialize(base, message, existing = nil); end
+  def initialize(base, message, save: nil); end
   def message; end
   def save; end
   def saved?; end
@@ -574,7 +674,7 @@ class Git::Stashes
   def all; end
   def apply(index = nil); end
   def clear; end
-  def each(&block); end
+  def each(&); end
   def initialize(base); end
   def save(message); end
   def size; end
@@ -590,14 +690,13 @@ class Git::GitAltURI < Addressable::URI
 end
 class Git::WorkingDirectory < Git::Path
 end
-class Git::Worktree < Git::Path
+class Git::Worktree
   def add; end
   def dir; end
   def dir=(arg0); end
   def full; end
   def full=(arg0); end
   def gcommit; end
-  def gcommit=(arg0); end
   def initialize(base, dir, gcommit = nil); end
   def remove; end
   def to_a; end
@@ -605,7 +704,7 @@ class Git::Worktree < Git::Path
 end
 class Git::Worktrees
   def [](worktree_name); end
-  def each(&block); end
+  def each(&); end
   def initialize(base); end
   def prune; end
   def size; end

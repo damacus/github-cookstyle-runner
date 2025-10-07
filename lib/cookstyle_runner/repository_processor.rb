@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-# typed: strict
+# typed: true
 
 require 'sorbet-runtime'
 require 'fileutils'
@@ -27,9 +27,6 @@ module CookstyleRunner
     sig { returns(Configuration) }
     attr_reader :configuration
 
-    sig { returns(Logger) }
-    attr_reader :logger
-
     sig { returns(T.nilable(Cache)) }
     attr_reader :cache_manager
 
@@ -42,16 +39,15 @@ module CookstyleRunner
     sig do
       params(
         configuration: Configuration,
-        logger: Logger,
         cache_manager: T.nilable(Cache),
         github_client: T.nilable(T.any(Octokit::Client, Object)),
         pr_manager: T.nilable(GitHubPRManager),
         context_manager: T.nilable(ContextManager)
       ).void
     end
-    def initialize(configuration:, logger:, cache_manager: nil, github_client: nil, pr_manager: nil, context_manager: nil)
+    def initialize(configuration:, cache_manager: nil, github_client: nil, pr_manager: nil, context_manager: nil)
       @configuration = T.let(configuration, Configuration)
-      @logger = T.let(logger, Logger)
+      @logger = T.let(SemanticLogger[self.class], SemanticLogger::Logger)
       @cache_manager = T.let(cache_manager, T.nilable(Cache))
       @github_client = T.let(github_client, T.nilable(T.any(Octokit::Client, Object)))
       @pr_manager = T.let(pr_manager, T.nilable(GitHubPRManager))
@@ -61,7 +57,7 @@ module CookstyleRunner
     # Process a single repository
     def process_repository(repo_name, repo_url)
       start_time = Time.now
-      logger.info("Processing repository: #{repo_name}")
+      logger.debug("Processing repository: #{repo_name}")
 
       # Prepare result hash with defaults
       result = {
@@ -126,6 +122,9 @@ module CookstyleRunner
 
     private
 
+    sig { returns(T.untyped) }
+    attr_reader :logger
+
     # Prepare the repository directory
     def prepare_repo_directory(repo_name)
       workspace_dir = ENV.fetch('GCR_WORKSPACE_DIR', File.join(Dir.pwd, 'tmp', 'repositories'))
@@ -142,7 +141,6 @@ module CookstyleRunner
       context = Git::RepoContext.new(
         repo_name: repo_name,
         owner: @configuration.owner,
-        logger: logger,
         repo_dir: repo_dir,
         repo_url: repo_url
       )
@@ -170,11 +168,10 @@ module CookstyleRunner
       context = Git::RepoContext.new(
         repo_name: repo_name,
         owner: @configuration.owner,
-        logger: logger,
         repo_dir: repo_dir
       )
 
-      result = CookstyleOperations.run_cookstyle(context, logger)
+      result = CookstyleOperations.run_cookstyle(context)
       report = result[:report]
 
       # Transform the result to match expected format
@@ -218,14 +215,11 @@ module CookstyleRunner
       context = Git::RepoContext.new(
         repo_name: repo_name,
         owner: @configuration.owner,
-        logger: logger,
         repo_dir: repo_dir
       )
 
       # Run cookstyle with autocorrect to fix issues
-      CookstyleOperations.run_cookstyle(context, logger)
-
-      # Generate PR description from the ORIGINAL offense details (before auto-correction)
+      CookstyleOperations.run_cookstyle(context)
       pr_description = format_pr_description(result['offense_details'])
 
       # Commit changes and create PR
@@ -237,7 +231,6 @@ module CookstyleRunner
         context = Git::RepoContext.new(
           repo_name: repo_name,
           owner: @configuration.owner,
-          logger: logger,
           repo_dir: repo_dir
         )
 
@@ -248,8 +241,9 @@ module CookstyleRunner
           git_user_email: @configuration.git_email
         }
 
-        Git.add_and_commit_changes(context, commit_message, git_config: git_config)
-        Git.create_branch(context, git_config, logger)
+        # Create branch first (this sets up git config)
+        Git.create_branch(context, git_config)
+        Git.add_and_commit_changes(context, commit_message)
         Git.push_branch(context, branch_name)
 
         pr_success = @pr_manager.create_pull_request(

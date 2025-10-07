@@ -6,8 +6,9 @@ module CookstyleRunner
   class Reporter
     extend T::Sig
 
-    def initialize(logger)
-      @logger = logger
+    T::Sig::WithoutRuntime.sig { params(logger: T.nilable(SemanticLogger::Logger)).void }
+    def initialize(logger: nil)
+      @logger = logger || SemanticLogger[self.class]
     end
 
     # Aggregates results from parallel processing
@@ -24,25 +25,33 @@ module CookstyleRunner
       results.each do |result|
         case result[:status]
         when :no_issues
+          message = 'No issues in repository'
           processed_count += 1 # Count successful processing without issues
         when :issues_found
+          message = 'Cookstyle issues found'
           processed_count += 1
           issues_count += 1
         when :skipped
+          message = 'Skipped'
           skipped_count += 1
         when :error
           error_count += 1
-          @logger.error("Error occurred processing repository: #{result[:repo_name]}. Message: #{result[:error_message]}")
+          message = 'Repository processing error'
         else
-          @logger.warn("Unknown status '#{result[:status]}' received for repository: #{result[:repo_name]}")
+          message = 'Unknown repository status'
           error_count += 1 # Treat unknown status as an error
         end
+
+        @logger.info(message, payload: {
+                       status: result[:status],
+                       repo_name: result[:repo_name]
+                     })
       end
       [processed_count, issues_count, skipped_count, error_count]
     end
     # rubocop:enable Metrics/MethodLength
 
-    # Reports the summary of the application run
+    # Reports the summary of the application run using structured logging
     # @param total_repos [Integer] Total repositories considered
     # @param processed_count [Integer] Number of repositories processed
     # @param issues_count [Integer] Number of repositories with issues
@@ -52,70 +61,60 @@ module CookstyleRunner
     # @param prs_created [Integer] Number of pull requests created
     # @param issue_errors [Integer] Number of issue creation errors
     # @param pr_errors [Integer] Number of pull request creation errors
-    # @return [String] Summary report
     sig do
       params(total_repos: Integer, processed_count: Integer, issues_count: Integer, skipped_count: Integer, error_count: Integer,
-             issues_created: Integer, prs_created: Integer, issue_errors: Integer, pr_errors: Integer).returns(String)
+             issues_created: Integer, prs_created: Integer, issue_errors: Integer, pr_errors: Integer).void
     end
     def summary(total_repos:, processed_count:, issues_count: 0, skipped_count: 0, error_count: 0,
                 issues_created: 0, prs_created: 0, issue_errors: 0, pr_errors: 0)
-      summary = <<~SUMMARY
-
-        --- Summary ---
-        Total repositories considered: #{total_repos}
-        Successfully processed: #{processed_count}
-        Found issues in: #{issues_count} repositories.
-        Skipped: #{skipped_count} repositories.
-        Errors: #{error_count} repositories.
-
-        --- Artifact Creation ---
-        Issues Created: #{issues_created}
-        Pull Requests Created: #{prs_created}
-        Issue Creation Errors: #{issue_errors}
-        PR Creation Errors: #{pr_errors}
-      SUMMARY
-      @logger.info(summary)
-      summary
+      @logger.info('Run summary', payload: {
+                     summary: {
+                       total_repositories: total_repos, successfully_processed: processed_count,
+                       found_issues_in: issues_count, skipped: skipped_count, errors: error_count
+                     },
+                     artifacts: {
+                       issues_created: issues_created, pull_requests_created: prs_created,
+                       issue_creation_errors: issue_errors, pr_creation_errors: pr_errors
+                     }
+                   })
     end
-    sig { params(created_artifacts: T::Array[Hash]).returns(T::Array[String]) }
+
+    sig { params(created_artifacts: T::Array[Hash]).void }
     def created_artifacts(created_artifacts:)
-      report = ["--- Created Artifacts (#{created_artifacts.size}) ---"]
-
-      created_artifacts.each do |artifact|
-        report << <<~ARTIFACT_ENTRY
-          Repository: #{artifact[:repo]}
-          Artifact ##{artifact[:number]}: #{artifact[:title]}
-          Type: #{artifact[:type]}
-          URL: #{artifact[:url]}
-        ARTIFACT_ENTRY
-      end
-
       if created_artifacts.any?
-        @logger.info(report.join("\n").strip)
+        @logger.info('Artifacts created', payload: { artifacts: created_artifacts, count: created_artifacts.size })
       else
-        @logger.info('No artifacts were created during this run.')
+        @logger.info('No artifacts created')
       end
-
-      report
     end
 
-    sig { params(artifact_creation_errors: T::Array[Hash]).returns(T::Array[String]) }
+    sig { params(artifact_creation_errors: T::Array[Hash]).void }
     def artifact_creation_errors(artifact_creation_errors = [])
-      report = ["--- Artifact Creation Errors (#{artifact_creation_errors.size}) ---"]
-      artifact_creation_errors.each do |error|
-        report << <<~ARTIFACT_ERROR_ENTRY
-          Repository: #{error[:repo]}
-          Error: #{error[:message]}
-          Type: #{error[:type]}
-        ARTIFACT_ERROR_ENTRY
-      end
       if artifact_creation_errors.any?
-        @logger.info(report.join("\n").strip)
+        @logger.error('Artifact creation errors', payload: { errors: artifact_creation_errors, count: artifact_creation_errors.size })
       else
-        @logger.info('No artifact creation errors were reported.')
+        @logger.info('No artifact creation errors')
       end
+    end
 
-      report
+    # Report cache statistics using structured logging
+    # @param stats_hash [Hash] Cache statistics hash
+    sig { params(stats_hash: T::Hash[String, T.untyped]).void }
+    def cache_stats(stats_hash)
+      hits = stats_hash['cache_hits'] || 0
+      misses = stats_hash['cache_misses'] || 0
+      updates = stats_hash['cache_updates'] || 0
+      hit_rate = stats_hash['cache_hit_rate'] || 0.0
+      time_saved = stats_hash['estimated_time_saved'] || 0.0
+      runtime = stats_hash['runtime'] || 0.0
+
+      @logger.info('Cache statistics',
+                   cache_hits: hits,
+                   cache_misses: misses,
+                   cache_updates: updates,
+                   cache_hit_rate: hit_rate,
+                   estimated_time_saved: time_saved,
+                   runtime: runtime)
     end
   end
 end

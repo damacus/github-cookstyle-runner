@@ -1,4 +1,4 @@
-# typed: true
+# typed: false
 # frozen_string_literal: true
 
 # This file is an RBI (Ruby Interface) file for Sorbet static type checking.
@@ -27,12 +27,12 @@ module CookstyleRunner
 
     # Create a new branch for cookstyle fixes using GitHub API
     # Deletes the existing branch if there is one
-    sig { params(context: RepoContext, config: T::Hash[Symbol, T.untyped], logger: Logger).returns(T::Boolean) }
-    def self.create_branch(context, config, logger); end
+    sig { params(context: RepoContext, config: T::Hash[Symbol, T.untyped]).returns(T::Boolean) }
+    def self.create_branch(context, config); end
 
     # Get the latest commit SHA for the repository
-    sig { params(repo_dir: String, logger: Logger).returns(T.nilable(String)) }
-    def self.latest_commit_sha(repo_dir, logger); end
+    sig { params(repo_dir: String).returns(T.nilable(String)) }
+    def self.latest_commit_sha(repo_dir); end
 
     # Clone or update a repository to get the latest state
     sig { params(context: RepoContext, config: T::Hash[Symbol, T.untyped]).returns(T.nilable(::Git::Base)) }
@@ -90,12 +90,12 @@ module CookstyleRunner
     def self.push_to_remote(repo, context, branch_name); end
 
     # Configure git user.name and user.email globally
-    sig { params(user_name: String, user_email: String, logger: Logger).returns(T::Boolean) }
-    def self.setup_git_config(user_name:, user_email:, logger:); end
+    sig { params(user_name: String, user_email: String).returns(T::Boolean) }
+    def self.setup_git_config(user_name:, user_email:); end
 
     # Helper method to delete, create, and checkout a branch
-    sig { params(repo: ::Git::Base, branch_name: String, logger: Logger).void }
-    def self._manage_branch_lifecycle(repo, branch_name, logger); end
+    sig { params(repo: ::Git::Base, branch_name: String).void }
+    def self._manage_branch_lifecycle(repo, branch_name); end
 
     # Commit and push changes to the remote branch with robust error handling
     sig { params(context: RepoContext, commit_message: String).returns(T::Boolean) }

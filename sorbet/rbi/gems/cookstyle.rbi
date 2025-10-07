@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/cookstyle/all/cookstyle.rbi
 #
-# cookstyle-8.1.2
+# cookstyle-8.5.0
 
 module Cookstyle
   def self.config; end
@@ -87,6 +87,13 @@ class RuboCop::Cop::Chef::Correctness::DnfPackageAllowDowngrades < RuboCop::Cop:
   extend RuboCop::Cop::AutoCorrector
   include RuboCop::Chef::CookbookHelpers
   include RuboCop::Cop::RangeHelp
+end
+class RuboCop::Cop::Chef::Correctness::EmptyResourceGuard < RuboCop::Cop::Base
+  def empty_string?(str); end
+  def empty_string_block_guard?(param0 = nil); end
+  def empty_string_guard?(param0 = nil); end
+  def on_block(node); end
+  def on_send(node); end
 end
 class RuboCop::Cop::Chef::Correctness::IncorrectLibraryInjection < RuboCop::Cop::Base
   def correct_injection?(param0); end

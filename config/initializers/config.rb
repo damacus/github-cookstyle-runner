@@ -14,7 +14,6 @@ rescue LoadError => e
 end
 
 # Initialize logger for configuration debugging
-# This can be replaced with a proper application logger later
 config_logger = Logger.new($stdout)
 config_logger.level = ENV['DEBUG'] ? Logger::DEBUG : Logger::INFO
 

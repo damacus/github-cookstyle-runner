@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/rspec-support/all/rspec-support.rbi
 #
-# rspec-support-3.13.3
+# rspec-support-3.13.6
 
 module RSpec
   extend RSpec::Support::Warnings
@@ -180,14 +180,14 @@ class RSpec::Support::MethodSignatureVerifier
   def min_non_kw_args; end
   def missing_kw_args; end
   def non_kw_args; end
-  def split_args(*args); end
+  def split_args(args); end
   def unlimited_args?; end
   def valid?; end
   def valid_non_kw_args?; end
   def with_expectation(expectation); end
 end
 class RSpec::Support::LooseSignatureVerifier < RSpec::Support::MethodSignatureVerifier
-  def split_args(*args); end
+  def split_args(args); end
 end
 class RSpec::Support::LooseSignatureVerifier::SignatureWithKeywordArgumentsMatcher
   def has_kw_args_in?(args); end

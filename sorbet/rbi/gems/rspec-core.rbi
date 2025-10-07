@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/rspec-core/all/rspec-core.rbi
 #
-# rspec-core-3.13.3
+# rspec-core-3.13.5
 
 module RSpec
   def self.clear_examples; end
@@ -662,6 +662,7 @@ module RSpec::Core::HashImitatable
   def key(*args, &block); end
   def key?(*args, &block); end
   def keys(*args, &block); end
+  def ko_deep_merge!(*args, &block); end
   def lazy(*args, &block); end
   def length(*args, &block); end
   def many?(*args, &block); end
@@ -1761,16 +1762,6 @@ class RSpec::Core::Time
   def self.now(in: nil); end
 end
 class Module
-  def context(*a, &b); end
-  def describe(*a, &b); end
-  def example_group(*a, &b); end
-  def fcontext(*a, &b); end
-  def fdescribe(*a, &b); end
-  def shared_context(name, *args, &block); end
-  def shared_examples(name, *args, &block); end
-  def shared_examples_for(name, *args, &block); end
-  def xcontext(*a, &b); end
-  def xdescribe(*a, &b); end
 end
 module RSpec::Core::SharedContext
   def __shared_context_recordings; end
@@ -2001,4 +1992,15 @@ class RSpec::Core::Formatters::FailureListFormatter < RSpec::Core::Formatters::B
   def dump_profile(_profile); end
   def example_failed(failure); end
   def message(_message); end
+end
+module RSpec::Core::MockingAdapters
+end
+module RSpec::Core::MockingAdapters::RSpec
+  def self.configuration; end
+  def self.framework_name; end
+  def setup_mocks_for_rspec; end
+  def teardown_mocks_for_rspec; end
+  def verify_mocks_for_rspec; end
+  include RSpec::Mocks::ExampleMethods
+  include RSpec::Mocks::ExampleMethods::ExpectHost
 end

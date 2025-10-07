@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/drb/all/drb.rbi
 #
-# drb-2.2.1
+# drb-2.2.3
 
 module DRb
   def config; end
@@ -65,41 +65,15 @@ class DRb::DRbObject
   def self.prepare_backtrace(uri, result); end
   def self.with_friend(uri); end
 end
-class DRb::DRbServer
-  def alive?; end
-  def any_to_s(obj); end
-  def check_insecure_method(obj, msg_id); end
-  def config; end
-  def error_print(exception); end
-  def front; end
-  def here?(uri); end
-  def initialize(uri = nil, front = nil, config_or_acl = nil); end
-  def insecure_method?(msg_id); end
-  def main_loop; end
-  def run; end
-  def self.default_acl(acl); end
-  def self.default_argc_limit(argc); end
-  def self.default_id_conv(idconv); end
-  def self.default_load_limit(sz); end
-  def self.make_config(hash = nil); end
-  def self.verbose; end
-  def self.verbose=(on); end
-  def shutdown; end
-  def stop_service; end
-  def thread; end
-  def to_id(obj); end
-  def to_obj(ref); end
-  def uri; end
-  def verbose; end
-  def verbose=(v); end
-end
-module DRb::DRbServer::InvokeMethod18Mixin
-  def block_yield(x); end
-  def perform_with_block; end
-end
 class DRb::DRbError < RuntimeError
 end
 class DRb::DRbConnError < DRb::DRbError
+end
+class DRb::DRbObjectSpace
+  def initialize; end
+  def to_id(obj); end
+  def to_obj(ref); end
+  include MonitorMixin
 end
 class DRb::DRbIdConv
   def to_id(obj); end
@@ -209,12 +183,41 @@ class DRb::DRbConn
   def send_message(ref, msg_id, arg, block); end
   def uri; end
 end
+class DRb::DRbServer
+  def alive?; end
+  def any_to_s(obj); end
+  def check_insecure_method(obj, msg_id); end
+  def config; end
+  def error_print(exception); end
+  def front; end
+  def here?(uri); end
+  def initialize(uri = nil, front = nil, config_or_acl = nil); end
+  def insecure_method?(msg_id); end
+  def main_loop; end
+  def run; end
+  def self.default_acl(acl); end
+  def self.default_argc_limit(argc); end
+  def self.default_id_conv(idconv); end
+  def self.default_load_limit(sz); end
+  def self.make_config(hash = nil); end
+  def self.verbose; end
+  def self.verbose=(on); end
+  def shutdown; end
+  def stop_service; end
+  def thread; end
+  def to_id(obj); end
+  def to_obj(ref); end
+  def uri; end
+  def verbose; end
+  def verbose=(v); end
+end
 class DRb::DRbServer::InvokeMethod
+  def block_yield(x); end
   def check_insecure_method; end
   def init_with_client; end
   def initialize(drb_server, client); end
   def perform; end
+  def perform_with_block; end
   def perform_without_block; end
   def setup_message; end
-  include DRb::DRbServer::InvokeMethod18Mixin
 end

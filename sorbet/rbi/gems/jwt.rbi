@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/jwt/all/jwt.rbi
 #
-# jwt-2.10.1
+# jwt-3.1.2
 
 module JWT
   def decode(jwt, key = nil, verify = nil, options = nil, &keyfinder); end
@@ -18,14 +18,11 @@ module JWT
   def self.openssl_3?; end
   def self.openssl_3_hmac_empty_key_regression?; end
   def self.openssl_version; end
-  def self.rbnacl?; end
-  def self.rbnacl_6_or_greater?; end
   extend JWT::Configuration
 end
 module JWT::VERSION
 end
 class JWT::Base64
-  def self.loose_urlsafe_decode64(str); end
   def self.url_decode(str); end
   def self.url_encode(str); end
 end
@@ -119,28 +116,15 @@ class JWT::Configuration::Container
   def strict_base64_decoding; end
   def strict_base64_decoding=(arg0); end
 end
-module JWT::Deprecations
-  def self.context; end
-  def self.emit_warnings; end
-  def self.record_warned(message); end
-  def self.store(message); end
-  def self.warning(message, only_if_valid: nil); end
-end
 module JWT::JWA
   def self.algorithms; end
-  def self.create(algorithm); end
+  def self.create_signer(algorithm:, key:); end
+  def self.create_verifiers(algorithms:, keys:, preferred_algorithm:); end
   def self.find(algo); end
   def self.register_algorithm(algo); end
   def self.resolve(algorithm); end
   def self.resolve_and_sort(algorithms:, preferred_algorithm:); end
-end
-module JWT::JWA::Compat
-  def self.included(klass); end
-end
-module JWT::JWA::Compat::ClassMethods
-  def from_algorithm(algorithm); end
-  def sign(algorithm, msg, key); end
-  def verify(algorithm, key, signing_input, signature); end
+  def self.validate_jwk_algorithms!(jwks, algorithms, error_class); end
 end
 module JWT::JWA::SigningAlgorithm
   def alg; end
@@ -161,24 +145,19 @@ class JWT::JWA::Ecdsa
   def digest; end
   def initialize(alg, digest); end
   def raw_to_asn1(signature, private_key); end
+  def self.create_public_key_from_point(point); end
   def self.curve_by_name(name); end
-  def self.from_algorithm(algorithm); end
   def sign(data:, signing_key:); end
   def verify(data:, signature:, verification_key:); end
-  extend JWT::JWA::Compat::ClassMethods
   extend JWT::JWA::SigningAlgorithm::ClassMethods
-  include JWT::JWA::Compat
   include JWT::JWA::SigningAlgorithm
 end
 class JWT::JWA::Hmac
   def digest; end
   def initialize(alg, digest); end
-  def self.from_algorithm(algorithm); end
   def sign(data:, signing_key:); end
   def verify(data:, signature:, verification_key:); end
-  extend JWT::JWA::Compat::ClassMethods
   extend JWT::JWA::SigningAlgorithm::ClassMethods
-  include JWT::JWA::Compat
   include JWT::JWA::SigningAlgorithm
 end
 module JWT::JWA::Hmac::SecurityUtils
@@ -191,9 +170,7 @@ class JWT::JWA::None
   def initialize; end
   def sign(*); end
   def verify(*); end
-  extend JWT::JWA::Compat::ClassMethods
   extend JWT::JWA::SigningAlgorithm::ClassMethods
-  include JWT::JWA::Compat
   include JWT::JWA::SigningAlgorithm
 end
 class JWT::JWA::Ps
@@ -201,9 +178,7 @@ class JWT::JWA::Ps
   def initialize(alg); end
   def sign(data:, signing_key:); end
   def verify(data:, signature:, verification_key:); end
-  extend JWT::JWA::Compat::ClassMethods
   extend JWT::JWA::SigningAlgorithm::ClassMethods
-  include JWT::JWA::Compat
   include JWT::JWA::SigningAlgorithm
 end
 class JWT::JWA::Rsa
@@ -211,26 +186,22 @@ class JWT::JWA::Rsa
   def initialize(alg); end
   def sign(data:, signing_key:); end
   def verify(data:, signature:, verification_key:); end
-  extend JWT::JWA::Compat::ClassMethods
   extend JWT::JWA::SigningAlgorithm::ClassMethods
-  include JWT::JWA::Compat
   include JWT::JWA::SigningAlgorithm
 end
 module JWT::JWA::Unsupported
   def self.sign(*); end
   def self.verify(*); end
 end
-class JWT::JWA::Wrapper
-  def alg; end
-  def header(*args, **kwargs); end
-  def initialize(algorithm); end
-  def sign(*args, **kwargs); end
-  def valid_alg?(alg_to_check); end
+class JWT::JWA::VerifierContext
+  def initialize(jwa:, keys:); end
+  def jwa; end
   def verify(*args, **kwargs); end
-  extend JWT::JWA::Compat::ClassMethods
-  extend JWT::JWA::SigningAlgorithm::ClassMethods
-  include JWT::JWA::Compat
-  include JWT::JWA::SigningAlgorithm
+end
+class JWT::JWA::SignerContext
+  def initialize(jwa:, key:); end
+  def jwa; end
+  def sign(*args, **kwargs); end
 end
 class JWT::Encode
   def initialize(options); end
@@ -239,8 +210,6 @@ end
 class JWT::EncodeError < StandardError
 end
 class JWT::DecodeError < StandardError
-end
-class JWT::RequiredDependencyError < StandardError
 end
 class JWT::VerificationError < JWT::DecodeError
 end
@@ -273,9 +242,10 @@ end
 class JWT::JWKError < JWT::DecodeError
 end
 class JWT::JWK::KeyFinder
+  def call(token); end
   def initialize(options); end
-  def key_for(kid); end
-  def resolve_key(kid); end
+  def key_for(kid, key_field = nil); end
+  def resolve_key(kid, key_field); end
 end
 class JWT::JWK::Set
   def +(enum); end
@@ -309,21 +279,25 @@ class JWT::JWK::KeyBase
   def eql?(other); end
   def hash; end
   def initialize(options, params = nil); end
+  def jwa; end
   def kid; end
   def parameters; end
   def self.inherited(klass); end
+  def sign(**kwargs); end
+  def verify(**kwargs); end
 end
 class JWT::JWK::EC < JWT::JWK::KeyBase
   def []=(key, value); end
   def check_jwk_params!(key_params, params); end
   def create_ec_key(jwk_crv, jwk_x, jwk_y, jwk_d); end
+  def create_point(jwk_crv, jwk_x, jwk_y); end
   def decode_octets(base64_encoded_coordinate); end
   def ec_key; end
   def encode_octets(octets); end
-  def encode_open_ssl_bn(key_part); end
   def export(options = nil); end
   def extract_key_params(key); end
   def initialize(key, params = nil, options = nil); end
+  def jwa; end
   def key_digest; end
   def keypair; end
   def keypair_components(ec_keypair); end
@@ -381,7 +355,6 @@ end
 module JWT::Claims
   def self.payload_errors(payload, *options); end
   def self.valid_payload?(payload, *options); end
-  def self.verify!(payload, options); end
   def self.verify_payload!(payload, *options); end
 end
 class JWT::Claims::Audience
@@ -430,15 +403,9 @@ class JWT::Claims::NotBefore
   def verify!(context:, **_args); end
 end
 class JWT::Claims::Numeric
-  def self.new(*args); end
-  def self.verify!(payload:, **_args); end
   def validate_is_numeric(payload, claim); end
   def validate_numeric_claims(payload); end
   def verify!(context:); end
-end
-class JWT::Claims::Numeric::Compat
-  def initialize(payload); end
-  def verify!; end
 end
 class JWT::Claims::Required
   def initialize(required_claims:); end
@@ -449,11 +416,6 @@ class JWT::Claims::Subject
   def expected_subject; end
   def initialize(expected_subject:); end
   def verify!(context:, **_args); end
-end
-module JWT::Claims::VerificationMethods
-  def claim_errors(*options); end
-  def valid_claims?(*options); end
-  def verify_claims!(*options); end
 end
 module JWT::Claims::Verifier
   def self.errors(context, *options); end
@@ -471,7 +433,10 @@ class JWT::Claims::Error < Struct
   def self.new(*arg0); end
 end
 class JWT::EncodedToken
+  def claim_errors(*options); end
+  def claims_options(options); end
   def decode_payload; end
+  def decoded_payload; end
   def encoded_header; end
   def encoded_payload; end
   def encoded_payload=(arg0); end
@@ -487,11 +452,23 @@ class JWT::EncodedToken
   def signing_input; end
   def to_s; end
   def unencoded_payload?; end
-  def valid_signature?(algorithm:, key:); end
+  def unverified_payload; end
+  def valid?(signature:, claims: nil); end
+  def valid_claims?(*options); end
+  def valid_signature?(algorithm: nil, key: nil, key_finder: nil); end
+  def verify!(signature:, claims: nil); end
+  def verify_claims!(*options); end
   def verify_signature!(algorithm:, key: nil, key_finder: nil); end
-  include JWT::Claims::VerificationMethods
+end
+class JWT::EncodedToken::ClaimsContext
+  def header(*args, **, &block); end
+  def initialize(token); end
+  def payload; end
+  def unverified_payload(*args, **, &block); end
+  extend Forwardable
 end
 class JWT::Token
+  def claim_errors(*options); end
   def detach_payload!; end
   def encoded_header; end
   def encoded_payload; end
@@ -500,33 +477,10 @@ class JWT::Token
   def initialize(payload:, header: nil); end
   def jwt; end
   def payload; end
-  def sign!(algorithm:, key:); end
+  def sign!(key:, algorithm:); end
   def signature; end
   def signing_input; end
   def to_s; end
-  include JWT::Claims::VerificationMethods
-end
-class JWT::ClaimsValidator
-  def initialize(payload); end
-  def validate!; end
-end
-class JWT::Verify
-  def initialize(payload, options); end
-  def self.verify_aud(payload, options); end
-  def self.verify_claims(payload, options); end
-  def self.verify_expiration(payload, options); end
-  def self.verify_iat(payload, options); end
-  def self.verify_iss(payload, options); end
-  def self.verify_jti(payload, options); end
-  def self.verify_not_before(payload, options); end
-  def self.verify_required_claims(payload, options); end
-  def self.verify_sub(payload, options); end
-  def verify_aud; end
-  def verify_expiration; end
-  def verify_iat; end
-  def verify_iss; end
-  def verify_jti; end
-  def verify_not_before; end
-  def verify_required_claims; end
-  def verify_sub; end
+  def valid_claims?(*options); end
+  def verify_claims!(*options); end
 end

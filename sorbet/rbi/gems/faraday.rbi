@@ -7,7 +7,7 @@
 #
 #   https://github.com/sorbet/sorbet-typed/new/master?filename=lib/faraday/all/faraday.rbi
 #
-# faraday-2.13.1
+# faraday-2.14.0
 
 module Faraday
   def self.default_adapter; end
@@ -30,8 +30,12 @@ module Faraday
 end
 class Faraday::Error < StandardError
   def backtrace; end
+  def build_error_message_from_env(env); end
+  def build_error_message_from_hash(hash); end
+  def build_status_error_message(status, method, url); end
   def exc_msg_and_response!(exc, response = nil); end
   def exc_msg_and_response(exc, response = nil); end
+  def fallback_error_message(status); end
   def initialize(exc = nil, response = nil); end
   def inspect; end
   def response; end
@@ -56,7 +60,7 @@ class Faraday::RequestTimeoutError < Faraday::ClientError
 end
 class Faraday::ConflictError < Faraday::ClientError
 end
-class Faraday::UnprocessableEntityError < Faraday::ClientError
+class Faraday::UnprocessableContentError < Faraday::ClientError
 end
 class Faraday::TooManyRequestsError < Faraday::ClientError
 end
@@ -442,7 +446,6 @@ class Faraday::RackBuilder
   def insert(index, *, **, &); end
   def insert_after(index, *, **, &); end
   def insert_before(index, *, **, &); end
-  def is_adapter?(klass); end
   def lock!; end
   def locked?; end
   def raise_if_adapter(klass); end
@@ -656,6 +659,7 @@ class Faraday::Response
   def status; end
   def success?; end
   def to_hash; end
+  def url; end
   extend Faraday::MiddlewareRegistry
   extend Forwardable
 end

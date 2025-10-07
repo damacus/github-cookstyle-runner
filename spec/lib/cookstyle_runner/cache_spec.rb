@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require 'spec_helper'
@@ -8,10 +9,9 @@ require 'json'
 RSpec.describe CookstyleRunner::Cache do
   let(:cache_dir) { File.join(Dir.tmpdir, 'cookstyle-runner-test', 'cache') }
   let(:cache_file) { File.join(cache_dir, 'cache.json') }
-  let(:logger) { CookstyleRunner::Logger.new(StringIO.new, level: Logger::INFO) }
   let(:repo_name) { 'test/repo' }
   let(:commit_sha) { '0123456789abcdef0123456789abcdef01234567' }
-  let(:cache) { described_class.new(cache_dir, logger) }
+  let(:cache) { described_class.new(cache_dir) }
 
   before do
     # Clear and recreate cache directory before each test
@@ -28,7 +28,7 @@ RSpec.describe CookstyleRunner::Cache do
     it 'creates cache directory if it does not exist' do
       FileUtils.rm_rf(cache_dir)
       expect(Dir.exist?(cache_dir)).to be false
-      described_class.new(cache_dir, logger)
+      described_class.new(cache_dir)
       expect(Dir.exist?(cache_dir)).to be true
     end
 
@@ -49,7 +49,7 @@ RSpec.describe CookstyleRunner::Cache do
                                            }))
 
       # Initialize cache and check that it loaded existing data
-      cache = described_class.new(cache_dir, logger)
+      cache = described_class.new(cache_dir)
       expect(cache.data['repositories']).to have_key(repo_name)
     end
 
@@ -58,7 +58,7 @@ RSpec.describe CookstyleRunner::Cache do
       FileUtils.mkdir_p(cache_dir)
 
       # Initialize cache with no existing file
-      cache = described_class.new(cache_dir, logger)
+      cache = described_class.new(cache_dir)
       expect(cache.data).to include('repositories', 'last_updated')
       expect(cache.data['repositories']).to be_empty
     end

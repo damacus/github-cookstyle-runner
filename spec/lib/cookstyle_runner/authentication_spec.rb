@@ -1,3 +1,4 @@
+# typed: false
 # frozen_string_literal: true
 
 require 'spec_helper'
@@ -270,7 +271,7 @@ RSpec.describe CookstyleRunner::Authentication do
   describe '.authenticated_url' do
     let(:owner) { 'sous-chefs' }
     let(:repo_name) { 'apt' }
-    let(:logger) { CookstyleRunner::Logger.new(StringIO.new) }
+    let(:logger) { SemanticLogger['Test'] }
 
     context 'with PAT authentication' do
       before do

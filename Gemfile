@@ -15,13 +15,13 @@ gem 'octokit', '~> 10.0' # GitHub API client
 gem 'ostruct'
 gem 'parallel', '~> 1.26' # Parallel processing
 gem 'pastel', '~> 0.8' # Terminal colors
-gem 'pp'
+gem 'semantic_logger', '~> 4.17' # Structured logging with JSON support
 gem 'sorbet-runtime'
 gem 'tty-command' # For running shell commands
 gem 'tty-option', '~> 0.3' # CLI option parsing
-gem 'tty-progressbar', '~> 0.18' # Progress indicators
-gem 'tty-prompt', '~> 0.23' # Interactive prompts
-gem 'tty-spinner', '~> 0.9' # Spinners for operations
+gem 'tty-progressbar' # Progress indicators
+gem 'tty-prompt' # Interactive prompts
+gem 'tty-spinner' # Spinners for operations
 
 group :development, :test do
   gem 'rspec', '~> 3.12'
