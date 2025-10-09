@@ -9,6 +9,18 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "lib/cookstyle_runner/version.rb"
+      ],
+      "changelog-sections": [
+        { "type": "build", "section": "Build System", "hidden": false },
+        { "type": "chore", "section": "Chores", "hidden": false },
+        { "type": "ci", "section": "Continuous Integration", "hidden": false },
+        { "type": "docs", "section": "Documentation", "hidden": false },
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "perf", "section": "Performance Improvements", "hidden": false },
+        { "type": "refactor", "section": "Code Refactoring", "hidden": false },
+        { "type": "style", "section": "Styles", "hidden": false },
+        { "type": "test", "section": "Tests", "hidden": false }
       ]
     }
   }
