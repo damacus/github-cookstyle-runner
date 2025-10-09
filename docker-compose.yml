@@ -1,16 +1,16 @@
 services:
-  app:
+  cookstyle-runner:
     build: .
     volumes:
       # - .:/app
       - cookstyle_cache:/app/.cache
-      - ./config/settings/local.yml:/app/config/settings/local.yml
+      - ./config/settings/local.yml:/app/config/settings/development.yml
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GCR_LOG_FORMAT=color
 
   test:
-    extends: app
+    extends: cookstyle-runner
     volumes:
       - ./spec:/app/spec
       - ./config:/app/config
