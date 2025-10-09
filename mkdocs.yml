@@ -78,4 +78,3 @@ nav:
   - Development:
       - Contributing: development/contributing.md
       - Architecture: development/architecture.md
-  - Changelog: CHANGELOG.md
