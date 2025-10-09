@@ -99,7 +99,7 @@ GEM
       racc
     pastel (0.8.0)
       tty-color (~> 0.5)
-    prism (1.5.1)
+    prism (1.5.2)
     process_executer (4.0.0)
       track_open_instances (~> 0.1)
     public_suffix (6.0.2)
