@@ -48,34 +48,34 @@ services:
       - GITHUB_APP_ID=${GITHUB_APP_ID}
       - GITHUB_APP_INSTALLATION_ID=${GITHUB_APP_INSTALLATION_ID}
       - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}
-      
+
       # Required: Repository Configuration
       - GCR_DESTINATION_REPO_OWNER=your-org-name
       - GCR_DESTINATION_REPO_TOPICS=chef-cookbook
-      
+
       # Required: Git Configuration
       - GCR_GIT_EMAIL=bot@example.com
       - GCR_GIT_NAME=Cookstyle Bot
-      
+
       # Optional: Branch Configuration
       - GCR_BRANCH_NAME=automated/cookstyle
       - GCR_DEFAULT_GIT_BRANCH=main
-      
+
       # Optional: Pull Request Configuration
       - GCR_PULL_REQUEST_TITLE=Automated PR: Cookstyle Changes
       - GCR_PULL_REQUEST_LABELS=tech-debt,automated
       - GCR_CREATE_MANUAL_FIX_PRS=1
-      
+
       # Optional: Cache Configuration
       - GCR_USE_CACHE=1
       - GCR_CACHE_MAX_AGE=7
       - GCR_FORCE_REFRESH=0
-      
+
       # Optional: Performance Configuration
       - GCR_THREAD_COUNT=4
       - GCR_RETRY_COUNT=3
       - GCR_DEBUG_MODE=0
-      
+
       # Optional: Repository Filtering
       # - GCR_FILTER_REPOS=repo1,repo2,repo3
 
@@ -119,7 +119,7 @@ For scheduled runs, use a cron job on the host:
 crontab -e
 
 # Add entry to run daily at 2 AM
-0 2 * * * cd /path/to/cookstyle-runner && docker-compose up
+0 2 * * * cd /path/to/cookstyle-runner && docker-compose run -it --rm app
 ```
 
 ### 2. Kubernetes
@@ -204,31 +204,31 @@ metadata:
 spec:
   # Run daily at 2 AM UTC
   schedule: "0 2 * * *"
-  
+
   # Keep last 3 successful and 1 failed job for debugging
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 1
-  
+
   # Don't start new job if previous is still running
   concurrencyPolicy: Forbid
-  
+
   jobTemplate:
     spec:
       # Clean up completed jobs after 1 hour
       ttlSecondsAfterFinished: 3600
-      
+
       template:
         metadata:
           labels:
             app: cookstyle-runner
         spec:
           restartPolicy: OnFailure
-          
+
           containers:
           - name: cookstyle-runner
             image: ghcr.io/damacus/github-cookstyle-runner:latest
             imagePullPolicy: Always
-            
+
             # Resource limits (adjust based on your needs)
             resources:
               requests:
@@ -237,12 +237,12 @@ spec:
               limits:
                 memory: "2Gi"
                 cpu: "2000m"
-            
+
             # Environment variables from ConfigMap
             envFrom:
             - configMapRef:
                 name: cookstyle-runner-config
-            
+
             # Sensitive environment variables from Secret
             env:
             - name: GITHUB_APP_ID
@@ -260,12 +260,12 @@ spec:
                 secretKeyRef:
                   name: cookstyle-runner-secrets
                   key: github-app-private-key
-            
+
             # Persistent cache volume
             volumeMounts:
             - name: cache
               mountPath: /app/.cache
-          
+
           volumes:
           - name: cache
             persistentVolumeClaim:

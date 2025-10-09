@@ -6,9 +6,5 @@ config:
   reference-links-images: false  # MD052
 ignores:
   - .github/copilot-instructions.md
-  - .windsurf/rules/coding-standards.md
-  - .windsurf/rules/core-principles.md
-  - .windsurf/rules/development-practises.md
-  - .windsurf/workflows/fix-specs.md
-  - .windsurf/workflows/rubocop.md
-  - .windsurf/workflows/update-dependencies.md
+  - .windsurf/rules/**
+  - .windsurf/workflows/**
