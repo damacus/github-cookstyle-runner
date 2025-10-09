@@ -2,5 +2,20 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>damacus/renovate-config"
+  ],
+  "prBodyTemplate": "{{{defaultPrBody}}}",
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["major"],
+      "prBodyTemplate": "### ⚠️ Major Update Detected ⚠️\n\nThis pull request includes a **major version update** for `{{depName}}` from `{{currentVersion}}` to `{{newVersion}}`. Please review the changelog carefully for breaking changes.\n\n{{#if releaseNotes}}\n#### Release Notes:\n{{{releaseNotes}}}\n{{/if}}\n\n<details>\n<summary>Chores</summary>\n\n- [ ] All tests pass\n- [ ] New functionality includes testing\n- [ ] New functionality has been documented in the CHANGELOG\n- [ ] New functionality has been documented in the README if applicable\n\n</details>\n"
+    },
+    {
+      "matchUpdateTypes": ["minor"],
+      "prBodyTemplate": "### ✨ Minor Update ✨\n\nThis pull request updates `{{depName}}` from `{{currentVersion}}` to `{{newVersion}}`. This is a minor version update and should be backward-compatible.\n\n{{#if releaseNotes}}\n#### Release Notes:\n{{{releaseNotes}}}\n{{/if}}\n\n<details>\n<summary>Chores</summary>\n\n- [ ] All tests pass\n- [ ] New functionality includes testing\n- [ ] New functionality has been documented in the CHANGELOG\n- [ ] New functionality has been documented in the README if applicable\n\n</details>\n"
+    },
+    {
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+      "prBodyTemplate": "### 🩹 Patch/Maintenance Update 🩹\n\nThis pull request includes a patch or maintenance update for `{{depName}}` from `{{currentVersion}}` to `{{newVersion}}`. These updates typically contain bug fixes or small improvements.\n\n{{#if releaseNotes}}\n#### Release Notes:\n{{{releaseNotes}}}\n{{/if}}\n\n<details>\n<summary>Chores</summary>\n\n- [ ] All tests pass\n- [ ] New functionality includes testing\n- [ ] New functionality has been documented in the CHANGELOG\n- [ ] New functionality has been documented in the README if applicable\n\n</details>\n"
+    }
   ]
 }
