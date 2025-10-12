@@ -270,4 +270,46 @@ RSpec.describe CookstyleRunner::CLI do
       expect(result).to eq(0)
     end
   end
+
+  describe '#extract_repo_name_from_url' do
+    let(:cli) { described_class.new([]) }
+
+    it 'extracts owner/repo from full GitHub URL' do
+      url = 'https://github.com/sous-chefs/apt.git'
+      result = cli.send(:extract_repo_name_from_url, url)
+      expect(result).to eq('sous-chefs/apt')
+    end
+
+    it 'extracts owner/repo from GitHub URL without .git' do
+      url = 'https://github.com/sous-chefs/apt'
+      result = cli.send(:extract_repo_name_from_url, url)
+      expect(result).to eq('sous-chefs/apt')
+    end
+
+    it 'handles short repo name format' do
+      url = 'apt.git'
+      result = cli.send(:extract_repo_name_from_url, url)
+      expect(result).to eq('apt')
+    end
+
+    it 'handles owner/repo format directly' do
+      url = 'sous-chefs/apt'
+      result = cli.send(:extract_repo_name_from_url, url)
+      expect(result).to eq('sous-chefs/apt')
+    end
+
+    it 'raises error for malformed GitHub URL with insufficient segments' do
+      url = 'https://github.com/invalid'
+      expect do
+        cli.send(:extract_repo_name_from_url, url)
+      end.to raise_error(ArgumentError, /Invalid GitHub URL format/)
+    end
+
+    it 'raises error for malformed GitHub URL' do
+      url = 'https://github.com/'
+      expect do
+        cli.send(:extract_repo_name_from_url, url)
+      end.to raise_error(ArgumentError, /Invalid GitHub URL format/)
+    end
+  end
 end

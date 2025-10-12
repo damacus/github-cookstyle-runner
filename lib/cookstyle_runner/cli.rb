@@ -504,26 +504,33 @@ module CookstyleRunner
     end
 
     def extract_repo_name_from_url(repo_url)
-      if repo_url.include?('github.com')
-        parts = repo_url.split('/')
-        "#{parts[-2]}/#{parts[-1].gsub('.git', '')}"
-      else
-        repo_url.gsub('.git', '')
-      end
+      return repo_url.gsub('.git', '') unless repo_url.include?('github.com')
+
+      # Parse GitHub URL
+      parts = repo_url.split('/')
+
+      # Validate we have enough segments (at least owner and repo)
+      raise ArgumentError, "Invalid GitHub URL format: #{repo_url}" if parts.length < 2
+
+      # Extract owner and repo from the last two segments
+      owner = parts[-2]
+      repo = parts[-1]&.gsub('.git', '')
+
+      # Validate both owner and repo are present and not empty
+      raise ArgumentError, "Invalid GitHub URL format: #{repo_url}" if owner.nil? || owner.empty? || repo.nil? || repo.empty?
+
+      "#{owner}/#{repo}"
     end
 
     def show_cleanup_prs_help
-      puts pastel.cyan("\nUsage: cookstyle-runner clean-prs [OPTIONS]")
+      puts pastel.cyan("\nUsage: cookstyle-runner clean-prs")
       puts "\nClose pull requests matching the configured branch name and PR title."
       puts "\nThis command will:"
       puts '  1. Fetch repositories using existing filters'
       puts '  2. Search for open PRs matching branch_name and pr_title'
       puts '  3. Close all matching PRs'
-      puts "\nOptions:"
-      puts '  --format FORMAT   Output format (text, table, json)'
       puts "\nExamples:"
       puts '  cookstyle-runner clean-prs'
-      puts '  cookstyle-runner clean-prs --format json'
     end
   end
   # rubocop:enable Metrics/ClassLength
