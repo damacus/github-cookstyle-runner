@@ -55,6 +55,7 @@ module CookstyleRunner
     end
 
     # Process a single repository
+    sig { params(repo_name: String, repo_url: String).returns(T::Hash[Symbol, T.untyped]) }
     def process_repository(repo_name, repo_url)
       start_time = Time.now
       logger.debug('Processing repository', payload: { repo: repo_name, operation: 'process_repository' })
@@ -77,16 +78,22 @@ module CookstyleRunner
       begin
         # Get the latest commit SHA from the repository
         commit_sha = current_sha(repo_url, repo_dir)
-        return result.merge('state' => 'error', 'error' => 'Failed to get commit SHA') unless commit_sha
+        unless commit_sha
+          logger.error('Failed to get commit SHA', payload: { repo: repo_name, operation: 'get_commit_sha' })
+          error_result = result.merge('state' => 'error', 'error' => 'Failed to get commit SHA')
+          return convert_result_to_symbols(error_result, repo_name)
+        end
 
         # Skip processing if repository is up to date in cache
         if cache_up_to_date?(repo_name, commit_sha)
           logger.info('Skipping repository - no changes detected since last run', payload: { repo: repo_name, status: 'skipped' })
-          return result.merge('state' => 'skipped', 'message' => 'No changes detected since last run')
+          skip_result = result.merge('state' => 'skipped', 'message' => 'No changes detected since last run')
+          return convert_result_to_symbols(skip_result, repo_name)
         end
       rescue StandardError => e
         logger.error('Error processing repository', payload: { repo: repo_name, error: e.message, operation: 'process_repository' })
-        return result.merge('state' => 'error', 'error' => "Git error: #{e.message}")
+        error_result = result.merge('state' => 'error', 'error' => "Git error: #{e.message}")
+        return convert_result_to_symbols(error_result, repo_name)
       end
 
       # Run Cookstyle on the repository
@@ -103,7 +110,8 @@ module CookstyleRunner
         )
       rescue StandardError => e
         logger.error('Error running Cookstyle', payload: { repo: repo_name, error: e.message, operation: 'run_cookstyle' })
-        return result.merge('state' => 'error', 'error' => "Cookstyle error: #{e.message}")
+        error_result = result.merge('state' => 'error', 'error' => "Cookstyle error: #{e.message}")
+        return convert_result_to_symbols(error_result, repo_name)
       end
 
       # Create pull request or issue if there are issues (no dry run mode in current implementation)
@@ -134,7 +142,7 @@ module CookstyleRunner
     end
 
     # Clone or update the repository
-    sig { params(repo_url: String, repo_dir: String).returns(String) }
+    sig { params(repo_url: String, repo_dir: String).returns(T.nilable(String)) }
     def current_sha(repo_url, repo_dir)
       # Create a minimal repo context for Git operations
       repo_name = T.must(repo_dir.split('/').last)
@@ -146,7 +154,7 @@ module CookstyleRunner
       )
 
       CookstyleRunner::Git.clone_or_update_repo(context, { branch_name: @configuration.default_branch })
-      T.must(CookstyleRunner::Git.current_commit_sha(context))
+      CookstyleRunner::Git.current_commit_sha(context)
     end
 
     # Check if the repository is up to date in the cache
@@ -316,7 +324,7 @@ module CookstyleRunner
     end
 
     # Convert result hash to symbol keys for reporter compatibility
-    sig { params(result: T::Hash[String, T.untyped], repo_name: String).returns(T::Hash[String, T.untyped]) }
+    sig { params(result: T::Hash[String, T.untyped], repo_name: String).returns(T::Hash[Symbol, T.untyped]) }
     def convert_result_to_symbols(result, repo_name)
       status = if result['state'] == 'processed'
                  result['issues_found'] ? :issues_found : :no_issues

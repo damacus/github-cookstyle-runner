@@ -531,4 +531,64 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
       end
     end
   end
+
+  describe 'CookstyleRunner::CommandPrinter' do
+    let(:logger) { instance_double(SemanticLogger::Logger) }
+    let(:printer) { CookstyleRunner::CommandPrinter.new(logger) }
+    let(:mock_cmd) { instance_double(TTY::Command::Cmd, to_command: 'cookstyle --format json') }
+
+    describe '#print_command_start' do
+      it 'logs command at DEBUG level' do
+        allow(logger).to receive(:debug)
+
+        printer.print_command_start(mock_cmd)
+
+        expect(logger).to have_received(:debug).with('Running command: cookstyle --format json')
+      end
+    end
+
+    describe '#print_command_exit' do
+      it 'logs success at DEBUG level with runtime' do
+        allow(logger).to receive(:debug)
+
+        printer.print_command_exit(mock_cmd, 0, 1.234)
+
+        expect(logger).to have_received(:debug).with(/Command finished in 1\.234s with exit status 0/)
+      end
+
+      it 'logs failure at WARN level with runtime' do
+        allow(logger).to receive(:warn)
+
+        printer.print_command_exit(mock_cmd, 1, 2.567)
+
+        expect(logger).to have_received(:warn).with(/Command failed in 2\.567s with exit status 1/)
+      end
+    end
+
+    describe '#print_command_out_data' do
+      it 'suppresses stdout output' do
+        allow(logger).to receive(:debug)
+        allow(logger).to receive(:info)
+
+        printer.print_command_out_data(mock_cmd, 'some stdout data')
+
+        expect(logger).not_to have_received(:debug)
+        expect(logger).not_to have_received(:info)
+      end
+    end
+
+    describe '#print_command_err_data' do
+      it 'suppresses stderr output' do
+        allow(logger).to receive(:debug)
+        allow(logger).to receive(:warn)
+        allow(logger).to receive(:error)
+
+        printer.print_command_err_data(mock_cmd, 'some stderr data')
+
+        expect(logger).not_to have_received(:debug)
+        expect(logger).not_to have_received(:warn)
+        expect(logger).not_to have_received(:error)
+      end
+    end
+  end
 end
