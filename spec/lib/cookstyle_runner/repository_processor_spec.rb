@@ -94,4 +94,31 @@ RSpec.describe CookstyleRunner::RepositoryProcessor, :integration do
       expect(result[:repo_name]).to eq(repo_name)
     end
   end
+
+  context 'when current_commit_sha returns nil' do
+    let(:repo_owner) { 'sous-chefs' }
+    let(:repo_name) { 'test-repo' }
+    let(:repo_url) { "https://github.com/#{repo_owner}/#{repo_name}.git" }
+
+    let(:processor) do
+      described_class.new(
+        configuration: configuration,
+        cache_manager: cache_manager,
+        pr_manager: pr_manager,
+        context_manager: context_manager
+      )
+    end
+
+    it 'returns an error result' do
+      # Stub the instance method current_sha to return nil
+      allow(processor).to receive(:current_sha).and_return(nil)
+
+      # Process repository
+      result = processor.process_repository(repo_name, repo_url)
+
+      # Verify the result indicates an error
+      expect(result[:status]).to eq(:error)
+      expect(result[:error_message]).to include('Failed to get commit SHA')
+    end
+  end
 end
