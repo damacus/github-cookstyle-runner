@@ -32,6 +32,8 @@ log/
 .env.*
 .envrc
 
+config/settings/local.yml
+
 # Docker files
 Dockerfile
 docker-compose.yml

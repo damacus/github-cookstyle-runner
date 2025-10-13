@@ -14,13 +14,7 @@ tasks:
   test:
     desc: Run tests in Docker container with isolated environment
     cmds:
-      - echo "Building test Docker image..."
-      - docker compose build test
-      - echo "Installing dependencies..."
-      - docker compose run --rm --entrypoint "bundle" test install --jobs $(nproc) --retry 3
-      - echo "Running tests in Docker container..."
       - docker compose run --rm test
-      - echo "Tests completed."
 
   test-local:
     desc: Run tests locally with bundle

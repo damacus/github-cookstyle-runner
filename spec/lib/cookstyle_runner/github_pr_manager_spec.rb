@@ -19,11 +19,11 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     end
 
     it 'sets instance variables from settings' do
-      # Values from config/settings (default.yml or test.yml)
-      expect(pr_manager.owner).to eq('sous-chefs')
-      expect(pr_manager.branch_name).to eq('cookstyle/fixes')
-      expect(pr_manager.pr_title).to eq('Cookstyle Fixes')
-      expect(pr_manager.issue_labels).to eq(%w[cookstyle automated])
+      # Values from config/settings/test.yml
+      expect(pr_manager.owner).to eq('test-owner')
+      expect(pr_manager.branch_name).to eq('test-cookstyle-fixes')
+      expect(pr_manager.pr_title).to eq('Test PR: Cookstyle Changes')
+      expect(pr_manager.issue_labels).to eq(%w[TestLabel Cookstyle])
       expect(pr_manager.create_manual_fix_issues).to be true
     end
   end
@@ -63,7 +63,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       expect(github_client).to have_received(:add_labels_to_an_issue).with(
         'test-org/test-cookbook',
         123,
-        %w[cookstyle automated]
+        %w[TestLabel Cookstyle]
       )
     end
 
@@ -103,7 +103,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
         pr_manager.create_pull_request(repository, base_branch, head_branch, title, body)
 
         expect(github_client).to have_received(:create_pull_request).with(
-          'sous-chefs/test-cookbook',
+          'test-owner/test-cookbook',
           anything,
           anything,
           anything,
@@ -141,7 +141,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       expect(github_client).to have_received(:add_labels_to_an_issue).with(
         'test-org/test-cookbook',
         456,
-        %w[cookstyle automated]
+        %w[TestLabel Cookstyle]
       )
     end
 
@@ -179,7 +179,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
         pr_manager.create_issue(repository, title, body)
 
         expect(github_client).to have_received(:create_issue).with(
-          'sous-chefs/test-cookbook',
+          'test-owner/test-cookbook',
           anything,
           anything
         )
@@ -231,7 +231,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
         pr_manager.create_issue(repository, 'title', 'body')
 
         expect(github_client).to have_received(:create_issue).with(
-          'sous-chefs/mysql',
+          'test-owner/mysql',
           anything,
           anything
         )

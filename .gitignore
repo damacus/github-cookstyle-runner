@@ -5,4 +5,5 @@
 .env
 
 # Local configuration
-config/settings/local.yml
+config/settings.local.yml
+config/settings/settings.local.yml

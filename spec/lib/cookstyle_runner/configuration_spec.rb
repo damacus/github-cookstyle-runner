@@ -38,18 +38,18 @@ RSpec.describe CookstyleRunner::Configuration do
 
   describe 'configuration values' do
     it 'provides expected configuration values' do
-      # Test against the actual loaded configuration values (development.yml in test environment)
-      expect(config_instance.owner).to eq('sous-chefs')
+      # Test against the actual loaded configuration values from test.yml
+      expect(config_instance.owner).to eq('test-owner')
       expect(config_instance.github_api_endpoint).to eq('https://api.github.com')
-      expect(config_instance.branch_name).to eq('cookstyle/fixes')
+      expect(config_instance.branch_name).to eq('test-cookstyle-fixes')
       expect(config_instance.cache_max_age).to eq(7)
     end
 
     it 'correctly handles array values' do
-      # Test against the actual loaded configuration values (development.yml in test environment)
+      # Test against the actual loaded configuration values from test.yml
       expect(config_instance.topics).to be_an(Array)
-      expect(config_instance.topics).to include('chef-cookbook')
-      expect(config_instance.issue_labels).to match_array(%w[cookstyle automated])
+      expect(config_instance.topics).to include('test-topic')
+      expect(config_instance.issue_labels).to match_array(%w[TestLabel Cookstyle])
     end
   end
 
@@ -59,10 +59,10 @@ RSpec.describe CookstyleRunner::Configuration do
 
       expect(hash).to be_a(Hash)
       expect(hash.keys).to match_array(CookstyleRunner::Configuration::CONFIG_ATTRIBUTES)
-      expect(hash[:owner]).to eq('sous-chefs')
-      expect(hash[:branch_name]).to eq('cookstyle/fixes')
-      expect(hash[:issue_labels]).to match_array(%w[cookstyle automated])
-      expect(hash[:topics]).to contain_exactly('chef-cookbook')
+      expect(hash[:owner]).to eq('test-owner')
+      expect(hash[:branch_name]).to eq('test-cookstyle-fixes')
+      expect(hash[:issue_labels]).to match_array(%w[TestLabel Cookstyle])
+      expect(hash[:topics]).to contain_exactly('test-topic')
       expect(hash[:cache_max_age]).to eq(7)
     end
   end

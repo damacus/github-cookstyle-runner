@@ -118,8 +118,19 @@ RSpec.configure do |config|
 
   # SemanticLogger test setup
   config.before do
-    # Clear any existing appenders before each test
     SemanticLogger.appenders.clear
     SemanticLogger.default_level = :trace
+
+    # Reload Settings before each test to ensure test environment configuration
+    # This prevents test order dependencies and ensures consistent configuration
+    config_root = File.join(File.dirname(__FILE__), '..', 'config')
+    environment = ENV.fetch('ENVIRONMENT', 'test')
+    setting_files = Config.setting_files(config_root, environment)
+
+    # Exclude local.yml files in test environment for predictable behavior
+    setting_files = setting_files.reject { |file| file.include?('.local.yml') || file.include?('/local.yml') }
+
+    # Reload configuration from the filtered file list
+    Config.load_and_set_settings(setting_files)
   end
 end

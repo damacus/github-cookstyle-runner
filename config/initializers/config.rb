@@ -62,22 +62,10 @@ ConfigGem.setup do |config|
   # Name of the constant exposing loaded settings
   config.const_name = 'Settings'
 
-  # Determine environment
-  environment = ENV.fetch('COOKSTYLE_ENV', 'development')
+  # Determine environment - default to 'test' if running under RSpec
+  default_env = defined?(RSpec) ? 'test' : 'production'
+  environment = ENV.fetch('ENVIRONMENT', default_env)
   config_logger.info("Loading configuration for environment: #{environment}")
-
-  # Define configuration files to load with proper precedence
-  # 1. Default settings (always loaded)
-  # 2. Environment-specific settings (development, test, production)
-  # 3. Local settings override (optional, for development)
-  settings_files = [
-    File.join(File.dirname(__FILE__), '..', 'settings', 'default.yml'),
-    File.join(File.dirname(__FILE__), '..', 'settings', "#{environment}.yml")
-  ]
-
-  # Only include local.yml if it exists (optional developer overrides)
-  local_config = File.join(File.dirname(__FILE__), '..', 'settings', 'local.yml')
-  settings_files << local_config if File.exist?(local_config)
 
   # Configure environment variable handling
   # Use a separator that won't conflict with our setting names
@@ -89,19 +77,33 @@ ConfigGem.setup do |config|
 
   # Don't fail on missing settings - we'll validate what we need later
   config.fail_on_missing = false
-
-  # Log which files are being loaded
-  settings_files.each do |file|
-    if File.exist?(file)
-      config_logger.debug("Loading configuration file: #{file}")
-    else
-      config_logger.warn("Configuration file not found: #{file}")
-    end
-  end
-
-  # Load the configuration files
-  config.load_and_set_settings(*settings_files)
 end
+
+# Load configuration files using automatic file discovery
+# This uses Config.setting_files which automatically loads in priority order:
+# 1. config/settings.yml
+# 2. config/settings/#{environment}.yml
+# 3. config/environments/#{environment}.yml
+# 4. config/settings.local.yml (excluded in test)
+# 5. config/settings/#{environment}.local.yml (excluded in test)
+# 6. config/environments/#{environment}.local.yml (excluded in test)
+# Files lower in the list override settings from files higher up
+environment = ENV.fetch('ENVIRONMENT', 'production')
+config_root = File.join(File.dirname(__FILE__), '..')
+
+# Get the standard setting files and load them
+setting_files = ConfigGem.setting_files(config_root, environment)
+
+# In test environment, exclude ALL local.yml files to ensure predictable test behavior
+if environment == 'test'
+  original_count = setting_files.length
+  setting_files = setting_files.reject { |file| file.include?('.local.yml') || file.include?('/local.yml') }
+  config_logger.info("Test environment: filtered #{original_count - setting_files.length} local config files")
+end
+
+config_logger.info("Loading #{setting_files.length} configuration files for environment: #{environment}")
+config_logger.debug("Files: #{setting_files.join(', ')}")
+ConfigGem.load_and_set_settings(setting_files)
 
 # Load the validator after config is initialized
 require_relative '../validators/settings_validator'

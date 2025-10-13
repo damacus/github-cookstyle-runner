@@ -1,0 +1,7 @@
+---
+# Base configuration - shared across all environments
+# Environment-specific overrides go in config/settings/{environment}.yml
+# Local overrides go in config/settings.local.yml (gitignored)
+
+# GitHub API endpoint (can be overridden for GitHub Enterprise)
+github_api_endpoint: https://api.github.com
