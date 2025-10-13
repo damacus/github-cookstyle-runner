@@ -4,17 +4,16 @@
 
 ### Added
 
-- Pretty table output format using `table_tennis` gem
-- `--format pretty` option for CLI list command
-- Enhanced table rendering with borders and zebra striping
-- Configuration validation for output_format setting
+* Pretty table output format using `table_tennis` gem
+* `--format pretty` option for CLI list command
+* Enhanced table rendering with borders and zebra striping
+* Configuration validation for output_format setting
 
 ### Changed
 
-- Updated `tty-progressbar` dependency to support `table_tennis`
+* Updated `tty-progressbar` dependency to support `table_tennis`
 
 ## [0.1.1](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner-v0.1.0...github-cookstyle-runner/v0.1.1) (2025-10-09)
-
 
 ### Chores
 
@@ -64,14 +63,12 @@
 * **deps:** update softprops/action-gh-release digest to 6cbd405 ([#46](https://github.com/damacus/github-cookstyle-runner/issues/46)) ([d011e11](https://github.com/damacus/github-cookstyle-runner/commit/d011e11aeff8ab351956d109089cb818f65371dd))
 * **deps:** update softprops/action-gh-release digest to aec2ec5 ([#91](https://github.com/damacus/github-cookstyle-runner/issues/91)) ([8878e48](https://github.com/damacus/github-cookstyle-runner/commit/8878e48e7d2a65e5c430ca06a3811d321090b0d8))
 
-
 ### Features
 
 * Add extract_offenses method to CookstyleOperations ([#83](https://github.com/damacus/github-cookstyle-runner/issues/83)) ([76a1919](https://github.com/damacus/github-cookstyle-runner/commit/76a191933675b3536496cd01a4e0a6439b377488))
 * add VCR and integration test infrastructure ([130e04b](https://github.com/damacus/github-cookstyle-runner/commit/130e04be650ee83191811a4b36fc46325031bf0a))
 * implement comprehensive CLI with TTY framework ([#77](https://github.com/damacus/github-cookstyle-runner/issues/77)) ([5441642](https://github.com/damacus/github-cookstyle-runner/commit/5441642e898b412eb7e87b77a111715975d18cd8))
 * implement Runner class for executing Cookstyle on repositories ([2645369](https://github.com/damacus/github-cookstyle-runner/commit/2645369f70853d0d5b2fb9c379767cd48f5e4b03))
-
 
 ### Bug Fixes
 
@@ -81,28 +78,27 @@
 * Remove changelog management ([#75](https://github.com/damacus/github-cookstyle-runner/issues/75)) ([97abbf4](https://github.com/damacus/github-cookstyle-runner/commit/97abbf4150d542eef99084243272ea95d8f4897d))
 * **tapioca:** Update types ([#95](https://github.com/damacus/github-cookstyle-runner/issues/95)) ([635d1cd](https://github.com/damacus/github-cookstyle-runner/commit/635d1cddbeef62c27563db83521c25bbff599c3b))
 
-
 ### Code Refactoring
 
 * Complete rewrite from PowerShell to Ruby with comprehensive test coverage ([#67](https://github.com/damacus/github-cookstyle-runner/issues/67)) ([55ba2c0](https://github.com/damacus/github-cookstyle-runner/commit/55ba2c00e74274a25ca0012bb52e033e5a30e31e))
 
 ## 2.0.0 - *2021-08-11*
 
-- Breaking Change: Defaults to looking for main branches, introduces new cli arg for setting default branch name
+* Breaking Change: Defaults to looking for main branches, introduces new cli arg for setting default branch name
 
 ## 1.4.3 - *2020-11-18*
 
-- Removed branch cleanup workflow as now using github repo settings
+* Removed branch cleanup workflow as now using github repo settings
 
 ## 1.4.2 - *2020-11-18*
 
-- Fixed bug with dockerhub push due to set-env deprecation
+* Fixed bug with dockerhub push due to set-env deprecation
 
 ## 1.4.1 - *2020-10-25*
 
-- Resolved issues with pagination:
-  - Set auth headers correctly
-  - Removed duplicate results from being added
+* Resolved issues with pagination:
+  * Set auth headers correctly
+  * Removed duplicate results from being added
 
 ## 1.3.1
 

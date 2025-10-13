@@ -1,26 +1,34 @@
 services:
-  app:
+  cookstyle-runner:
     build: .
     volumes:
       # - .:/app
       - cookstyle_cache:/app/.cache
-      - ./config/settings/local.yml:/app/config/settings/local.yml
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GCR_LOG_FORMAT=color
+      - ENVIRONMENT=development
 
   test:
-    extends: app
+    extends:
+      service: cookstyle-runner
     volumes:
       - ./spec:/app/spec
-      - ./config:/app/config
       - ./lib:/app/lib
+      - cookstyle_cache:/app/.cache
+      # Mount config files individually, excluding local.yml
+      - ./config/initializers:/app/config/initializers
+      - ./config/validators:/app/config/validators
+      - ./config/settings:/app/config/settings
     environment:
       # Clear GitHub credentials for testing
       - GITHUB_TOKEN=
       - GCR_GITHUB_APP_ID=
       - GCR_GITHUB_APP_INSTALLATION_ID=
       - GCR_GITHUB_APP_PRIVATE_KEY=
+      - ENVIRONMENT=test
+      - GCR__LOG_LEVEL=debug
+      - GCR__LOG_FORMAT=json
     entrypoint: ["bundle", "exec", "rspec"]
     command: []
 

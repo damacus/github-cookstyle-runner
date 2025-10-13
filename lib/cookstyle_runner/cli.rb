@@ -43,6 +43,8 @@ module CookstyleRunner
         version_command
       when 'help', nil
         help_command
+      when 'clean-prs'
+        cleanup_prs
       else
         puts pastel.red("Unknown command: #{@command}")
         puts "Run 'cookstyle-runner help' for usage information"
@@ -384,6 +386,7 @@ module CookstyleRunner
       puts '  list              List repositories that would be processed'
       puts '  config            Display or validate configuration'
       puts '  status            Show cache and operation status'
+      puts '  clean-prs         Close pull requests matching configured filters'
       puts '  version           Display version information'
       puts '  help              Show this help message'
       puts "\nGlobal Options:"
@@ -444,6 +447,90 @@ module CookstyleRunner
       puts '  cookstyle-runner status'
       puts '  cookstyle-runner status --format table'
       puts '  cookstyle-runner status --format json'
+    end
+
+    def cleanup_prs
+      setup_environment
+      apply_cli_options
+
+      if options[:help]
+        show_cleanup_prs_help
+        return 0
+      end
+
+      app = Application.new
+      repositories = fetch_repositories(app)
+
+      return 0 if repositories.empty?
+
+      closed_count = close_matching_prs(app, repositories)
+
+      app.logger.info("Closed #{closed_count} pull request(s)")
+      0
+    end
+
+    def close_matching_prs(app, repositories)
+      github_client = Authentication.client
+      config = app.configuration
+      closed_count = 0
+
+      repositories.each do |repo_url|
+        repo_name = extract_repo_name_from_url(repo_url)
+        closed_count += close_prs_for_repository(github_client, config, app.logger, repo_name)
+      end
+
+      closed_count
+    end
+
+    def close_prs_for_repository(github_client, config, logger, repo_name)
+      prs = github_client.pull_requests(repo_name, state: 'open')
+      matching_prs = find_matching_prs(prs, config)
+
+      matching_prs.each do |pr|
+        github_client.close_pull_request(repo_name, pr.number)
+        logger.info("Closed PR ##{pr.number} in #{repo_name}")
+      end
+
+      matching_prs.length
+    rescue StandardError => e
+      logger.error("Error processing #{repo_name}: #{e.message}")
+      0
+    end
+
+    def find_matching_prs(prs, config)
+      prs.select do |pr|
+        pr.head.ref == config.branch_name && pr.title == config.pr_title
+      end
+    end
+
+    def extract_repo_name_from_url(repo_url)
+      return repo_url.gsub('.git', '') unless repo_url.include?('github.com')
+
+      # Parse GitHub URL
+      parts = repo_url.split('/')
+
+      # Validate we have enough segments (at least owner and repo)
+      raise ArgumentError, "Invalid GitHub URL format: #{repo_url}" if parts.length < 2
+
+      # Extract owner and repo from the last two segments
+      owner = parts[-2]
+      repo = parts[-1]&.gsub('.git', '')
+
+      # Validate both owner and repo are present and not empty
+      raise ArgumentError, "Invalid GitHub URL format: #{repo_url}" if owner.nil? || owner.empty? || repo.nil? || repo.empty?
+
+      "#{owner}/#{repo}"
+    end
+
+    def show_cleanup_prs_help
+      puts pastel.cyan("\nUsage: cookstyle-runner clean-prs")
+      puts "\nClose pull requests matching the configured branch name and PR title."
+      puts "\nThis command will:"
+      puts '  1. Fetch repositories using existing filters'
+      puts '  2. Search for open PRs matching branch_name and pr_title'
+      puts '  3. Close all matching PRs'
+      puts "\nExamples:"
+      puts '  cookstyle-runner clean-prs'
     end
   end
   # rubocop:enable Metrics/ClassLength
