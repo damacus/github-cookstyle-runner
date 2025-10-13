@@ -7,8 +7,6 @@ here is the log output from an existing run
 
 This tracking data should be put into a KV store such as redis/postgresql for later stats and make it easier to find old PRs that we have opened.
 
-# Cleanup
+## Cleanup
 
 When closing PRs using the "cleanup_prs" method it should lookup information in this table, close the PR and delete the branch, then remove the corresponding entry in the DB.
-
-#
