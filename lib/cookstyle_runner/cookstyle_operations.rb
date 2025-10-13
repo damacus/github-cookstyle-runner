@@ -117,7 +117,7 @@ module CookstyleRunner
     # Returns results array and the command result object.
     # Raises errors to be caught by run_cookstyle.
     private_class_method def self._execute_cookstyle_and_process(context, cmd, autocorrect: false)
-      log.debug("Executing Cookstyle: autocorrect=#{autocorrect}")
+      log.debug('Executing Cookstyle', payload: { repo: context.repo_name, autocorrect: autocorrect, operation: 'run_cookstyle' })
 
       command = 'cookstyle --format json --display-cop-names'
       command += ' --autocorrect-all' if autocorrect
@@ -137,10 +137,11 @@ module CookstyleRunner
         return DEFAULT_ERROR_RETURN
       end
 
-      log.trace('Cookstyle output', payload: { exit_status: cookstyle_result.exit_status })
+      log.trace('Cookstyle output', payload: { repo: context.repo_name, exit_status: cookstyle_result.exit_status })
       parsed_json = _parse_json_safely(cookstyle_result.out)
       if parsed_json.nil? || parsed_json.empty?
         log.error('Cookstyle produced no parsable JSON output', payload: {
+                    repo: context.repo_name,
                     exit_status: cookstyle_result.exit_status,
                     stdout: cookstyle_result.out,
                     stderr: cookstyle_result.err
@@ -169,11 +170,11 @@ module CookstyleRunner
     # Commits changes after a successful auto-correction run.
     private_class_method def self._commit_autocorrections(context)
       if Git.changes_to_commit?(context)
-        log.info("Detected changes after auto-correction for #{context.repo_name}, attempting commit.")
+        log.info('Detected changes after auto-correction, attempting commit', payload: { repo: context.repo_name, operation: 'commit_changes' })
         commit_message = 'Fix: Apply Cookstyle auto-corrections'
         Git.add_and_commit_changes(context, commit_message)
       else
-        log.info("No changes detected after auto-correction for #{context.repo_name}.")
+        log.info('No changes detected after auto-correction', payload: { repo: context.repo_name, operation: 'check_changes' })
         false
       end
     end

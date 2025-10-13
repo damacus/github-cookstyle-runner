@@ -23,16 +23,16 @@ module CookstyleRunner
     def self.fetch_repositories(owner, topics = nil)
       query = "org:#{owner}"
       topics.each { |topic| query += " topic:#{topic}" } if topics && !topics.empty?
-      log.debug("Search query: #{query}")
+      log.debug('Searching repositories', payload: { owner: owner, topics: topics, query: query })
       results = Authentication.client.search_repositories(query)
-      log.info("Found #{results.total_count} repositories")
+      log.info('Found repositories', payload: { count: results.total_count, owner: owner })
       results.items.map(&:clone_url)
     rescue Octokit::Error => e
-      log.error("GitHub API error: #{e.message}")
+      log.error('GitHub API error', payload: { operation: 'search_repositories', error: e.message, owner: owner })
       log.debug(T.must(e.backtrace).join("\n"))
       []
     rescue StandardError => e
-      log.error("Error fetching repositories: #{e.message}")
+      log.error('Error fetching repositories', payload: { operation: 'search_repositories', error: e.message, owner: owner })
       log.debug(T.must(e.backtrace).join("\n"))
       []
     end
@@ -43,7 +43,7 @@ module CookstyleRunner
       prs = Authentication.client.pull_requests(repo_full_name, state: 'open')
       prs.find { |pr| pr.head.ref == branch_name }
     rescue StandardError => e
-      log.error("Error finding existing PR for #{repo_full_name}: #{e.message}")
+      log.error('Error finding existing PR', payload: { repo: repo_full_name, branch: branch_name, error: e.message, operation: 'find_pr' })
       nil
     end
 
@@ -56,7 +56,7 @@ module CookstyleRunner
     def self.create_or_update_pr(repo_full_name, branch_name, default_branch, title, body, labels)
       existing_pr = find_existing_pr(repo_full_name, branch_name)
       if existing_pr
-        log.info("Pull request already exists for #{repo_full_name}, updating PR ##{existing_pr.number}")
+        log.info('Pull request already exists, updating', payload: { repo: repo_full_name, pr_number: existing_pr.number, operation: 'update_pr' })
         pr = Authentication.client.update_pull_request(
           repo_full_name,
           existing_pr.number,
@@ -69,7 +69,7 @@ module CookstyleRunner
           Authentication.client.add_labels_to_an_issue(repo_full_name, existing_pr.number, new_labels) if new_labels.any?
         end
       else
-        log.info("Creating new PR for #{repo_full_name}")
+        log.info('Creating new PR', payload: { repo: repo_full_name, branch: branch_name, operation: 'create_pr' })
         pr = Authentication.client.create_pull_request(
           repo_full_name,
           default_branch,
@@ -83,7 +83,12 @@ module CookstyleRunner
       end
       pr
     rescue StandardError => e
-      log.error("Error creating/updating PR for #{repo_full_name}: #{e.message}")
+      log.error('Error creating/updating PR', payload: {
+                  repo: repo_full_name,
+                  branch: branch_name,
+                  error: e.message,
+                  operation: 'create_or_update_pr'
+                })
       log.debug(T.must(e.backtrace).join("\n"))
       nil
     end

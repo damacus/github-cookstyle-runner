@@ -102,7 +102,7 @@ module CookstyleRunner
       # Reraise exit for authentication failures
       raise
     rescue StandardError => e
-      log.error("Error ensuring repo latest state: #{e.message}")
+      log.error('Error ensuring repo latest state', payload: { repo: context.repo_name, error: e.message, operation: 'clone_or_update' })
       nil
     end
 
@@ -144,7 +144,7 @@ module CookstyleRunner
       log.debug('Repository cloned successfully', payload: { repo: context.repo_name })
       repo
     rescue StandardError => e
-      log.error("Error ensuring repo latest state: #{e.message}")
+      log.error('Error ensuring repo latest state', payload: { repo: context.repo_name, error: e.message, operation: 'clone' })
       nil
     end
 
@@ -167,7 +167,7 @@ module CookstyleRunner
       repo = ::Git.open(context.repo_dir)
       repo.object('HEAD').sha
     rescue StandardError => e
-      log.error("Failed to get current commit SHA: #{e.message}")
+      log.error('Failed to get current commit SHA', payload: { repo: context.repo_name, error: e.message, operation: 'get_sha' })
       nil
     end
 
@@ -175,10 +175,10 @@ module CookstyleRunner
     def self.changes_to_commit?(context)
       repo = ::Git.open(context.repo_dir)
       changes = changes?(repo)
-      log.debug("Changes to commit found for #{context.repo_name}: #{changes}")
+      log.debug('Changes to commit found', payload: { repo: context.repo_name, has_changes: changes })
       changes
     rescue ::Git::Error => e
-      log.error("Failed to check for changes to commit: #{e.message}")
+      log.error('Failed to check for changes to commit', payload: { repo: context.repo_name, error: e.message, operation: 'check_changes' })
       false
     end
 
@@ -193,7 +193,7 @@ module CookstyleRunner
       repo.add(all: true)
       repo.commit(commit_message)
     rescue StandardError => e
-      log.error("Failed to add and commit local changes: #{e.message}")
+      log.error('Failed to add and commit local changes', payload: { repo: context.repo_name, error: e.message, operation: 'commit' })
       false
     end
 
@@ -202,7 +202,7 @@ module CookstyleRunner
       setup_remote(repo, context)
       push_to_remote(repo, context, branch_name)
     rescue StandardError => e
-      log.error("Failed to push branch #{branch_name}: #{e.message}")
+      log.error('Failed to push branch', payload: { repo: context.repo_name, branch: branch_name, error: e.message, operation: 'push' })
       false
     end
 
@@ -212,7 +212,7 @@ module CookstyleRunner
       repo.fetch('origin')
       true
     rescue StandardError => e
-      log.error("Error setting up remote for #{context.repo_name}: #{e.message}")
+      log.error('Error setting up remote', payload: { repo: context.repo_name, error: e.message, operation: 'setup_remote' })
       false
     end
 
@@ -225,10 +225,10 @@ module CookstyleRunner
 
     def self.push_to_remote(repo, context, branch_name)
       repo.push('origin', branch_name, force: true)
-      log.debug("Pushed changes to origin/#{branch_name} for #{context.repo_name}")
+      log.debug('Pushed changes to origin', payload: { repo: context.repo_name, branch: branch_name, operation: 'push' })
       true
     rescue StandardError => e
-      log.error("Error pushing to origin/#{branch_name} for #{context.repo_name}: #{e.message}")
+      log.error('Error pushing to origin', payload: { repo: context.repo_name, branch: branch_name, error: e.message, operation: 'push' })
       false
     end
 
@@ -239,7 +239,7 @@ module CookstyleRunner
       ::Git.global_config('user.email', user_email)
       true
     rescue StandardError => e
-      log.error("Failed to configure git user: #{e.message}")
+      log.error('Failed to configure git user', payload: { error: e.message, operation: 'setup_git_config' })
       false
     end
 
@@ -258,15 +258,15 @@ module CookstyleRunner
     def self._manage_branch_lifecycle(repo, branch_name)
       # Check if branch exists locally and delete it
       if repo.branches.local.map(&:name).include?(branch_name)
-        log.debug("Deleting existing local branch '#{branch_name}'")
+        log.debug('Deleting existing local branch', payload: { branch: branch_name, operation: 'delete_branch' })
         repo.branch(branch_name).delete
       end
 
       repo.branch(branch_name).create
       repo.branch(branch_name).checkout
-      log.debug("Created and checked out branch '#{branch_name}' locally.")
+      log.debug('Created and checked out branch locally', payload: { branch: branch_name, operation: 'create_branch' })
     rescue ::Git::Error => e
-      log.error("Failed to manage branch lifecycle for '#{branch_name}': #{e.message}")
+      log.error('Failed to manage branch lifecycle', payload: { branch: branch_name, error: e.message, operation: 'manage_branch' })
       raise
     end
 
@@ -281,7 +281,7 @@ module CookstyleRunner
 
       true
     rescue StandardError => e
-      log.error("Failed to commit and push changes: #{e.message}")
+      log.error('Failed to commit and push changes', payload: { repo: context.repo_name, error: e.message, operation: 'commit_and_push' })
       false
     end
 
@@ -289,7 +289,7 @@ module CookstyleRunner
       begin
         repo = ::Git.open(context.repo_dir)
       rescue StandardError => e
-        log.error("Failed to commit and push changes: #{e.message}")
+        log.error('Failed to commit and push changes', payload: { repo: context.repo_name, error: e.message, operation: 'commit_and_push' })
         return false
       end
 
@@ -297,7 +297,7 @@ module CookstyleRunner
         repo.add(all: true)
         repo.commit(commit_message)
       rescue StandardError => e
-        log.error("Error committing changes in #{context.repo_dir}: #{e.message}")
+        log.error('Error committing changes', payload: { repo: context.repo_name, repo_dir: context.repo_dir, error: e.message, operation: 'commit' })
         false
       end
     end
