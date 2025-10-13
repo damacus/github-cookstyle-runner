@@ -57,7 +57,7 @@ module CookstyleRunner
     # Process a single repository
     def process_repository(repo_name, repo_url)
       start_time = Time.now
-      logger.debug("Processing repository: #{repo_name}")
+      logger.debug('Processing repository', payload: { repo: repo_name, operation: 'process_repository' })
 
       # Prepare result hash with defaults
       result = {
@@ -81,11 +81,11 @@ module CookstyleRunner
 
         # Skip processing if repository is up to date in cache
         if cache_up_to_date?(repo_name, commit_sha)
-          logger.info("Skipping #{repo_name} - No changes detected since last run")
+          logger.info('Skipping repository - no changes detected since last run', payload: { repo: repo_name, status: 'skipped' })
           return result.merge('state' => 'skipped', 'message' => 'No changes detected since last run')
         end
       rescue StandardError => e
-        logger.error("Error processing repository #{repo_name}: #{e.message}")
+        logger.error('Error processing repository', payload: { repo: repo_name, error: e.message, operation: 'process_repository' })
         return result.merge('state' => 'error', 'error' => "Git error: #{e.message}")
       end
 
@@ -102,7 +102,7 @@ module CookstyleRunner
           'offense_details' => cookstyle_result[:offense_details]
         )
       rescue StandardError => e
-        logger.error("Error running Cookstyle on #{repo_name}: #{e.message}")
+        logger.error('Error running Cookstyle', payload: { repo: repo_name, error: e.message, operation: 'run_cookstyle' })
         return result.merge('state' => 'error', 'error' => "Cookstyle error: #{e.message}")
       end
 
@@ -114,7 +114,7 @@ module CookstyleRunner
 
       # Add the time taken to the result
       result['time_taken'] = Time.now - start_time
-      logger.info("Finished processing #{repo_name} in #{result['time_taken'].round(2)}s")
+      logger.info('Finished processing repository', payload: { repo: repo_name, time_taken: result['time_taken'].round(2), status: result['state'] })
 
       # Convert to symbol keys for reporter compatibility
       convert_result_to_symbols(result, repo_name)
@@ -161,7 +161,7 @@ module CookstyleRunner
 
     # Run Cookstyle checks on the repository
     def run_cookstyle_checks(repo_dir)
-      logger.debug("Running Cookstyle on #{repo_dir}")
+      logger.debug('Running Cookstyle', payload: { repo_dir: repo_dir, operation: 'run_cookstyle' })
 
       # Create a repo context for Cookstyle operations
       repo_name = T.must(repo_dir.split('/').last)
@@ -208,7 +208,7 @@ module CookstyleRunner
       return result unless @pr_manager
 
       # Run Cookstyle with auto-correct
-      logger.info("Auto-correcting #{result['auto_correctable']} issues in #{repo_full_name}")
+      logger.info('Auto-correcting issues', payload: { repo: repo_full_name, count: result['auto_correctable'], operation: 'auto_correct' })
 
       # Create a repo context for Cookstyle operations
       repo_name = T.must(repo_full_name.split('/').last)
@@ -256,14 +256,14 @@ module CookstyleRunner
 
         if pr_success
           result['message'] = 'Created PR with auto-corrected changes'
-          logger.info("Created PR for #{repo_full_name}")
+          logger.info('Created PR', payload: { repo: repo_full_name, operation: 'create_pr' })
         else
           result['error'] = 'Failed to create PR'
-          logger.error("Failed to create PR for #{repo_full_name}")
+          logger.error('Failed to create PR', payload: { repo: repo_full_name, operation: 'create_pr' })
         end
       rescue StandardError => e
         result['error'] = "Failed to create PR: #{e.message}"
-        logger.error("Error creating PR for #{repo_full_name}: #{e.message}")
+        logger.error('Error creating PR', payload: { repo: repo_full_name, error: e.message, operation: 'create_pr' })
       end
 
       result
@@ -273,15 +273,15 @@ module CookstyleRunner
     def handle_manual_fixes(result, repo_full_name)
       return result unless @pr_manager
 
-      logger.info("Creating issue for #{result['manual_fixes']} manual fixes in #{repo_full_name}")
+      logger.info('Creating issue for manual fixes', payload: { repo: repo_full_name, count: result['manual_fixes'], operation: 'create_issue' })
       issue_success = create_manual_fix_issue(repo_full_name, result['offense_details'])
 
       if issue_success
         result['message'] = 'Created issue for manual fixes'
-        logger.info("Created issue for #{repo_full_name}")
+        logger.info('Created issue', payload: { repo: repo_full_name, operation: 'create_issue' })
       else
         result['error'] = 'Failed to create issue'
-        logger.error("Failed to create issue for #{repo_full_name}")
+        logger.error('Failed to create issue', payload: { repo: repo_full_name, operation: 'create_issue' })
       end
 
       result
@@ -312,7 +312,7 @@ module CookstyleRunner
       return unless @cache_manager && @configuration.use_cache
 
       @cache_manager.update(repo_name, commit_sha, had_issues, result, processing_time)
-      logger.debug("Updated cache for #{repo_name}")
+      logger.debug('Updated cache', payload: { repo: repo_name, operation: 'update_cache' })
     end
 
     # Convert result hash to symbol keys for reporter compatibility
