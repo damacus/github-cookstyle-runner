@@ -13,6 +13,17 @@
 
 * Updated `tty-progressbar` dependency to support `table_tennis`
 
+## [0.1.3](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.2...github-cookstyle-runner/v0.1.3) (2025-10-21)
+
+
+### Chores
+
+* **deps:** update dependency rspec to v3.13.2 ([#130](https://github.com/damacus/github-cookstyle-runner/issues/130)) ([b0abffe](https://github.com/damacus/github-cookstyle-runner/commit/b0abffe50af308f7a26abf737ff82205471abdc2))
+* **deps:** update dependency sorbet to v0.6.12650 ([#124](https://github.com/damacus/github-cookstyle-runner/issues/124)) ([81f5c99](https://github.com/damacus/github-cookstyle-runner/commit/81f5c99260267912aadbee94c23f11c78d31e13b))
+* **deps:** update dependency sorbet-runtime to v0.6.12650 ([#125](https://github.com/damacus/github-cookstyle-runner/issues/125)) ([c7599e9](https://github.com/damacus/github-cookstyle-runner/commit/c7599e92df3d0798aa945e98ae2e1acdcbc695f9))
+* **deps:** update dependency tapioca to v0.17.7 ([#126](https://github.com/damacus/github-cookstyle-runner/issues/126)) ([e874928](https://github.com/damacus/github-cookstyle-runner/commit/e87492868214043f315dac2b597c2b1b4ca816bc))
+* **deps:** update dependency tapioca to v0.17.8 ([#128](https://github.com/damacus/github-cookstyle-runner/issues/128)) ([66883ea](https://github.com/damacus/github-cookstyle-runner/commit/66883eaee93c2d551f3c0bda77a99762192256bb))
+
 ## [0.1.2](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.1...github-cookstyle-runner/v0.1.2) (2025-10-13)
 
 
