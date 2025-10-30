@@ -15,7 +15,6 @@
 
 ## [0.1.2](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.1...github-cookstyle-runner/v0.1.2) (2025-10-13)
 
-
 ### Chores
 
 * **deps:** update dependency rubocop to v1.81.1 ([#110](https://github.com/damacus/github-cookstyle-runner/issues/110)) ([c3fc29b](https://github.com/damacus/github-cookstyle-runner/commit/c3fc29b786865c9771e515b4485b1048bc03abbc))
@@ -24,16 +23,13 @@
 * **deps:** update dependency sorbet-runtime to v0.6.12638 ([#112](https://github.com/damacus/github-cookstyle-runner/issues/112)) ([397b9e5](https://github.com/damacus/github-cookstyle-runner/commit/397b9e5f3eff5f9639f1cf2025dbf93bc51b9403))
 * **deps:** update dependency tapioca to v0.17.7 ([#111](https://github.com/damacus/github-cookstyle-runner/issues/111)) ([e515030](https://github.com/damacus/github-cookstyle-runner/commit/e515030eafacb2feb3c74698c9d0bd495196727b))
 
-
 ### Features
 
 * add clean-prs command and fix configuration loading ([5012148](https://github.com/damacus/github-cookstyle-runner/commit/5012148cbb4c79b69091de8e64bfba0ad5ff304b))
 
-
 ### Bug Fixes
 
 * **logging:** Update logging output ([#121](https://github.com/damacus/github-cookstyle-runner/issues/121)) ([41e060d](https://github.com/damacus/github-cookstyle-runner/commit/41e060d91fec3a940aab0fdb684c05b3e931c07e))
-
 
 ### Code Refactoring
 
