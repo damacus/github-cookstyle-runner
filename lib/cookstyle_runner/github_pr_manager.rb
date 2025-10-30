@@ -45,14 +45,8 @@ module CookstyleRunner
       @branch_name = T.let(settings.branch_name || 'cookstyle-fixes', String)
       @pr_title = T.let(settings.pr_title || 'Automated PR: Cookstyle Changes', String)
       @issue_labels = T.let(settings.issue_labels || [], T::Array[String])
-      @create_manual_fix_issues = T.let(
-        settings.respond_to?(:create_manual_fix_issues) && !settings.create_manual_fix_issues.nil? ? settings.create_manual_fix_issues : true,
-        T::Boolean
-      )
-      @auto_assign_manual_fixes = T.let(
-        settings.respond_to?(:auto_assign_manual_fixes) && !settings.auto_assign_manual_fixes.nil? ? settings.auto_assign_manual_fixes : true,
-        T::Boolean
-      )
+      @create_manual_fix_issues = T.let(boolean_config(settings, :create_manual_fix_issues, true), T::Boolean)
+      @auto_assign_manual_fixes = T.let(boolean_config(settings, :auto_assign_manual_fixes, true), T::Boolean)
       @copilot_assignee = T.let(settings.copilot_assignee || 'copilot', String)
     end
 
@@ -187,6 +181,16 @@ module CookstyleRunner
         # Handle direct repo names or owner/repo format
         repository.include?('/') ? repository : "#{@owner}/#{repository}"
       end
+    end
+
+    # Helper method to safely get boolean configuration values
+    # @param settings [Config::Options] Settings object
+    # @param field [Symbol] Field name
+    # @param default [Boolean] Default value if field is not set
+    # @return [Boolean] The boolean value
+    sig { params(settings: ::Config::Options, field: Symbol, default: T::Boolean).returns(T::Boolean) }
+    def boolean_config(settings, field, default)
+      settings.respond_to?(field) && !settings.send(field).nil? ? settings.send(field) : default
     end
   end
 end
