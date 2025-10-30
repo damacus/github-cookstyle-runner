@@ -87,6 +87,7 @@ RSpec.describe 'PR and Issue Creation', :integration do
       before do
         allow(github_client).to receive(:create_issue).and_return(issue_response)
         allow(github_client).to receive(:add_labels_to_an_issue)
+        allow(github_client).to receive(:update_issue)
       end
 
       it 'creates the issue and applies labels' do

@@ -23,6 +23,10 @@ issue_labels:
 default_branch: test-main
 create_manual_fix_issues: true
 
+# Auto-assign configuration for manual fixes
+auto_assign_manual_fixes: true
+copilot_assignee: test-copilot
+
 # Git author configuration
 git_name: Test Cookstyle Runner
 git_email: "test-cookstylerunner@noreply.com"

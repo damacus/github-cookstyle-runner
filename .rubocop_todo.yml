@@ -17,6 +17,7 @@ Metrics/ClassLength:
   Exclude:
     - 'lib/cookstyle_runner.rb'
     - 'lib/cookstyle_runner/cache.rb'
+    - 'lib/cookstyle_runner/github_pr_manager.rb'
     - 'lib/cookstyle_runner/repository_processor.rb'
 
 # Offense count: 4

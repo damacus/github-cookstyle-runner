@@ -25,6 +25,8 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       expect(pr_manager.pr_title).to eq('Test PR: Cookstyle Changes')
       expect(pr_manager.issue_labels).to eq(%w[TestLabel Cookstyle])
       expect(pr_manager.create_manual_fix_issues).to be true
+      expect(pr_manager.auto_assign_manual_fixes).to be true
+      expect(pr_manager.copilot_assignee).to eq('test-copilot')
     end
   end
 
@@ -122,6 +124,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     before do
       allow(github_client).to receive(:create_issue).and_return(issue_response)
       allow(github_client).to receive(:add_labels_to_an_issue)
+      allow(github_client).to receive(:update_issue)
     end
 
     it 'creates an issue successfully' do
@@ -143,6 +146,63 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
         456,
         %w[TestLabel Cookstyle]
       )
+    end
+
+    it 'assigns the issue to the Copilot agent when auto_assign_manual_fixes is true' do
+      pr_manager.create_issue(repository, title, body)
+
+      expect(github_client).to have_received(:update_issue).with(
+        'test-org/test-cookbook',
+        456,
+        assignees: ['test-copilot']
+      )
+    end
+
+    context 'when auto_assign_manual_fixes is false' do
+      let(:custom_settings) do
+        # Create a mock settings object with auto_assign_manual_fixes disabled
+        config = Config::Options.new
+        settings.to_h.each { |k, v| config[k] = v }
+        config.auto_assign_manual_fixes = false
+        config
+      end
+      let(:custom_pr_manager) { described_class.new(custom_settings, github_client) }
+
+      it 'does not assign the issue' do
+        custom_pr_manager.create_issue(repository, title, body)
+
+        expect(github_client).not_to have_received(:update_issue)
+      end
+    end
+
+    context 'when copilot_assignee is empty' do
+      let(:custom_settings) do
+        # Create a mock settings object with empty copilot_assignee
+        config = Config::Options.new
+        settings.to_h.each { |k, v| config[k] = v }
+        config.copilot_assignee = ''
+        config
+      end
+      let(:custom_pr_manager) { described_class.new(custom_settings, github_client) }
+
+      it 'does not assign the issue' do
+        custom_pr_manager.create_issue(repository, title, body)
+
+        expect(github_client).not_to have_received(:update_issue)
+      end
+    end
+
+    context 'when assignment fails' do
+      before do
+        allow(github_client).to receive(:update_issue)
+          .and_raise(StandardError.new('Assignment failed'))
+      end
+
+      it 'still returns true for successful issue creation' do
+        result = pr_manager.create_issue(repository, title, body)
+
+        expect(result).to be true
+      end
     end
 
     context 'when issue creation fails' do
@@ -194,6 +254,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     before do
       allow(github_client).to receive(:create_issue).and_return(issue_response)
       allow(github_client).to receive(:add_labels_to_an_issue)
+      allow(github_client).to receive(:update_issue)
     end
 
     context 'with GitHub HTTPS URL' do

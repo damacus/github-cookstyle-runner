@@ -30,6 +30,12 @@ module CookstyleRunner
     T::Sig::WithoutRuntime.sig { returns(T::Boolean) }
     attr_reader :create_manual_fix_issues
 
+    T::Sig::WithoutRuntime.sig { returns(T::Boolean) }
+    attr_reader :auto_assign_manual_fixes
+
+    T::Sig::WithoutRuntime.sig { returns(String) }
+    attr_reader :copilot_assignee
+
     T::Sig::WithoutRuntime.sig { params(settings: ::Config::Options, github_client: Octokit::Client).void }
     def initialize(settings, github_client)
       @settings = T.let(settings, ::Config::Options)
@@ -39,7 +45,15 @@ module CookstyleRunner
       @branch_name = T.let(settings.branch_name || 'cookstyle-fixes', String)
       @pr_title = T.let(settings.pr_title || 'Automated PR: Cookstyle Changes', String)
       @issue_labels = T.let(settings.issue_labels || [], T::Array[String])
-      @create_manual_fix_issues = T.let(settings.create_manual_fix_issues || true, T::Boolean)
+      @create_manual_fix_issues = T.let(
+        settings.respond_to?(:create_manual_fix_issues) && !settings.create_manual_fix_issues.nil? ? settings.create_manual_fix_issues : true,
+        T::Boolean
+      )
+      @auto_assign_manual_fixes = T.let(
+        settings.respond_to?(:auto_assign_manual_fixes) && !settings.auto_assign_manual_fixes.nil? ? settings.auto_assign_manual_fixes : true,
+        T::Boolean
+      )
+      @copilot_assignee = T.let(settings.copilot_assignee || 'copilot', String)
     end
 
     sig { params(repository: String, base_branch: String, head_branch: String, title: String, body: String).returns(T::Boolean) }
@@ -124,6 +138,20 @@ module CookstyleRunner
           @logger.info('Added labels to issue', payload: {
                          repo: repo_name, issue_number: issue.number, labels: @issue_labels
                        })
+        end
+
+        # Assign the issue to the Copilot agent if auto-assign is enabled
+        if @auto_assign_manual_fixes && @copilot_assignee && !@copilot_assignee.empty?
+          begin
+            @github_client.update_issue(repo_name, issue.number, assignees: [@copilot_assignee])
+            @logger.info('Assigned issue to Copilot agent', payload: {
+                           repo: repo_name, issue_number: issue.number, assignee: @copilot_assignee
+                         })
+          rescue StandardError => e
+            @logger.warn('Failed to assign issue to Copilot agent', exception: e, payload: {
+                           repo: repo_name, issue_number: issue.number, assignee: @copilot_assignee
+                         })
+          end
         end
 
         @logger.info('Issue created successfully', payload: {

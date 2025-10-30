@@ -24,6 +24,10 @@ issue_labels:
 default_branch: main
 create_manual_fix_issues: true
 
+# Auto-assign configuration for manual fixes
+auto_assign_manual_fixes: true # Automatically assign manual fix issues to a Copilot agent
+copilot_assignee: copilot # GitHub username to assign manual fix issues to
+
 # Git author configuration
 git_name: Cookstyle Runner
 git_email: cookstyle-runner@example.com

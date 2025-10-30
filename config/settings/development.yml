@@ -19,6 +19,8 @@ branch_name: cookstyle/fixes
 
 pr_title: "Cookstyle Fixes"
 create_manual_fix_issues: false
+auto_assign_manual_fixes: false
+copilot_assignee: copilot
 default_branch: main
 cache_max_age: 7
 force_refresh: true
