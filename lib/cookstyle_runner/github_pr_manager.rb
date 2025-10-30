@@ -135,6 +135,7 @@ module CookstyleRunner
         end
 
         # Assign the issue to the Copilot agent if auto-assign is enabled
+        # Check for both nil and empty since copilot_assignee is optional
         if @auto_assign_manual_fixes && @copilot_assignee && !@copilot_assignee.empty?
           begin
             @github_client.update_issue(repo_name, issue.number, assignees: [@copilot_assignee])

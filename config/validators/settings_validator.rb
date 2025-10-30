@@ -24,7 +24,7 @@ module CookstyleRunner
       optional(:issue_labels).array(:string)
       required(:create_manual_fix_issues).filled(:bool)
       required(:auto_assign_manual_fixes).filled(:bool)
-      required(:copilot_assignee).filled(:string)
+      optional(:copilot_assignee).filled(:string)
 
       # Cache settings
       required(:cache_max_age).filled(:integer) { gt?(0) }
