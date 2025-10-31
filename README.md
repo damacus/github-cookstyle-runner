@@ -125,9 +125,11 @@ For detailed logging configuration, see [Logging Documentation](docs/logging.md)
 
 ### Pull Request Configuration
 
-| Name                     | Type      | Required | Description                                                                                                      |
-|--------------------------|-----------|----------|------------------------------------------------------------------------------------------------------------------|
-| GCR_CREATE_MANUAL_FIX_PRS | `Boolean` | No       | Create PRs for issues that require manual fixes (default: disabled, set to `1` to enable)                         |
+| Name                          | Type      | Required | Description                                                                                                      |
+|-------------------------------|-----------|----------|------------------------------------------------------------------------------------------------------------------|
+| GCR_CREATE_MANUAL_FIX_ISSUES  | `Boolean` | No       | Create issues for violations that require manual fixes (default: enabled, set to `0` to disable)                |
+| GCR_AUTO_ASSIGN_MANUAL_FIXES  | `Boolean` | No       | Automatically assign manual fix issues to a Copilot agent (default: enabled, set to `0` to disable)            |
+| GCR_COPILOT_ASSIGNEE          | `String`  | No       | GitHub username to assign manual fix issues to (default: `copilot`)                                            |
 
 ## Git Authentication
 

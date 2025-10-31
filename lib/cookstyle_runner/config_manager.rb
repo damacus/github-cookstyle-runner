@@ -78,7 +78,9 @@ module CookstyleRunner
         processing: {
           retry_count: settings.retry_count || 3,
           filter_repos: settings.filter_repos || [],
-          create_manual_fix_issues: settings.create_manual_fix_issues || true
+          create_manual_fix_issues: settings.create_manual_fix_issues || true,
+          auto_assign_manual_fixes: settings.auto_assign_manual_fixes || true,
+          copilot_assignee: settings.copilot_assignee || 'copilot'
         }
       }
     end

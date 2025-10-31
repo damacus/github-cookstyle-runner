@@ -55,6 +55,8 @@ module CookstyleRunner
           required(:pr_title).filled(:string)
           optional(:issue_labels).array(:string)
           required(:create_manual_fix_issues).filled(:bool)
+          required(:auto_assign_manual_fixes).filled(:bool)
+          optional(:copilot_assignee).filled(:string)
 
           # GitHub auth settings
           optional(:git_name).filled(:string)

@@ -19,6 +19,8 @@ RSpec.describe CookstyleRunner::SettingsValidator do
       use_cache: true,
       force_refresh: false,
       create_manual_fix_issues: true,
+      auto_assign_manual_fixes: true,
+      copilot_assignee: 'copilot',
       branch_name: 'cookstyle-fixes',
       pr_title: 'Automated Cookstyle Fixes',
       default_branch: 'main',
