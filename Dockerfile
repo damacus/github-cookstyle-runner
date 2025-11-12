@@ -1,4 +1,4 @@
-FROM ruby:3.4-slim@sha256:c1734f5d0a502ece7f35658c30168fe85777e21531d7c800386f1514f5207ac8
+FROM ruby:3.4-slim@sha256:2de50c072bed1bdaf5e6b6c132fb2bc56f03700046ad95a515b4111203bf5034
 
 LABEL maintainer="Damacus <me@damacus.io>"
 LABEL org.label-schema.schema-version="1.0"
