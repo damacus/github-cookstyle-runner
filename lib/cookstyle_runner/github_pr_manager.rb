@@ -2,6 +2,8 @@
 # typed: true
 
 require 'sorbet-runtime'
+require_relative 'github_label_helper'
+require_relative 'github_pr_helper'
 
 module CookstyleRunner
   # GitHub PR Manager for creating pull requests and issues
@@ -75,28 +77,14 @@ module CookstyleRunner
           )
 
           # Update labels for existing PR (only add new ones)
-          if @issue_labels && !@issue_labels.empty?
-            existing_labels = @github_client.labels_for_issue(repo_name, existing_pr.number).map(&:name)
-            new_labels = @issue_labels - existing_labels
-            if new_labels.any?
-              @github_client.add_labels_to_an_issue(repo_name, pr.number, new_labels)
-              @logger.info('Added labels to pull request', payload: {
-                             repo: repo_name, pr_number: pr.number, labels: new_labels
-                           })
-            end
-          end
+          GitHubLabelHelper.update_pr_labels(@github_client, repo_name, pr.number, @issue_labels, @logger) if @issue_labels && !@issue_labels.empty?
         else
           # Use the GitHub client to create a PR
           # Octokit signature: create_pull_request(repo, base, head, title, body)
           pr = @github_client.create_pull_request(repo_name, base_branch, head_branch, title, body)
 
           # Apply labels to new PR
-          if @issue_labels && !@issue_labels.empty?
-            @github_client.add_labels_to_an_issue(repo_name, pr.number, @issue_labels)
-            @logger.info('Added labels to pull request', payload: {
-                           repo: repo_name, pr_number: pr.number, labels: @issue_labels
-                         })
-          end
+          GitHubLabelHelper.add_labels_safely(@github_client, repo_name, pr.number, @issue_labels, @logger) if @issue_labels && !@issue_labels.empty?
         end
 
         @logger.info('Pull request created successfully', payload: {
@@ -127,12 +115,7 @@ module CookstyleRunner
         )
 
         # Apply labels if they exist
-        if @issue_labels && !@issue_labels.empty?
-          @github_client.add_labels_to_an_issue(repo_name, issue.number, @issue_labels)
-          @logger.info('Added labels to issue', payload: {
-                         repo: repo_name, issue_number: issue.number, labels: @issue_labels
-                       })
-        end
+        GitHubLabelHelper.add_labels_safely(@github_client, repo_name, issue.number, @issue_labels, @logger) if @issue_labels && !@issue_labels.empty?
 
         # Assign the issue to the Copilot agent if auto-assign is enabled
         # Check for both nil and empty since copilot_assignee is optional
@@ -164,11 +147,7 @@ module CookstyleRunner
     # Find an existing PR for a branch
     sig { params(repo_name: String, branch_name: String).returns(T.nilable(Sawyer::Resource)) }
     def find_existing_pr(repo_name, branch_name)
-      prs = @github_client.pull_requests(repo_name, state: 'open')
-      prs.find { |pr| pr.head.ref == branch_name }
-    rescue StandardError => e
-      @logger.error('Error finding existing pull request', exception: e, payload: { repo: repo_name })
-      nil
+      GitHubPRHelper.find_existing_pr(@github_client, repo_name, branch_name, @logger)
     end
 
     # Extract the repository name from a full repository URL or path

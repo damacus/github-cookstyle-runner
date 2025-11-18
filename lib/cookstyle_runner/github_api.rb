@@ -4,6 +4,8 @@
 require 'octokit'
 require 'semantic_logger'
 require_relative 'authentication'
+require_relative 'github_label_helper'
+require_relative 'github_pr_helper'
 
 module CookstyleRunner
   # Module for GitHub API operations
@@ -40,11 +42,7 @@ module CookstyleRunner
     # Find an existing PR for a branch
     sig { params(repo_full_name: String, branch_name: String).returns(T.nilable(Sawyer::Resource)) }
     def self.find_existing_pr(repo_full_name, branch_name)
-      prs = Authentication.client.pull_requests(repo_full_name, state: 'open')
-      prs.find { |pr| pr.head.ref == branch_name }
-    rescue StandardError => e
-      log.error('Error finding existing PR', payload: { repo: repo_full_name, branch: branch_name, error: e.message, operation: 'find_pr' })
-      nil
+      GitHubPRHelper.find_existing_pr(Authentication.client, repo_full_name, branch_name, log)
     end
 
     # Create or update a pull request
@@ -63,11 +61,7 @@ module CookstyleRunner
           title: title,
           body: body
         )
-        if labels.any?
-          existing_labels = Authentication.client.labels_for_issue(repo_full_name, existing_pr.number).map(&:name)
-          new_labels = labels - existing_labels
-          Authentication.client.add_labels_to_an_issue(repo_full_name, existing_pr.number, new_labels) if new_labels.any?
-        end
+        GitHubLabelHelper.update_pr_labels(Authentication.client, repo_full_name, existing_pr.number, labels, log)
       else
         log.info('Creating new PR', payload: { repo: repo_full_name, branch: branch_name, operation: 'create_pr' })
         pr = Authentication.client.create_pull_request(
@@ -79,7 +73,7 @@ module CookstyleRunner
         )
 
         # Add labels if specified
-        Authentication.client.add_labels_to_an_issue(repo_full_name, pr.number, labels) if labels.any?
+        GitHubLabelHelper.add_labels_safely(Authentication.client, repo_full_name, pr.number, labels, log)
       end
       pr
     rescue StandardError => e
