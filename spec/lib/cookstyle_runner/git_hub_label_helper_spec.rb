@@ -25,7 +25,7 @@ RSpec.describe CookstyleRunner::GitHubLabelHelper do
 
       it 'returns true without calling the API' do
         result = described_class.add_labels_safely(client, repo_name, issue_number, [], logger)
-        
+
         expect(result).to be true
         expect(client).not_to have_received(:labels_for_issue)
       end
@@ -39,7 +39,7 @@ RSpec.describe CookstyleRunner::GitHubLabelHelper do
 
       it 'adds new labels successfully' do
         result = described_class.add_labels_safely(client, repo_name, issue_number, labels, logger)
-        
+
         expect(result).to be true
         expect(client).to have_received(:labels_for_issue).with(repo_name, issue_number)
         expect(client).to have_received(:add_labels_to_an_issue).with(repo_name, issue_number, labels)
@@ -47,7 +47,7 @@ RSpec.describe CookstyleRunner::GitHubLabelHelper do
     end
 
     context 'when some labels already exist' do
-      let(:existing_label) { double('Label', name: 'bug') }
+      let(:existing_label) { Struct.new(:name).new('bug') }
 
       before do
         allow(client).to receive(:labels_for_issue).and_return([existing_label])
@@ -56,7 +56,7 @@ RSpec.describe CookstyleRunner::GitHubLabelHelper do
 
       it 'only adds new labels' do
         result = described_class.add_labels_safely(client, repo_name, issue_number, labels, logger)
-        
+
         expect(result).to be true
         expect(client).to have_received(:add_labels_to_an_issue).with(repo_name, issue_number, ['enhancement'])
       end
@@ -69,7 +69,7 @@ RSpec.describe CookstyleRunner::GitHubLabelHelper do
 
       it 'returns false and logs error' do
         result = described_class.add_labels_safely(client, repo_name, issue_number, labels, logger)
-        
+
         expect(result).to be false
         expect(logger).to have_received(:error)
       end
@@ -82,7 +82,7 @@ RSpec.describe CookstyleRunner::GitHubLabelHelper do
       allow(client).to receive(:add_labels_to_an_issue)
 
       result = described_class.update_pr_labels(client, repo_name, issue_number, labels, logger)
-      
+
       expect(result).to be true
     end
   end

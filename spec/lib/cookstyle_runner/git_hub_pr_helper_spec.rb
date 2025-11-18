@@ -15,31 +15,33 @@ RSpec.describe CookstyleRunner::GitHubPRHelper do
   end
 
   describe '.find_existing_pr' do
-    let(:pr1) { double('PR', head: double(ref: 'main-branch')) }
-    let(:pr2) { double('PR', head: double(ref: 'feature-branch')) }
-    let(:pr3) { double('PR', head: double(ref: 'another-branch')) }
+    let(:pr_head_struct) { Struct.new(:ref) }
+    let(:pr_struct) { Struct.new(:head) }
+    let(:main_branch_pr) { pr_struct.new(pr_head_struct.new('main-branch')) }
+    let(:feature_branch_pr) { pr_struct.new(pr_head_struct.new('feature-branch')) }
+    let(:another_branch_pr) { pr_struct.new(pr_head_struct.new('another-branch')) }
 
     context 'when a matching PR exists' do
       before do
-        allow(client).to receive(:pull_requests).and_return([pr1, pr2, pr3])
+        allow(client).to receive(:pull_requests).and_return([main_branch_pr, feature_branch_pr, another_branch_pr])
       end
 
       it 'returns the matching PR' do
         result = described_class.find_existing_pr(client, repo_name, branch_name, logger)
-        
-        expect(result).to eq(pr2)
+
+        expect(result).to eq(feature_branch_pr)
         expect(client).to have_received(:pull_requests).with(repo_name, state: 'open')
       end
     end
 
     context 'when no matching PR exists' do
       before do
-        allow(client).to receive(:pull_requests).and_return([pr1, pr3])
+        allow(client).to receive(:pull_requests).and_return([main_branch_pr, another_branch_pr])
       end
 
       it 'returns nil' do
         result = described_class.find_existing_pr(client, repo_name, branch_name, logger)
-        
+
         expect(result).to be_nil
       end
     end
@@ -51,7 +53,7 @@ RSpec.describe CookstyleRunner::GitHubPRHelper do
 
       it 'returns nil' do
         result = described_class.find_existing_pr(client, repo_name, branch_name, logger)
-        
+
         expect(result).to be_nil
       end
     end
@@ -63,13 +65,13 @@ RSpec.describe CookstyleRunner::GitHubPRHelper do
 
       it 'returns nil and logs error' do
         result = described_class.find_existing_pr(client, repo_name, branch_name, logger)
-        
+
         expect(result).to be_nil
         expect(logger).to have_received(:error).with('Error finding existing pull request', payload: {
-                                                        repo: repo_name,
-                                                        branch: branch_name,
-                                                        error: 'API error'
-                                                      })
+                                                       repo: repo_name,
+                                                       branch: branch_name,
+                                                       error: 'API error'
+                                                     })
       end
     end
 
@@ -80,7 +82,7 @@ RSpec.describe CookstyleRunner::GitHubPRHelper do
 
       it 'handles error gracefully without logger' do
         result = described_class.find_existing_pr(client, repo_name, branch_name, nil)
-        
+
         expect(result).to be_nil
       end
     end
