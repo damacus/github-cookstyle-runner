@@ -28,7 +28,7 @@ module CookstyleRunner
         repo_name: String,
         branch_name: String,
         logger: T.nilable(T.any(SemanticLogger::Logger, Object))
-      ).returns(T.nilable(Sawyer::Resource))
+      ).returns(T.nilable(T.any(Sawyer::Resource, Object)))
     end
     def self.find_existing_pr(client, repo_name, branch_name, logger = nil)
       prs = client.pull_requests(repo_name, state: 'open')
