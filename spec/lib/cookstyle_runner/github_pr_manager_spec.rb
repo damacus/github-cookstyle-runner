@@ -42,6 +42,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
       allow(github_client).to receive_messages(
         pull_requests: [],
         create_pull_request: pr_response,
+        labels_for_issue: [],
         add_labels_to_an_issue: nil
       )
     end
@@ -122,7 +123,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     let(:issue_response) { double('Issue', number: 456) }
 
     before do
-      allow(github_client).to receive(:create_issue).and_return(issue_response)
+      allow(github_client).to receive_messages(create_issue: issue_response, labels_for_issue: [])
       allow(github_client).to receive(:add_labels_to_an_issue)
       allow(github_client).to receive(:update_issue)
     end
@@ -252,7 +253,7 @@ RSpec.describe CookstyleRunner::GitHubPRManager do
     let(:issue_response) { double('Issue', number: 1) }
 
     before do
-      allow(github_client).to receive(:create_issue).and_return(issue_response)
+      allow(github_client).to receive_messages(create_issue: issue_response, labels_for_issue: [])
       allow(github_client).to receive(:add_labels_to_an_issue)
       allow(github_client).to receive(:update_issue)
     end
