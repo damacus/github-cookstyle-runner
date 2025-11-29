@@ -13,6 +13,49 @@
 
 * Updated `tty-progressbar` dependency to support `table_tennis`
 
+## [0.1.3](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.2...github-cookstyle-runner/v0.1.3) (2025-11-29)
+
+
+### Chores
+
+* **ci:** source renovate-config for auto-merging GitHub Actions ([#159](https://github.com/damacus/github-cookstyle-runner/issues/159)) ([016324c](https://github.com/damacus/github-cookstyle-runner/commit/016324c814babe41e0eb62f42d26e56727d63d52))
+* **deps:** update actions/checkout action to v6 ([#158](https://github.com/damacus/github-cookstyle-runner/issues/158)) ([2fd9df9](https://github.com/damacus/github-cookstyle-runner/commit/2fd9df92af2db9d96efc1d151c0acddc6c23a988))
+* **deps:** update actions/upload-artifact action to v5 ([#135](https://github.com/damacus/github-cookstyle-runner/issues/135)) ([120a62f](https://github.com/damacus/github-cookstyle-runner/commit/120a62f6fff5f747d036c3e0cd769e94ec7cf1e4))
+* **deps:** update dependency cookstyle to v8.5.2 ([#139](https://github.com/damacus/github-cookstyle-runner/issues/139)) ([b4707f8](https://github.com/damacus/github-cookstyle-runner/commit/b4707f81ca889158d435389e20297083dd0f514c))
+* **deps:** update dependency git to v4.0.6 ([#153](https://github.com/damacus/github-cookstyle-runner/issues/153)) ([d13fb4d](https://github.com/damacus/github-cookstyle-runner/commit/d13fb4dfea74a4600875b983e97e099dbae18883))
+* **deps:** update dependency json to v2.15.2 ([#136](https://github.com/damacus/github-cookstyle-runner/issues/136)) ([1e3d372](https://github.com/damacus/github-cookstyle-runner/commit/1e3d372f7020039e900dab0c1ebef456424611e5))
+* **deps:** update dependency json to v2.16.0 ([#152](https://github.com/damacus/github-cookstyle-runner/issues/152)) ([92e1397](https://github.com/damacus/github-cookstyle-runner/commit/92e139724de16e4f36423f0d205740b86481ded5))
+* **deps:** update dependency rspec to v3.13.2 ([#130](https://github.com/damacus/github-cookstyle-runner/issues/130)) ([b0abffe](https://github.com/damacus/github-cookstyle-runner/commit/b0abffe50af308f7a26abf737ff82205471abdc2))
+* **deps:** update dependency rubocop to v1.81.6 ([#137](https://github.com/damacus/github-cookstyle-runner/issues/137)) ([421204c](https://github.com/damacus/github-cookstyle-runner/commit/421204c8426a5a4ad5fdeca8a3dc1f13676edc23))
+* **deps:** update dependency rubocop-rspec to v3.8.0 ([#154](https://github.com/damacus/github-cookstyle-runner/issues/154)) ([0569bda](https://github.com/damacus/github-cookstyle-runner/commit/0569bda2cb273e9b233691ba92d0730568409411))
+* **deps:** update dependency sorbet to v0.6.12650 ([#124](https://github.com/damacus/github-cookstyle-runner/issues/124)) ([81f5c99](https://github.com/damacus/github-cookstyle-runner/commit/81f5c99260267912aadbee94c23f11c78d31e13b))
+* **deps:** update dependency sorbet to v0.6.12683 ([#131](https://github.com/damacus/github-cookstyle-runner/issues/131)) ([754ed96](https://github.com/damacus/github-cookstyle-runner/commit/754ed96e1a0da764848e46cea76c1c3dc345159b))
+* **deps:** update dependency sorbet to v0.6.12783 ([#146](https://github.com/damacus/github-cookstyle-runner/issues/146)) ([b0a6a51](https://github.com/damacus/github-cookstyle-runner/commit/b0a6a5158b9d35e1351dffde9b44a773c95c0f30))
+* **deps:** update dependency sorbet-runtime to v0.6.12650 ([#125](https://github.com/damacus/github-cookstyle-runner/issues/125)) ([c7599e9](https://github.com/damacus/github-cookstyle-runner/commit/c7599e92df3d0798aa945e98ae2e1acdcbc695f9))
+* **deps:** update dependency sorbet-runtime to v0.6.12683 ([#132](https://github.com/damacus/github-cookstyle-runner/issues/132)) ([a8cba8a](https://github.com/damacus/github-cookstyle-runner/commit/a8cba8a1b5cd3dfc7338cd6e6693bcdcbbbcd946))
+* **deps:** update dependency tapioca to v0.17.7 ([#126](https://github.com/damacus/github-cookstyle-runner/issues/126)) ([e874928](https://github.com/damacus/github-cookstyle-runner/commit/e87492868214043f315dac2b597c2b1b4ca816bc))
+* **deps:** update dependency tapioca to v0.17.8 ([#128](https://github.com/damacus/github-cookstyle-runner/issues/128)) ([66883ea](https://github.com/damacus/github-cookstyle-runner/commit/66883eaee93c2d551f3c0bda77a99762192256bb))
+* **deps:** update dependency tapioca to v0.17.8 ([#133](https://github.com/damacus/github-cookstyle-runner/issues/133)) ([0201e74](https://github.com/damacus/github-cookstyle-runner/commit/0201e743feabafba987db42a28e68af7c09f3dd1))
+* **deps:** update dependency tapioca to v0.17.9 ([#140](https://github.com/damacus/github-cookstyle-runner/issues/140)) ([47b4415](https://github.com/damacus/github-cookstyle-runner/commit/47b44150ea59430d22c98d48d002389a98c8ba0d))
+* **deps:** update dependency webmock to v3.26.1 ([#138](https://github.com/damacus/github-cookstyle-runner/issues/138)) ([b0d6d35](https://github.com/damacus/github-cookstyle-runner/commit/b0d6d3527a3e994d49e8e4be3fd76e3130eeb460))
+* **deps:** update docker/metadata-action digest to 318604b ([#149](https://github.com/damacus/github-cookstyle-runner/issues/149)) ([d2ca3e7](https://github.com/damacus/github-cookstyle-runner/commit/d2ca3e74c123e4220da62c7ffec2efb015ae663c))
+* **deps:** update docker/setup-qemu-action digest to c7c5346 ([#151](https://github.com/damacus/github-cookstyle-runner/issues/151)) ([a96702a](https://github.com/damacus/github-cookstyle-runner/commit/a96702ab28d576965f8bc5a41ea0a7d8b08e88c7))
+* **deps:** update googleapis/release-please-action digest to 16a9c90 ([#134](https://github.com/damacus/github-cookstyle-runner/issues/134)) ([50584c2](https://github.com/damacus/github-cookstyle-runner/commit/50584c224e58d2e1db6a3657708705f20caa81b5))
+* **deps:** update ruby:3.4-slim docker digest to c1734f5 ([#129](https://github.com/damacus/github-cookstyle-runner/issues/129)) ([91a1195](https://github.com/damacus/github-cookstyle-runner/commit/91a119575ec032dfb6422f407f33478e3cf30dfa))
+* **deps:** update ruby:3.4-slim docker digest to c1bc8f6 ([#148](https://github.com/damacus/github-cookstyle-runner/issues/148)) ([b515299](https://github.com/damacus/github-cookstyle-runner/commit/b5152996d66ab04621e59933f18f57a4562ea798))
+
+
+### Bug Fixes
+
+* Add automatic Copilot agent assignment for manual fix issues ([#142](https://github.com/damacus/github-cookstyle-runner/issues/142)) ([f4ad5af](https://github.com/damacus/github-cookstyle-runner/commit/f4ad5afb32fb2e1151a5049b9976bb2997766e89))
+* duplicate YAML key in .markdownlint-cli2.yaml ([#150](https://github.com/damacus/github-cookstyle-runner/issues/150)) ([02d2d8c](https://github.com/damacus/github-cookstyle-runner/commit/02d2d8c2741e4428cffb3153deccc184332a6817))
+* Relax markdown linting configuration ([#144](https://github.com/damacus/github-cookstyle-runner/issues/144)) ([40260a5](https://github.com/damacus/github-cookstyle-runner/commit/40260a57509d4def323ae71f2abc095c37d0658c))
+
+
+### Code Refactoring
+
+* Extract common GitHub operations into reusable helpers ([#157](https://github.com/damacus/github-cookstyle-runner/issues/157)) ([831ed93](https://github.com/damacus/github-cookstyle-runner/commit/831ed9315a3779ab249462ef22f50b870737c4f2))
+
 ## [0.1.2](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.1...github-cookstyle-runner/v0.1.2) (2025-10-13)
 
 
