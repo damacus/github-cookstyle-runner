@@ -90,8 +90,8 @@ This project uses Sorbet for type safety:
 # Run type checker
 bundle exec srb tc
 
-# Update RBI files
-bundle exec tapioca gem
+# Update RBI files for gems
+bundle exec tapioca gems
 ```
 
 **Type requirements**:
@@ -109,6 +109,7 @@ This project uses SemanticLogger for structured logging:
 **Logger Initialization**:
 
 - Use class-based logger names: `@logger = SemanticLogger[self.class]`
+- In a class named `RepositoryProcessor`, this becomes `@logger = SemanticLogger[RepositoryProcessor]`
 - This automatically includes the class name in all log entries
 
 **Log Levels**:
