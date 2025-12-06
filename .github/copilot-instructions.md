@@ -77,11 +77,10 @@ markdownlint-cli2 "**/*.md"
 
 ### Coding Standards
 
-- Use Sorbet for type checking (see `sorbet/` directory)
 - Follow module-based organization under `lib/cookstyle_runner/`
 - Use descriptive method and variable names
 - Add comments for complex logic, but prefer self-documenting code
-- Use `# frozen_string_literal: true` at the top of all Ruby files
+- See Type Checking section below for Sorbet requirements
 
 ### Type Checking
 
