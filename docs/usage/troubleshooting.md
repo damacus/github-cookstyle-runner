@@ -12,12 +12,11 @@ Common issues and their solutions.
 
 **Causes**:
 
-- Invalid GitHub App ID
-- Invalid Installation ID
-- Invalid or expired private key
-- App not installed on organization
+- **GitHub App**: Invalid App ID, Installation ID, or private key
+- **PAT**: Invalid or expired token
+- App not installed on organization (GitHub App only)
 
-**Solutions**:
+**Solutions for GitHub App**:
 
 1. Verify GitHub App credentials:
 
@@ -31,14 +30,31 @@ echo "$GITHUB_APP_PRIVATE_KEY" | head -1
 # Should output: -----BEGIN RSA PRIVATE KEY-----
 ```
 
-1. Verify App installation:
+2. Verify App installation:
    - Go to GitHub → Settings → GitHub Apps
    - Check that the app is installed on your organization
    - Verify the Installation ID matches
 
-1. Generate new private key:
+3. Generate new private key:
    - GitHub App settings → Generate new private key
    - Update `GITHUB_APP_PRIVATE_KEY` environment variable
+
+**Solutions for Personal Access Token**:
+
+1. Verify token is valid:
+
+```bash
+# Check token format (should start with ghp_ or github_pat_)
+echo $GITHUB_TOKEN | cut -c1-10
+```
+
+2. Check token hasn't expired:
+   - Go to GitHub → Settings → Developer settings → Personal access tokens
+   - Verify expiration date
+
+3. Verify required scopes:
+   - Token needs `repo` and `read:org` scopes
+   - Regenerate token with correct scopes if needed
 
 ### Symptom: 403 Forbidden
 
@@ -83,13 +99,22 @@ GCR_CACHE_MAX_AGE=7
 
 **Solution**:
 
-Ensure all required environment variables are set:
+Ensure all required environment variables are set. You must provide either GitHub App credentials OR a Personal Access Token:
 
+**Option 1: GitHub App (Recommended)**
 ```bash
-# Required variables
 GITHUB_APP_ID=123456
 GITHUB_APP_INSTALLATION_ID=789012
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----..."
+GCR_DESTINATION_REPO_OWNER=my-org
+GCR_DESTINATION_REPO_TOPICS=chef-cookbook
+GCR_GIT_EMAIL=bot@example.com
+GCR_GIT_NAME=Cookstyle Bot
+```
+
+**Option 2: Personal Access Token**
+```bash
+GITHUB_TOKEN=ghp_YourPersonalAccessToken
 GCR_DESTINATION_REPO_OWNER=my-org
 GCR_DESTINATION_REPO_TOPICS=chef-cookbook
 GCR_GIT_EMAIL=bot@example.com

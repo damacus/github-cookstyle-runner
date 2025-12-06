@@ -62,9 +62,14 @@ For detailed installation instructions including Kubernetes (CronJob) and docker
 
 ## User Permissions
 
-- It is recommended to use a github bot account when using this application
-- You must ensure the account has permissions to create branches and pull requests directly on the repository, it will not try to fork.
-- You must supply GitHub App credentials (GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY) to access the GitHub API.
+- It is recommended to use a GitHub App for authentication (see [Authentication Guide](https://damacus.github.io/github-cookstyle-runner/configuration/authentication/))
+- Alternatively, you can use a GitHub bot account with a Personal Access Token
+- You must ensure the account/app has permissions to create branches and pull requests directly on the repository, it will not try to fork.
+- You must supply either:
+  - GitHub App credentials (`GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, `GITHUB_APP_PRIVATE_KEY`), or
+  - A Personal Access Token (`GITHUB_TOKEN`)
+
+See the [Authentication Guide](https://damacus.github.io/github-cookstyle-runner/configuration/authentication/) for detailed setup instructions.
 
 ## Items of Note
 
@@ -82,9 +87,29 @@ Below are a list of variables, what they mean and example values
 | GCR_DESTINATION_REPO_TOPICS | `String` | Yes      | The topics that the destination repositories are tagged with to search for, Takes a csv, eg: `chef-cookbook,vscode`                                                           |
 | GCR_GIT_EMAIL               | `String` | Yes      | The E-mail address to use when creating the git commits                                                                                                                       |
 | GCR_GIT_NAME                | `String` | Yes      | The Name to use when creating the git commits                                                                                                                                 |
-| GITHUB_APP_ID               | `String` | Yes      | The GitHub App ID for authentication |
-| GITHUB_APP_INSTALLATION_ID  | `String` | Yes      | The installation ID for the GitHub App |
-| GITHUB_APP_PRIVATE_KEY      | `String` | Yes      | The PEM-encoded private key for the GitHub App |
+
+### Authentication (Choose One Method)
+
+**GitHub App Authentication (Recommended)**
+
+| Name                        | Type     | Required | Description                                                                 |
+|-----------------------------|----------|----------|-----------------------------------------------------------------------------|
+| GITHUB_APP_ID               | `String` | Yes*     | The GitHub App ID for authentication                                         |
+| GITHUB_APP_INSTALLATION_ID  | `String` | Yes*     | The installation ID for the GitHub App                                       |
+| GITHUB_APP_PRIVATE_KEY      | `String` | Yes*     | The PEM-encoded private key for the GitHub App                               |
+
+**OR Personal Access Token Authentication**
+
+| Name          | Type     | Required | Description                                                   |
+|---------------|----------|----------|---------------------------------------------------------------|
+| GITHUB_TOKEN  | `String` | Yes*     | A GitHub Personal Access Token with `repo` and `read:org` scopes |
+
+*You must provide either GitHub App credentials or a Personal Access Token. See the [Authentication Guide](https://damacus.github.io/github-cookstyle-runner/configuration/authentication/) for detailed setup instructions.
+
+### Optional Configuration
+
+| Name                     | Type     | Required | Description                                                                                                                                                                   |
+|--------------------------|----------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | GCR_BRANCH_NAME             | `String` | No       | The name of the branch to create if changes are required, defaults to `automated/cookstyle`                                                                                   |
 | GCR_DEFAULT_GIT_BRANCH      | `String` | No       | The name of the default branch, if not set this will default to `main`                                                                                                        |
 | GCR_PULL_REQUEST_LABELS     | `String` | No       | The labels to apply to the Pull Request, Takes a csv, eg: `tech-debt,automated`, defaults to no labels                                                                        |
@@ -131,9 +156,14 @@ For detailed logging configuration, see [Logging Documentation](docs/logging.md)
 | GCR_AUTO_ASSIGN_MANUAL_FIXES  | `Boolean` | No       | Automatically assign manual fix issues to a Copilot agent (default: enabled, set to `0` to disable)            |
 | GCR_COPILOT_ASSIGNEE          | `String`  | No       | GitHub username to assign manual fix issues to (default: `copilot`)                                            |
 
-## Git Authentication
+## Authentication
 
-We use the `GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID` and `GITHUB_APP_PRIVATE_KEY` environment variables to authenticate against git, github allows this to be used instead of username and password
+The application supports two authentication methods:
+
+- **GitHub App Authentication (Recommended)**: Uses `GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, and `GITHUB_APP_PRIVATE_KEY` for secure, scoped access
+- **Personal Access Token**: Uses `GITHUB_TOKEN` for simpler setup (development/testing)
+
+Both methods provide authenticated access to GitHub's API and Git operations. See the [Authentication Guide](https://damacus.github.io/github-cookstyle-runner/configuration/authentication/) for detailed setup instructions.
 
 ## Docker Tags
 
@@ -205,13 +235,22 @@ The application supports flexible repository filtering options:
 
 ## Usage Examples
 
-### Basic Usage
+### Basic Usage (GitHub App)
 
 ```bash
 docker run --rm \
   -e GITHUB_APP_ID="your-github-app-id" \
   -e GITHUB_APP_INSTALLATION_ID="your-installation-id" \
   -e GITHUB_APP_PRIVATE_KEY="$(cat /path/to/private-key.pem)" \
+  -v /tmp/cookstyle-runner:/tmp/cookstyle-runner \
+  cookstyle-runner:latest
+```
+
+### Basic Usage (Personal Access Token)
+
+```bash
+docker run --rm \
+  -e GITHUB_TOKEN="your-personal-access-token" \
   -v /tmp/cookstyle-runner:/tmp/cookstyle-runner \
   cookstyle-runner:latest
 ```
