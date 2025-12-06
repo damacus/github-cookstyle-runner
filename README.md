@@ -114,7 +114,7 @@ Below are a list of variables, what they mean and example values
 | GCR_DEFAULT_GIT_BRANCH      | `String` | No       | The name of the default branch, if not set this will default to `main`                                                                                                        |
 | GCR_PULL_REQUEST_LABELS     | `String` | No       | The labels to apply to the Pull Request, Takes a csv, eg: `tech-debt,automated`, defaults to no labels                                                                        |
 | GCR_PULL_REQUEST_TITLE      | `String` | No       | The title to apply to the Pull Request, defaults to `Automated PR: Cookstyle Changes`                                                                                         |
-| GITHUB_API_ROOT             | `String` | No       | Where the api root is for github, defaults to api.github.com (Useful for enterprise users)                                                                                    |
+| GITHUB_API_ENDPOINT         | `String` | No       | The GitHub API endpoint URL, defaults to https://api.github.com (Useful for GitHub Enterprise users)                                                                          |
 
 ### Caching Configuration
 

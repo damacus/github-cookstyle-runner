@@ -59,13 +59,13 @@ Personal Access Token authentication is simpler to set up but less secure and ha
     - GitHub Apps provide more granular permission control
     - Consider using GitHub Apps for production deployments
 
-### GITHUB_API_ROOT
+### GITHUB_API_ENDPOINT
 
 - **Type**: String (URL)
 - **Required**: No
-- **Default**: `api.github.com`
-- **Description**: The GitHub API root URL (useful for GitHub Enterprise)
-- **Example**: `github.company.com/api/v3`
+- **Default**: `https://api.github.com`
+- **Description**: The GitHub API endpoint URL (useful for GitHub Enterprise)
+- **Example**: `https://github.company.com/api/v3`
 
 ## Repository Configuration
 

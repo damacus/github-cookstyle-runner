@@ -160,14 +160,14 @@ You cannot use both methods simultaneously. If both are configured, GitHub App a
 
 ## GitHub Enterprise
 
-Both authentication methods work with GitHub Enterprise Server. Set the `GITHUB_API_ROOT` environment variable:
+Both authentication methods work with GitHub Enterprise Server. Set the `GITHUB_API_ENDPOINT` environment variable:
 
 ```bash
 # For GitHub Enterprise
-GITHUB_API_ROOT=github.company.com/api/v3
+GITHUB_API_ENDPOINT=https://github.company.com/api/v3
 
 # For GitHub.com (default, no need to set)
-GITHUB_API_ROOT=api.github.com
+GITHUB_API_ENDPOINT=https://api.github.com
 ```
 
 ## Troubleshooting
