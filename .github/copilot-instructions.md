@@ -77,11 +77,54 @@ markdownlint-cli2 "**/*.md"
 
 ### Coding Standards
 
-- Use Sorbet for type checking (see `sorbet/` directory)
 - Follow module-based organization under `lib/cookstyle_runner/`
 - Use descriptive method and variable names
 - Add comments for complex logic, but prefer self-documenting code
-- Use `# frozen_string_literal: true` at the top of all Ruby files
+- See Type Checking section below for Sorbet requirements
+
+### Type Checking
+
+This project uses Sorbet for type safety:
+
+```bash
+# Run type checker
+bundle exec srb tc
+
+# Update RBI files for gems
+bundle exec tapioca gems
+```
+
+**Type requirements**:
+
+- Add type signatures to all public methods using `sig` blocks
+- Use `extend T::Sig` in classes that use type signatures
+- Use `T.nilable` for nullable types
+- Avoid `T.untyped` unless absolutely necessary
+- Follow existing patterns in the codebase for type annotations
+
+### Logging Guidelines
+
+This project uses SemanticLogger for structured logging:
+
+**Logger Initialization**:
+
+- Use class-based logger names: `@logger = SemanticLogger[self.class]`
+- In a class named `RepositoryProcessor`, this becomes `@logger = SemanticLogger[RepositoryProcessor]`
+- This automatically includes the class name in all log entries
+
+**Log Levels**:
+
+- **DEBUG**: Internal operations, detailed flow, command execution details
+- **INFO**: User-facing milestones, significant state changes
+- **WARN**: Recoverable issues, unexpected but handled situations
+- **ERROR**: Failures requiring attention, unrecoverable errors
+- **FATAL**: Critical errors that prevent application from continuing
+
+**Exception Logging**:
+
+- Use `exception:` parameter: `@logger.error('Message', exception: e, payload: { ... })`
+- Always include structured payload with relevant context (repo_name, operation, etc.)
+- See `docs/development/logging-guidelines.md` and `docs/development/semantic-logger-patterns.md` for detailed patterns
 
 ## Testing
 
@@ -172,6 +215,53 @@ bin/                             # Executable scripts
 - Authentication handled in `authentication.rb`
 
 ## Making Changes
+
+### Branch Naming Convention
+
+Use descriptive branch names following these patterns:
+
+- `feature/add-webhook-support`
+- `fix/cache-corruption-issue`
+- `refactor/simplify-git-operations`
+- `docs/update-installation-guide`
+
+### Commit Message Convention
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+**Format**:
+```
+<type>: <description>
+
+[optional body]
+
+[optional footer]
+```
+
+**Types**:
+- `feat`: New feature
+- `fix`: Bug fix
+- `refactor`: Code refactoring
+- `test`: Adding or updating tests
+- `docs`: Documentation changes
+- `chore`: Maintenance tasks (dependencies, CI, etc.)
+
+**Examples**:
+```
+feat: add webhook support for repository events
+fix: resolve cache corruption on invalid JSON
+refactor: extract PR creation logic into separate class
+docs: update installation guide with Kubernetes examples
+test: add integration tests for cache system
+```
+
+### Test-Driven Development (TDD)
+
+This project follows strict TDD principles:
+
+1. **Write a failing test first**
+2. **Implement the minimum code to make it pass**
+3. **Refactor while keeping tests green**
 
 ### Adding New Features
 
