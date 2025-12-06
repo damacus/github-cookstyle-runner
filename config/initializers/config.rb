@@ -14,6 +14,28 @@ rescue LoadError => e
 end
 
 # Initialize logger for configuration debugging
+#
+# DESIGN DECISION: Use plain Logger instead of SemanticLogger for configuration loading
+#
+# Rationale:
+# 1. Configuration loading happens BEFORE the application's logging infrastructure is initialized
+# 2. SemanticLogger requires configuration from Settings to determine log level and formatters
+# 3. Using plain Logger here avoids circular dependency: config needs logging, logging needs config
+# 4. Configuration errors need to be visible even if the application's logging system fails to initialize
+#
+# Log Level Strategy:
+# - Uses ENV['DEBUG'] rather than GCR_LOG_LEVEL to avoid dependency on parsed configuration
+# - INFO level in production: Shows which config files are loaded and environment mapping
+# - DEBUG level in development: Shows detailed configuration file paths and processing steps
+# - These messages help troubleshoot configuration issues during application startup
+# - Once configuration loads, the application switches to SemanticLogger with GCR_LOG_LEVEL
+#
+# Visibility in Production:
+# - INFO messages ARE visible in production by design to aid troubleshooting
+# - These are minimal: environment name, file count, and environment variable mapping
+# - Messages are written to STDOUT and captured by container orchestration/logging systems
+# - Example: "Loading configuration for environment: production"
+# - Example: "Loading 3 configuration files for environment: production"
 config_logger = Logger.new($stdout)
 config_logger.level = ENV['DEBUG'] ? Logger::DEBUG : Logger::INFO
 
