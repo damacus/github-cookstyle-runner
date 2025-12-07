@@ -30,12 +30,12 @@ echo "$GITHUB_APP_PRIVATE_KEY" | head -1
 # Should output: -----BEGIN RSA PRIVATE KEY-----
 ```
 
-2. Verify App installation:
+1. Verify App installation:
    - Go to GitHub → Settings → GitHub Apps
    - Check that the app is installed on your organization
    - Verify the Installation ID matches
 
-3. Generate new private key:
+1. Generate new private key:
    - GitHub App settings → Generate new private key
    - Update `GITHUB_APP_PRIVATE_KEY` environment variable
 
@@ -48,11 +48,11 @@ echo "$GITHUB_APP_PRIVATE_KEY" | head -1
 echo $GITHUB_TOKEN | cut -c1-10
 ```
 
-2. Check token hasn't expired:
+1. Check token hasn't expired:
    - Go to GitHub → Settings → Developer settings → Personal access tokens
    - Verify expiration date
 
-3. Verify required scopes:
+1. Verify required scopes:
    - Token needs `repo` and `read:org` scopes
    - Regenerate token with correct scopes if needed
 
@@ -101,7 +101,8 @@ GCR_CACHE_MAX_AGE=7
 
 Ensure all required environment variables are set. You must provide either GitHub App credentials OR a Personal Access Token:
 
-**Option 1: GitHub App (Recommended)**
+#### Option 1: GitHub App (Recommended)
+
 ```bash
 GITHUB_APP_ID=123456
 GITHUB_APP_INSTALLATION_ID=789012
@@ -112,7 +113,8 @@ GCR_GIT_EMAIL=bot@example.com
 GCR_GIT_NAME=Cookstyle Bot
 ```
 
-**Option 2: Personal Access Token**
+#### Option 2: Personal Access Token
+
 ```bash
 GITHUB_TOKEN=ghp_YourPersonalAccessToken
 GCR_DESTINATION_REPO_OWNER=my-org

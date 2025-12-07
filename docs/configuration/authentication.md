@@ -79,7 +79,7 @@ MIIEpAIBAAKCAQEA1234567890abcdef...
 
 !!! tip "Multi-line Private Key"
     When setting the private key as an environment variable, you can:
-    
+
     - **In `.env` file**: Include the entire key with line breaks
     - **In shell**: Use quotes and literal line breaks
     - **In Kubernetes Secret**: Use a multiline YAML literal block (`|`)
@@ -174,20 +174,20 @@ GITHUB_API_ENDPOINT=https://api.github.com
 
 ### GitHub App Authentication Issues
 
-**Error: "Invalid GitHub App credentials"**
+#### Error: "Invalid GitHub App credentials"
 
 - Verify your `GITHUB_APP_ID` is correct (numeric value)
 - Check that `GITHUB_APP_INSTALLATION_ID` matches your installation
 - Ensure the private key is complete with headers and footers
 - Confirm the app is installed on your organization
 
-**Error: "Resource not accessible by integration"**
+#### Error: "Resource not accessible by integration"
 
 - Review the app permissions - it may need additional scopes
 - Verify the app is installed on the repositories you're trying to access
 - Check that the installation is active (not suspended)
 
-**Error: "401 Unauthorized"**
+#### Error: "401 Unauthorized"
 
 - The private key may be incorrect or corrupted
 - The app may have been uninstalled
@@ -195,13 +195,13 @@ GITHUB_API_ENDPOINT=https://api.github.com
 
 ### PAT Authentication Issues
 
-**Error: "Bad credentials"**
+#### Error: "Bad credentials"
 
 - Verify the token hasn't expired
 - Check that the token is correctly copied (no extra spaces)
 - Ensure the token has the required scopes (`repo`, `read:org`)
 
-**Error: "Resource not accessible"**
+#### Error: "Resource not accessible"
 
 - The token's user account may not have access to the repositories
 - The required scopes may not be selected
@@ -209,7 +209,7 @@ GITHUB_API_ENDPOINT=https://api.github.com
 
 ### Common Issues
 
-**Rate Limiting**
+#### Rate Limiting
 
 Both methods have the same rate limit (5,000 requests/hour), but GitHub Apps can request rate limit increases more easily. If you hit rate limits:
 

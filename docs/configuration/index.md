@@ -53,15 +53,15 @@ Customize behavior with these optional settings:
 
 ## Quick Reference
 
-| Category | Variables | Purpose |
-|----------|-----------|---------|
-| Authentication | `GITHUB_APP_*` or `GITHUB_TOKEN` | GitHub API access ([details](authentication.md)) |
-| Repository | `GCR_DESTINATION_REPO_*` | Target repositories |
-| Git | `GCR_GIT_*` | Commit author info |
-| Pull Requests | `GCR_PULL_REQUEST_*` | PR customization |
-| Cache | `GCR_CACHE_*`, `GCR_USE_CACHE` | Performance optimization |
-| Performance | `GCR_THREAD_COUNT`, `GCR_RETRY_COUNT` | Execution tuning |
-| Filtering | `GCR_FILTER_REPOS` | Repository selection |
+| Category       | Variables                             | Purpose                                          |
+|----------------|---------------------------------------|--------------------------------------------------|
+| Authentication | `GITHUB_APP_*` or `GITHUB_TOKEN`      | GitHub API access ([details](authentication.md)) |
+| Repository     | `GCR_DESTINATION_REPO_*`              | Target repositories                              |
+| Git            | `GCR_GIT_*`                           | Commit author info                               |
+| Pull Requests  | `GCR_PULL_REQUEST_*`                  | PR customization                                 |
+| Cache          | `GCR_CACHE_*`, `GCR_USE_CACHE`        | Performance optimization                         |
+| Performance    | `GCR_THREAD_COUNT`, `GCR_RETRY_COUNT` | Execution tuning                                 |
+| Filtering      | `GCR_FILTER_REPOS`                    | Repository selection                             |
 
 ## Configuration Examples
 
