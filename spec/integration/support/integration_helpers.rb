@@ -10,6 +10,10 @@ module IntegrationHelpers
     large: 'sous-chefs/apache2'         # Same as complex for now
   }.freeze
 
+  # SemanticLogger prefix format: "2025-10-07 23:09:50.428434 I [11298:1240] CookstyleRunner::Application -- "
+  # This regex matches the timestamp, log level, thread IDs, logger name, and separator
+  SEMANTIC_LOGGER_PREFIX_REGEX = /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\w+\s+\[\d+:\d+\]\s+\S+\s+--\s+/
+
   # Run the cookstyle-runner CLI with given options
   # @param args [Hash] Options to pass to the runner
   # @return [CommandResult] Result object with exit_code, stdout, stderr
@@ -37,8 +41,8 @@ module IntegrationHelpers
 
     output.each_line do |line|
       clean_line = strip_ansi(line)
-      # Remove SemanticLogger prefix if present (e.g., "2025-10-07 23:09:50.428434 I [11298:1240] CookstyleRunner::Application -- ")
-      clean_line = clean_line.sub(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\w+\s+\[\d+:\d+\]\s+\S+\s+--\s+/, '')
+      # Remove SemanticLogger prefix if present
+      clean_line = clean_line.sub(SEMANTIC_LOGGER_PREFIX_REGEX, '')
       next unless clean_line.include?(':')
 
       key, value = clean_line.split(':', 2).map(&:strip)
@@ -59,7 +63,7 @@ module IntegrationHelpers
     output.each_line do |line|
       clean_line = strip_ansi(line)
       # Remove SemanticLogger prefix if present
-      clean_line = clean_line.sub(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+\s+\w+\s+\[\d+:\d+\]\s+\S+\s+--\s+/, '')
+      clean_line = clean_line.sub(SEMANTIC_LOGGER_PREFIX_REGEX, '')
       next unless clean_line.start_with?('  Cache Directory:') || clean_line.start_with?('Cache Directory:')
 
       return clean_line.split(':', 2).last.strip
