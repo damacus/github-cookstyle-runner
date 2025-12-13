@@ -13,6 +13,13 @@
 
 * Updated `tty-progressbar` dependency to support `table_tennis`
 
+## [0.1.4](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.3...github-cookstyle-runner/v0.1.4) (2025-12-13)
+
+
+### Code Refactoring
+
+* Extract SemanticLogger regex constant and document config logging rationale ([#164](https://github.com/damacus/github-cookstyle-runner/issues/164)) ([6768a2b](https://github.com/damacus/github-cookstyle-runner/commit/6768a2b8b888807cda8f15abd62e95264ddd1fda))
+
 ## [0.1.3](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.2...github-cookstyle-runner/v0.1.3) (2025-11-29)
 
 
