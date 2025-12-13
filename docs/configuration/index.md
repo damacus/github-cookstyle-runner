@@ -37,7 +37,7 @@ git:
 
 These must be configured for the application to run:
 
-- [GitHub App Authentication](environment-variables.md#github-app-authentication)
+- [Authentication](authentication.md) - GitHub App or Personal Access Token
 - [Repository Configuration](environment-variables.md#repository-configuration)
 - [Git Configuration](environment-variables.md#git-configuration)
 
@@ -53,26 +53,46 @@ Customize behavior with these optional settings:
 
 ## Quick Reference
 
-| Category | Variables | Purpose |
-|----------|-----------|---------|
-| Authentication | `GITHUB_APP_*` | GitHub API access |
-| Repository | `GCR_DESTINATION_REPO_*` | Target repositories |
-| Git | `GCR_GIT_*` | Commit author info |
-| Pull Requests | `GCR_PULL_REQUEST_*` | PR customization |
-| Cache | `GCR_CACHE_*`, `GCR_USE_CACHE` | Performance optimization |
-| Performance | `GCR_THREAD_COUNT`, `GCR_RETRY_COUNT` | Execution tuning |
-| Filtering | `GCR_FILTER_REPOS` | Repository selection |
+| Category       | Variables                             | Purpose                                          |
+|----------------|---------------------------------------|--------------------------------------------------|
+| Authentication | `GITHUB_APP_*` or `GITHUB_TOKEN`      | GitHub API access ([details](authentication.md)) |
+| Repository     | `GCR_DESTINATION_REPO_*`              | Target repositories                              |
+| Git            | `GCR_GIT_*`                           | Commit author info                               |
+| Pull Requests  | `GCR_PULL_REQUEST_*`                  | PR customization                                 |
+| Cache          | `GCR_CACHE_*`, `GCR_USE_CACHE`        | Performance optimization                         |
+| Performance    | `GCR_THREAD_COUNT`, `GCR_RETRY_COUNT` | Execution tuning                                 |
+| Filtering      | `GCR_FILTER_REPOS`                    | Repository selection                             |
 
 ## Configuration Examples
 
-### Minimal Configuration
+### Minimal Configuration (GitHub App)
 
 ```bash
+# GitHub App Authentication (Recommended)
 GITHUB_APP_ID=123456
 GITHUB_APP_INSTALLATION_ID=789012
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----..."
+
+# Repository Configuration
 GCR_DESTINATION_REPO_OWNER=my-org
 GCR_DESTINATION_REPO_TOPICS=chef-cookbook
+
+# Git Configuration
+GCR_GIT_EMAIL=bot@example.com
+GCR_GIT_NAME=Cookstyle Bot
+```
+
+### Minimal Configuration (PAT)
+
+```bash
+# Personal Access Token Authentication
+GITHUB_TOKEN=ghp_YourPersonalAccessTokenHere
+
+# Repository Configuration
+GCR_DESTINATION_REPO_OWNER=my-org
+GCR_DESTINATION_REPO_TOPICS=chef-cookbook
+
+# Git Configuration
 GCR_GIT_EMAIL=bot@example.com
 GCR_GIT_NAME=Cookstyle Bot
 ```
@@ -80,7 +100,7 @@ GCR_GIT_NAME=Cookstyle Bot
 ### Production Configuration
 
 ```bash
-# Authentication
+# Authentication (GitHub App - Recommended)
 GITHUB_APP_ID=123456
 GITHUB_APP_INSTALLATION_ID=789012
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----..."
