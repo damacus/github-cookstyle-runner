@@ -69,6 +69,7 @@ nav:
       - Kubernetes: installation/kubernetes.md
   - Configuration:
       - Overview: configuration/index.md
+      - Authentication: configuration/authentication.md
       - Environment Variables: configuration/environment-variables.md
       - Advanced Options: configuration/advanced.md
   - Usage:
