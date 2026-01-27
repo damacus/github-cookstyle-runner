@@ -5,6 +5,8 @@ config:
   no-duplicate-heading: false  # MD024
   reference-links-images: false  # MD052
   no-multiple-blanks: false  # MD012 - Allow multiple consecutive blank lines (for release-please)
+  code-block-style: false  # MD046 - Allow indented code blocks in admonitions
+  table-column-style: false  # MD060 - Disable table column alignment checks
 ignores:
   - .github/copilot-instructions.md
   - .windsurf/rules/**

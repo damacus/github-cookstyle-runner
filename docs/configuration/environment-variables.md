@@ -2,26 +2,32 @@
 
 Complete reference for all environment variables supported by the GitHub Cookstyle Runner.
 
-## GitHub App Authentication
+## Authentication
 
-### GITHUB_APP_ID
+The application supports two authentication methods with GitHub. You must configure one of these methods:
+
+### GitHub App Authentication (Recommended)
+
+GitHub App authentication provides better security, more granular permissions, and higher rate limits. This is the recommended authentication method for production use.
+
+#### GITHUB_APP_ID
 
 - **Type**: String (numeric)
-- **Required**: Yes
+- **Required**: Yes (if using GitHub App authentication)
 - **Description**: The GitHub App ID for authentication
 - **Example**: `123456`
 
-### GITHUB_APP_INSTALLATION_ID
+#### GITHUB_APP_INSTALLATION_ID
 
 - **Type**: String (numeric)
-- **Required**: Yes
+- **Required**: Yes (if using GitHub App authentication)
 - **Description**: The installation ID for the GitHub App
 - **Example**: `789012`
 
-### GITHUB_APP_PRIVATE_KEY
+#### GITHUB_APP_PRIVATE_KEY
 
 - **Type**: String (PEM format)
-- **Required**: Yes
+- **Required**: Yes (if using GitHub App authentication)
 - **Description**: The PEM-encoded private key for the GitHub App
 - **Example**:
 
@@ -31,13 +37,35 @@ MIIEpAIBAAKCAQEA...
 -----END RSA PRIVATE KEY-----"
 ```
 
-### GITHUB_API_ROOT
+!!! info "Creating a GitHub App"
+    See the [GitHub App Setup Guide](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/about-authentication-with-a-github-app) for detailed instructions on creating and configuring a GitHub App.
+
+### Personal Access Token (PAT) Authentication
+
+Personal Access Token authentication is simpler to set up but less secure and has lower rate limits. Use this for development or testing.
+
+#### GITHUB_TOKEN
+
+- **Type**: String
+- **Required**: Yes (if using PAT authentication)
+- **Description**: A GitHub Personal Access Token with appropriate permissions
+- **Example**: `ghp_1234567890abcdefghijklmnopqrstuvwxyz`
+- **Required Scopes**:
+    - `repo` - Full control of private repositories
+    - `read:org` - Read organization membership
+
+!!! warning "Security Considerations"
+    - Personal Access Tokens have the same permissions as the user account
+    - GitHub Apps provide more granular permission control
+    - Consider using GitHub Apps for production deployments
+
+### GITHUB_API_ENDPOINT
 
 - **Type**: String (URL)
 - **Required**: No
-- **Default**: `api.github.com`
-- **Description**: The GitHub API root URL (useful for GitHub Enterprise)
-- **Example**: `github.company.com/api/v3`
+- **Default**: `https://api.github.com`
+- **Description**: The GitHub API endpoint URL (useful for GitHub Enterprise)
+- **Example**: `https://github.company.com/api/v3`
 
 ## Repository Configuration
 
@@ -176,49 +204,90 @@ MIIEpAIBAAKCAQEA...
 
 ## Environment-Specific Examples
 
-### Development
+### Development (GitHub App)
 
 ```bash
+# GitHub App Authentication
 GITHUB_APP_ID=123456
 GITHUB_APP_INSTALLATION_ID=789012
-GITHUB_APP_PRIVATE_KEY="..."
+GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
+...
+-----END RSA PRIVATE KEY-----"
+
+# Repository Configuration
 GCR_DESTINATION_REPO_OWNER=my-org
 GCR_DESTINATION_REPO_TOPICS=chef-cookbook
 GCR_GIT_EMAIL=dev@example.com
 GCR_GIT_NAME=Dev Bot
+
+# Development Settings
 GCR_DEBUG_MODE=1
 GCR_THREAD_COUNT=2
 GCR_FILTER_REPOS=test-repo
 ```
 
-### Staging
+### Development (Personal Access Token)
 
 ```bash
+# PAT Authentication
+GITHUB_TOKEN=ghp_YourPersonalAccessTokenHere
+
+# Repository Configuration
+GCR_DESTINATION_REPO_OWNER=my-org
+GCR_DESTINATION_REPO_TOPICS=chef-cookbook
+GCR_GIT_EMAIL=dev@example.com
+GCR_GIT_NAME=Dev Bot
+
+# Development Settings
+GCR_DEBUG_MODE=1
+GCR_THREAD_COUNT=2
+GCR_FILTER_REPOS=test-repo
+```
+
+### Staging (GitHub App)
+
+```bash
+# GitHub App Authentication
 GITHUB_APP_ID=123456
 GITHUB_APP_INSTALLATION_ID=789012
-GITHUB_APP_PRIVATE_KEY="..."
+GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
+...
+-----END RSA PRIVATE KEY-----"
+
+# Repository Configuration
 GCR_DESTINATION_REPO_OWNER=my-org
 GCR_DESTINATION_REPO_TOPICS=chef-cookbook
 GCR_GIT_EMAIL=staging-bot@example.com
 GCR_GIT_NAME=Staging Cookstyle Bot
+
+# Performance & Cache Settings
 GCR_THREAD_COUNT=4
 GCR_USE_CACHE=1
 GCR_CACHE_MAX_AGE=3
 ```
 
-### Production
+### Production (GitHub App - Recommended)
 
 ```bash
+# GitHub App Authentication (Recommended)
 GITHUB_APP_ID=123456
 GITHUB_APP_INSTALLATION_ID=789012
-GITHUB_APP_PRIVATE_KEY="..."
+GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
+...
+-----END RSA PRIVATE KEY-----"
+
+# Repository Configuration
 GCR_DESTINATION_REPO_OWNER=my-org
 GCR_DESTINATION_REPO_TOPICS=chef-cookbook,chef
 GCR_GIT_EMAIL=cookstyle-bot@example.com
 GCR_GIT_NAME=Cookstyle Bot
+
+# Pull Request Configuration
 GCR_PULL_REQUEST_TITLE=Automated Cookstyle Fixes
 GCR_PULL_REQUEST_LABELS=tech-debt,automated
 GCR_CREATE_MANUAL_FIX_PRS=1
+
+# Performance & Cache Settings
 GCR_THREAD_COUNT=8
 GCR_RETRY_COUNT=3
 GCR_USE_CACHE=1
