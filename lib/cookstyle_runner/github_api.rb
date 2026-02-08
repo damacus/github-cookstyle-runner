@@ -36,7 +36,7 @@ module CookstyleRunner
         results.items.map(&:clone_url)
       rescue Octokit::TooManyRequests => e
         retries += 1
-        if retries <= max_retries
+        if retries < max_retries
           retry_after = T.let(e.response_headers&.dig('retry-after')&.to_i || (2**retries), Integer)
           log.warn('Rate limited, retrying', payload: { attempt: retries, retry_after: retry_after, owner: owner })
           sleep(retry_after)
@@ -46,7 +46,7 @@ module CookstyleRunner
         []
       rescue Octokit::ServerError => e
         retries += 1
-        if retries <= max_retries
+        if retries < max_retries
           delay = T.let(2**retries, Integer)
           log.warn('Server error, retrying', payload: { attempt: retries, delay: delay, owner: owner })
           sleep(delay)
