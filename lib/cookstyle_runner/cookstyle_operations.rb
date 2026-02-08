@@ -212,12 +212,12 @@ module CookstyleRunner
       counts
     end
 
-    # @see #count_offences
+    # @see .count_offences
     def self.count_correctable_offences(parsed_json)
       count_offences(parsed_json)[:correctable]
     end
 
-    # @see #count_offences
+    # @see .count_offences
     def self.count_uncorrectable_offences(parsed_json)
       count_offences(parsed_json)[:uncorrectable]
     end
