@@ -256,11 +256,11 @@ module CookstyleRunner
     def self.format_offenses(parsed_json)
       return '' unless parsed_json['files']
 
-      parsed_json['files'].flat_map do |file|
+      parsed_json['files'].filter_map do |file|
         next unless file['offenses']
 
         file['offenses'].map { |offense| "* #{file['path']}:#{offense['message']}" }
-      end.compact.flatten.join("\n")
+      end.flatten.join("\n")
     end
 
     # Formats the summary section of the Issue description.
@@ -296,13 +296,13 @@ module CookstyleRunner
     def self.manual_offenses(parsed_json)
       return [] unless parsed_json['files']
 
-      parsed_json['files'].flat_map do |file|
+      parsed_json['files'].filter_map do |file|
         next unless file['offenses']
 
         file['offenses']
           .reject { |offense| offense['correctable'] }
           .map { |offense| format_manual_offense(file, offense) }
-      end.compact.flatten
+      end.flatten
     end
 
     # Formats a single offense for the manual intervention section.

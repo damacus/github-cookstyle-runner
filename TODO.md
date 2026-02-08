@@ -13,9 +13,9 @@ When closing PRs using the "cleanup_prs" method it should lookup information in 
 
 ## Codebase Improvements
 
-The following improvements were identified during a codebase review. Each item includes the category (speed, style, or usability), the affected file(s), and a description of the proposed change.
+The following improvements were identified during a codebase review. All items have been implemented.
 
-### 1. Avoid unnecessary `CacheEntry` object creation in `average_processing_time`
+### ~~1. Avoid unnecessary `CacheEntry` object creation in `average_processing_time`~~ ✅
 
 - **Category:** Speed
 - **File:** `lib/cookstyle_runner/cache.rb`, lines 183–192
@@ -34,7 +34,7 @@ The following improvements were identified during a codebase review. Each item i
   times = @data['repositories'].values.filter_map { |repo_data| repo_data['processing_time'] }
   ```
 
-### 2. Simplify redundant nil check in `load_cache`
+### ~~2. Simplify redundant nil check in `load_cache`~~ ✅
 
 - **Category:** Style
 - **File:** `lib/cookstyle_runner/cache.rb`, lines 59–76
@@ -63,7 +63,7 @@ The following improvements were identified during a codebase review. Each item i
           end
   ```
 
-### 3. Add retry logic with exponential backoff to `fetch_repositories`
+### ~~3. Add retry logic with exponential backoff to `fetch_repositories`~~ ✅
 
 - **Category:** Usability
 - **File:** `lib/cookstyle_runner/github_api.rb`, lines 23–40
@@ -96,7 +96,7 @@ The following improvements were identified during a codebase review. Each item i
   end
   ```
 
-### 4. Deduplicate label application logic in `GitHubPRManager`
+### ~~4. Deduplicate label application logic in `GitHubPRManager`~~ ✅
 
 - **Category:** Style
 - **File:** `lib/cookstyle_runner/github_pr_manager.rb`, lines 80, 87, and 118
@@ -118,7 +118,7 @@ The following improvements were identified during a codebase review. Each item i
   end
   ```
 
-### 5. Replace `flat_map` + `compact.flatten` with `filter_map` in offense formatting
+### ~~5. Replace `flat_map` + `compact.flatten` with `filter_map` in offense formatting~~ ✅
 
 - **Category:** Style / Speed
 - **File:** `lib/cookstyle_runner/cookstyle_operations.rb`, lines 259–263 (`format_offenses`) and lines 299–306 (`manual_offenses`)
