@@ -103,6 +103,33 @@ RSpec.describe CookstyleRunner::CookstyleOperations do
     end
   end
 
+  describe '.count_offences' do
+    it 'returns zeroes for clean code' do
+      result = described_class.count_offences(clean_json)
+      expect(result).to eq({ correctable: 0, uncorrectable: 0 })
+    end
+
+    it 'counts correctable offenses correctly' do
+      result = described_class.count_offences(correctable_offenses_json)
+      expect(result).to eq({ correctable: 2, uncorrectable: 0 })
+    end
+
+    it 'counts uncorrectable offenses correctly' do
+      result = described_class.count_offences(uncorrectable_offenses_json)
+      expect(result).to eq({ correctable: 0, uncorrectable: 1 })
+    end
+
+    it 'counts both types in mixed output' do
+      result = described_class.count_offences(mixed_offenses_json)
+      expect(result).to eq({ correctable: 1, uncorrectable: 1 })
+    end
+
+    it 'handles missing files key' do
+      result = described_class.count_offences({})
+      expect(result).to eq({ correctable: 0, uncorrectable: 0 })
+    end
+  end
+
   describe '.count_correctable_offences' do
     it 'returns 0 for clean code' do
       expect(described_class.count_correctable_offences(clean_json)).to eq(0)
