@@ -77,14 +77,14 @@ module CookstyleRunner
           )
 
           # Update labels for existing PR (only add new ones)
-          GitHubLabelHelper.update_pr_labels(@github_client, repo_name, pr.number, @issue_labels, @logger) if @issue_labels && !@issue_labels.empty?
+          apply_labels(repo_name, pr.number, update: true)
         else
           # Use the GitHub client to create a PR
           # Octokit signature: create_pull_request(repo, base, head, title, body)
           pr = @github_client.create_pull_request(repo_name, base_branch, head_branch, title, body)
 
           # Apply labels to new PR
-          GitHubLabelHelper.add_labels_safely(@github_client, repo_name, pr.number, @issue_labels, @logger) if @issue_labels && !@issue_labels.empty?
+          apply_labels(repo_name, pr.number)
         end
 
         @logger.info('Pull request created successfully', payload: {
@@ -115,7 +115,7 @@ module CookstyleRunner
         )
 
         # Apply labels if they exist
-        GitHubLabelHelper.add_labels_safely(@github_client, repo_name, issue.number, @issue_labels, @logger) if @issue_labels && !@issue_labels.empty?
+        apply_labels(repo_name, issue.number)
 
         # Assign the issue to the Copilot agent if auto-assign is enabled
         # Check for both nil and empty since copilot_assignee is optional
@@ -143,6 +143,21 @@ module CookstyleRunner
     end
 
     private
+
+    # Apply labels to a PR or issue, choosing update vs add based on context
+    # @param repo_name [String] Repository name
+    # @param item_number [Integer] PR or issue number
+    # @param update [Boolean] Whether to update existing labels (true) or add new ones (false)
+    sig { params(repo_name: String, item_number: Integer, update: T::Boolean).void }
+    def apply_labels(repo_name, item_number, update: false)
+      return unless @issue_labels && !@issue_labels.empty?
+
+      if update
+        GitHubLabelHelper.update_pr_labels(@github_client, repo_name, item_number, @issue_labels, @logger)
+      else
+        GitHubLabelHelper.add_labels_safely(@github_client, repo_name, item_number, @issue_labels, @logger)
+      end
+    end
 
     # Find an existing PR for a branch
     sig { params(repo_name: String, branch_name: String).returns(T.nilable(Sawyer::Resource)) }

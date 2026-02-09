@@ -158,8 +158,7 @@ module CookstyleRunner
     # @param parsed_json [Hash] The parsed JSON output from Cookstyle.
     # @return [Array] [num_auto, num_manual, pr_desc, issue_desc]
     private_class_method def self._parse_results(parsed_json)
-      num_auto = count_correctable_offences(parsed_json)
-      num_manual = count_uncorrectable_offences(parsed_json)
+      num_auto, num_manual = count_offences(parsed_json).values_at(:correctable, :uncorrectable)
       total = num_auto + num_manual
       pr_description = "#{format_pr_summary(total, num_auto)}\n\n#{format_pr_description(parsed_json, num_auto)}".strip
       issue_description = "#{format_issue_summary(total, num_manual)}\n\n#{format_issue_description(parsed_json)}".strip
@@ -202,26 +201,25 @@ module CookstyleRunner
       end || false
     end
 
-    # Counts the number of correctable offenses in the parsed JSON.
+    # Counts correctable and uncorrectable offenses in a single pass.
     # @param parsed_json [Hash] Parsed JSON object from cookstyle run
-    # @return [Integer] Number of correctable offenses
-    def self.count_correctable_offences(parsed_json)
-      count = 0
+    # @return [Hash] { correctable: Integer, uncorrectable: Integer }
+    def self.count_offences(parsed_json)
+      counts = { correctable: 0, uncorrectable: 0 }
       parsed_json['files']&.each do |file|
-        file['offenses']&.each { |offense| count += 1 if offense['correctable'] }
+        file['offenses']&.each { |o| counts[o['correctable'] ? :correctable : :uncorrectable] += 1 }
       end
-      count
+      counts
     end
 
-    # Counts the number of uncorrectable offenses in the parsed JSON.
-    # @param parsed_json [Hash] Parsed JSON object from cookstyle run
-    # @return [Integer] Number of uncorrectable offenses
+    # @see .count_offences
+    def self.count_correctable_offences(parsed_json)
+      count_offences(parsed_json)[:correctable]
+    end
+
+    # @see .count_offences
     def self.count_uncorrectable_offences(parsed_json)
-      count = 0
-      parsed_json['files']&.each do |file|
-        file['offenses']&.each { |offense| count += 1 unless offense['correctable'] }
-      end
-      count
+      count_offences(parsed_json)[:uncorrectable]
     end
 
     # Formats the main summary section of the PR description.
@@ -258,11 +256,11 @@ module CookstyleRunner
     def self.format_offenses(parsed_json)
       return '' unless parsed_json['files']
 
-      parsed_json['files'].flat_map do |file|
+      parsed_json['files'].filter_map do |file|
         next unless file['offenses']
 
         file['offenses'].map { |offense| "* #{file['path']}:#{offense['message']}" }
-      end.compact.flatten.join("\n")
+      end.flatten.join("\n")
     end
 
     # Formats the summary section of the Issue description.
@@ -298,13 +296,13 @@ module CookstyleRunner
     def self.manual_offenses(parsed_json)
       return [] unless parsed_json['files']
 
-      parsed_json['files'].flat_map do |file|
+      parsed_json['files'].filter_map do |file|
         next unless file['offenses']
 
         file['offenses']
           .reject { |offense| offense['correctable'] }
           .map { |offense| format_manual_offense(file, offense) }
-      end.compact.flatten
+      end.flatten
     end
 
     # Formats a single offense for the manual intervention section.

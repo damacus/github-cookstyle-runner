@@ -60,17 +60,7 @@ module CookstyleRunner
       @data = if File.exist?(@file)
                 parse_cache_file
               else
-                # Initialize cache and handle nil return
-                result = initialize_cache
-                if result.nil?
-                  # Default hash
-                  {
-                    'repositories' => {},
-                    'last_updated' => Time.now.utc.iso8601
-                  }
-                else
-                  result
-                end
+                initialize_cache
               end
       @data
     end
@@ -181,10 +171,7 @@ module CookstyleRunner
     # Get average processing time from cache
     sig { returns(Float) }
     def average_processing_time
-      times = @data['repositories'].values.map do |repo_data|
-        entry = CacheEntry.from_hash(repo_data)
-        entry.processing_time
-      end.compact
+      times = @data['repositories'].values.filter_map { |repo_data| repo_data['processing_time'] }
 
       return 5.0 if times.empty?
 

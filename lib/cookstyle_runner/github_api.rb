@@ -21,23 +21,50 @@ module CookstyleRunner
     end
 
     # Fetch repositories from GitHub
+    # rubocop:disable Metrics/MethodLength
     sig { params(owner: String, topics: T.nilable(T::Array[String])).returns(T::Array[String]) }
     def self.fetch_repositories(owner, topics = nil)
-      query = "org:#{owner}"
-      topics.each { |topic| query += " topic:#{topic}" } if topics && !topics.empty?
-      log.debug('Searching repositories', payload: { owner: owner, topics: topics, query: query })
-      results = Authentication.client.search_repositories(query)
-      log.info('Found repositories', payload: { count: results.total_count, owner: owner })
-      results.items.map(&:clone_url)
-    rescue Octokit::Error => e
-      log.error('GitHub API error', payload: { operation: 'search_repositories', error: e.message, owner: owner })
-      log.debug(T.must(e.backtrace).join("\n"))
-      []
-    rescue StandardError => e
-      log.error('Error fetching repositories', payload: { operation: 'search_repositories', error: e.message, owner: owner })
-      log.debug(T.must(e.backtrace).join("\n"))
-      []
+      retries = T.let(0, Integer)
+      max_retries = T.let(3, Integer)
+
+      begin
+        query = "org:#{owner}"
+        topics.each { |topic| query += " topic:#{topic}" } if topics && !topics.empty?
+        log.debug('Searching repositories', payload: { owner: owner, topics: topics, query: query })
+        results = Authentication.client.search_repositories(query)
+        log.info('Found repositories', payload: { count: results.total_count, owner: owner })
+        results.items.map(&:clone_url)
+      rescue Octokit::TooManyRequests => e
+        retries += 1
+        if retries < max_retries
+          retry_after = T.let(e.response_headers&.dig('retry-after')&.to_i || (2**retries), Integer)
+          log.warn('Rate limited, retrying', payload: { attempt: retries, retry_after: retry_after, owner: owner })
+          sleep(retry_after)
+          retry
+        end
+        log.error('Rate limit exceeded after retries', payload: { operation: 'search_repositories', error: e.message, owner: owner })
+        []
+      rescue Octokit::ServerError => e
+        retries += 1
+        if retries < max_retries
+          delay = T.let(2**retries, Integer)
+          log.warn('Server error, retrying', payload: { attempt: retries, delay: delay, owner: owner })
+          sleep(delay)
+          retry
+        end
+        log.error('GitHub API server error after retries', payload: { operation: 'search_repositories', error: e.message, owner: owner })
+        []
+      rescue Octokit::Error => e
+        log.error('GitHub API error', payload: { operation: 'search_repositories', error: e.message, owner: owner })
+        log.debug(T.must(e.backtrace).join("\n"))
+        []
+      rescue StandardError => e
+        log.error('Error fetching repositories', payload: { operation: 'search_repositories', error: e.message, owner: owner })
+        log.debug(T.must(e.backtrace).join("\n"))
+        []
+      end
     end
+    # rubocop:enable Metrics/MethodLength
 
     # Find an existing PR for a branch
     sig { params(repo_full_name: String, branch_name: String).returns(T.nilable(Sawyer::Resource)) }
