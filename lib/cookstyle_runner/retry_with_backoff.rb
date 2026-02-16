@@ -48,32 +48,11 @@ module CookstyleRunner
         yield
       rescue StandardError => e
         if retries < max_retries && should_retry?(e)
-          retry_after = extract_retry_after(e, retries, backoff_sequence)
-
-          log_message = if e.message.include?('Rate limit')
-                          'Rate limit exceeded, retrying with exponential backoff'
-                        else
-                          'GitHub server error, retrying with exponential backoff'
-                        end
-
-          log.warn(log_message, payload: {
-            operation: operation_name,
-            attempt: retries + 1,
-            max_retries: max_retries,
-            delay: retry_after,
-            error: e.message
-          }.merge(context))
-
-          sleep(retry_after)
+          handle_retry(e, retries, max_retries, operation_name, context, backoff_sequence)
           retries += 1
           retry
         else
-          log.error('Operation failed after all retries', payload: {
-            operation: operation_name,
-            max_retries: max_retries,
-            total_attempts: retries + 1,
-            error: e.message
-          }.merge(context))
+          handle_final_failure(e, retries, max_retries, operation_name, context)
           raise
         end
       end
@@ -81,6 +60,54 @@ module CookstyleRunner
 
     class << self
       private
+
+      # Handle retry attempt with logging and delay
+      # @param exception [StandardError] The exception that occurred
+      # @param attempt [Integer] Current attempt number (0-based)
+      # @param max_retries [Integer] Maximum number of retries
+      # @param operation_name [String] Name of the operation
+      # @param context [Hash] Additional context for logging
+      # @param backoff_sequence [Array<Integer>] Backoff sequence to use
+      def handle_retry(exception, attempt, max_retries, operation_name, context, backoff_sequence)
+        retry_after = extract_retry_after(exception, attempt, backoff_sequence)
+        log_message = build_retry_log_message(exception)
+
+        log.warn(log_message, payload: {
+          operation: operation_name,
+          attempt: attempt + 1,
+          max_retries: max_retries,
+          delay: retry_after,
+          error: exception.message
+        }.merge(context))
+
+        sleep(retry_after)
+      end
+
+      # Handle final failure after all retries exhausted
+      # @param exception [StandardError] The exception that occurred
+      # @param total_attempts [Integer] Total number of attempts made
+      # @param max_retries [Integer] Maximum number of retries
+      # @param operation_name [String] Name of the operation
+      # @param context [Hash] Additional context for logging
+      def handle_final_failure(exception, total_attempts, max_retries, operation_name, context)
+        log.error('Operation failed after all retries', payload: {
+          operation: operation_name,
+          max_retries: max_retries,
+          total_attempts: total_attempts + 1,
+          error: exception.message
+        }.merge(context))
+      end
+
+      # Build retry log message based on exception type
+      # @param exception [StandardError] The exception
+      # @return [String] The log message
+      def build_retry_log_message(exception)
+        if exception.message.include?('Rate limit')
+          'Rate limit exceeded, retrying with exponential backoff'
+        else
+          'GitHub server error, retrying with exponential backoff'
+        end
+      end
 
       # Determine if an error should be retried
       # @param exception [StandardError] The exception to check
