@@ -13,6 +13,26 @@
 
 * Updated `tty-progressbar` dependency to support `table_tennis`
 
+## [0.1.6](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.5...github-cookstyle-runner/v0.1.6) (2026-02-16)
+
+
+### Chores
+
+* **deps:** update dependencies and GitHub Actions ([#176](https://github.com/damacus/github-cookstyle-runner/issues/176)) ([ef94130](https://github.com/damacus/github-cookstyle-runner/commit/ef94130d015a9177f0a9a3dd7f7a72c3576b7271))
+
+
+### Features
+
+* add exponential backoff for GitHub API rate limiting ([#173](https://github.com/damacus/github-cookstyle-runner/issues/173)) ([919c496](https://github.com/damacus/github-cookstyle-runner/commit/919c4960d3a1191649d4f6d8ba00507d5515c6c2))
+* add Prometheus metrics for observability ([#175](https://github.com/damacus/github-cookstyle-runner/issues/175)) ([3961c18](https://github.com/damacus/github-cookstyle-runner/commit/3961c18e87a922c5344c1860a6534b147821f0a8))
+* replace string interpolation with structured logging in cache.rb ([#172](https://github.com/damacus/github-cookstyle-runner/issues/172)) ([4be1748](https://github.com/damacus/github-cookstyle-runner/commit/4be1748e97fbf6aab8b2c9ac2ef06ed672cc13c2))
+
+
+### Code Refactoring
+
+* eliminate duplicate RepoContext creation in repository_processor.rb ([#174](https://github.com/damacus/github-cookstyle-runner/issues/174)) ([1826d1a](https://github.com/damacus/github-cookstyle-runner/commit/1826d1a55fc70dfdf7c11d51c6d5e04fd1761473))
+* performance improvements and code cleanup ([#170](https://github.com/damacus/github-cookstyle-runner/issues/170)) ([3aa258c](https://github.com/damacus/github-cookstyle-runner/commit/3aa258c0759e47ac9718dd44315a2bf3f728a2c9))
+
 ## [0.1.5](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.4...github-cookstyle-runner/v0.1.5) (2026-02-09)
 
 
