@@ -9,6 +9,7 @@ require_relative 'git'
 require_relative 'cookstyle_operations'
 require_relative 'github_api'
 require_relative 'cache'
+require_relative 'metrics'
 
 module CookstyleRunner
   # =============================================================================
@@ -62,14 +63,35 @@ module CookstyleRunner
 
       result = build_default_result(repo_name, repo_url)
       repo_dir = prepare_repo_directory(repo_name)
-      commit_state = resolve_commit_state(repo_name, repo_url, repo_dir, result)
-      return T.cast(commit_state[:final_result], T::Hash[Symbol, Object]) if commit_state[:final_result]
 
-      commit_sha = T.must(T.cast(commit_state[:commit_sha], T.nilable(String)))
-      cookstyle_state = resolve_cookstyle_state(repo_name, repo_dir, result)
-      return T.cast(cookstyle_state[:final_result], T::Hash[Symbol, Object]) if cookstyle_state[:final_result]
+      begin
+        commit_state = resolve_commit_state(repo_name, repo_url, repo_dir, result)
+        return T.cast(commit_state[:final_result], T::Hash[Symbol, Object]) if commit_state[:final_result]
 
-      finalize_processing(repo_name, repo_dir, commit_sha, start_time, T.cast(cookstyle_state, T::Hash[Symbol, Object]))
+        commit_sha = T.must(T.cast(commit_state[:commit_sha], T.nilable(String)))
+        cookstyle_state = resolve_cookstyle_state(repo_name, repo_dir, result)
+        return T.cast(cookstyle_state[:final_result], T::Hash[Symbol, Object]) if cookstyle_state[:final_result]
+
+        final_result = finalize_processing(repo_name, repo_dir, commit_sha, start_time, T.cast(cookstyle_state, T::Hash[Symbol, Object]))
+
+        # Record successful processing metrics
+        duration = Time.now - start_time
+        Metrics.increment_repos_processed(repo_name: repo_name, status: 'success')
+        Metrics.record_processing_duration(duration: duration, repo_name: repo_name)
+
+        final_result
+      rescue StandardError => e
+        # Record error metrics
+        duration = Time.now - start_time
+        Metrics.increment_repos_processed(repo_name: repo_name, status: 'failed')
+        Metrics.record_processing_duration(duration: duration, repo_name: repo_name)
+        Metrics.increment_errors(error_type: e.class.name, component: 'RepositoryProcessor')
+
+        logger.error('Repository processing failed', payload: { repo: repo_name, error: e.message, operation: 'process_repository' })
+        {
+          final_result: result.merge('state' => 'error', 'error' => e.message, 'time_taken' => duration)
+        }
+      end
     end
 
     private
@@ -243,7 +265,12 @@ module CookstyleRunner
 
       max_age_days = @configuration.cache_max_age
       max_age_seconds = max_age_days * 24 * 60 * 60
-      @cache_manager.up_to_date?(repo_name, commit_sha, max_age: max_age_seconds)
+      up_to_date = @cache_manager.up_to_date?(repo_name, commit_sha, max_age: max_age_seconds)
+
+      # Update cache hit rate metric
+      Metrics.set_cache_hit_rate(hit_rate: @cache_manager.hit_rate) if @cache_manager.respond_to?(:hit_rate)
+
+      up_to_date
     end
 
     # Run Cookstyle checks on the repository

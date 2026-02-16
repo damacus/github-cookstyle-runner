@@ -49,6 +49,7 @@ require_relative 'cookstyle_runner/context_manager'
 require_relative 'cookstyle_runner/configuration'
 require_relative 'cookstyle_runner/formatter'
 require_relative 'cookstyle_runner/github_pr_manager'
+require_relative 'cookstyle_runner/metrics'
 require_relative 'cookstyle_runner/repository_processor'
 require_relative 'cookstyle_runner/settings_validator'
 require_relative 'cookstyle_runner/reporter'
@@ -68,6 +69,7 @@ module CookstyleRunner
       _setup_context_manager
       _setup_github_client
       _setup_pr_manager
+      _setup_metrics_server
     end
 
     # Main entry point for the application
@@ -269,6 +271,19 @@ module CookstyleRunner
     def _setup_pr_manager
       settings = Object.const_get('Settings')
       @pr_manager = GitHubPRManager.new(settings, @github_client)
+    end
+
+    def _setup_metrics_server
+      settings = Object.const_get('Settings')
+      metrics_port = settings.respond_to?(:metrics_port) ? settings.metrics_port : 9394
+
+      return unless settings.respond_to?(:enable_metrics) && settings.enable_metrics
+
+      Metrics.start_server(port: metrics_port)
+      logger.info('Prometheus metrics server started', payload: {
+                    port: metrics_port,
+                    metrics_endpoint: "http://localhost:#{metrics_port}/metrics"
+                  })
     end
 
     # Process repositories in parallel
