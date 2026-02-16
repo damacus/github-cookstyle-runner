@@ -330,7 +330,7 @@ module CookstyleRunner
     # Extracts offense data from parsed Cookstyle JSON output.
     # @param parsed_json [Hash, nil] The parsed JSON output from Cookstyle.
     # @return [Array<Hash>] Array of offense hashes with structured data.
-    sig { params(parsed_json: T.nilable(T::Hash[String, T.untyped])).returns(T::Array[T::Hash[Symbol, T.untyped]]) }
+    sig { params(parsed_json: T.nilable(T::Hash[String, Object])).returns(T::Array[T::Hash[Symbol, Object]]) }
     def self.extract_offenses(parsed_json)
       return [] if parsed_json.nil? || parsed_json.empty?
       return [] unless parsed_json['files']

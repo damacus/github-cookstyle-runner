@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bd init:*)",
+      "Bash(bd stats:*)",
+      "Bash(bundle exec rubocop:*)",
+      "Bash(bd create:*)",
+      "Bash(bd list:*)",
+      "Bash(bd show github-cookstyle-runner-4gx)"
+    ]
+  }
+}

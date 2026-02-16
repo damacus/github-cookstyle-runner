@@ -24,7 +24,7 @@ module CookstyleRunner
 
     # Initialize a new CacheStats object
     # @param cache_data [Hash, nil] Optional reference to the cache data
-    sig { params(cache_data: T.nilable(T::Hash[T.untyped, T.untyped])).void }
+    sig { params(cache_data: T.nilable(T::Hash[String, Object])).void }
     def initialize(cache_data = nil)
       @hits = 0
       @misses = 0
@@ -55,7 +55,7 @@ module CookstyleRunner
     end
 
     # Get runtime statistics
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[String, Object]) }
     def runtime_stats
       total_requests = @hits + @misses
       hit_rate = total_requests.positive? ? (@hits.to_f / total_requests * 100).round(2) : 0
@@ -71,7 +71,7 @@ module CookstyleRunner
 
     # Get cache statistics
     # @return [Hash] Cache statistics
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[String, Object]) }
     def cache_stats
       return { 'total_repositories' => 0, 'repositories_with_issues' => 0, 'last_updated' => Time.now.utc.iso8601 } unless @cache_data
 

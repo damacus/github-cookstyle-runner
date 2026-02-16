@@ -28,7 +28,7 @@ module CookstyleRunner
     sig { returns(String) }
     attr_reader :file
 
-    sig { returns(T::Hash[String, T.any(String, T::Hash[String, T.untyped])]) }
+    sig { returns(T::Hash[String, Object]) }
     attr_reader :data
 
     sig { returns(CacheStats) }
@@ -41,7 +41,7 @@ module CookstyleRunner
       @dir = T.let(dir, String)
       @file = T.let(File.join(dir, 'cache.json'), String)
       @logger = T.let(SemanticLogger[self.class], SemanticLogger::Logger)
-      @data = T.let({}, T::Hash[String, T.any(String, T::Hash[String, T.untyped])])
+      @data = T.let({}, T::Hash[String, Object])
       @stats = T.let(CacheStats.new, CacheStats)
 
       # Create cache directory if it doesn't exist
@@ -55,7 +55,7 @@ module CookstyleRunner
     end
 
     # Load cache from disk or initialize a new cache
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[String, Object]) }
     def load_cache
       @data = if File.exist?(@file)
                 parse_cache_file
@@ -83,7 +83,7 @@ module CookstyleRunner
     end
 
     # Check if a repository is up to date in cache
-    sig { params(repo_name: String, current_sha: String, options: T::Hash[T.untyped, T.untyped]).returns(T::Boolean) }
+    sig { params(repo_name: String, current_sha: String, options: T::Hash[Symbol, Integer]).returns(T::Boolean) }
     def up_to_date?(repo_name, current_sha, options = {})
       # Default max_age to 7 days
       max_age = options[:max_age] || (7 * 24 * 60 * 60) # 7 days in seconds
@@ -111,7 +111,7 @@ module CookstyleRunner
     end
 
     # Get cached result for a repository
-    sig { params(repo_name: String).returns(T.nilable(T::Hash[T.untyped, T.untyped])) }
+    sig { params(repo_name: String).returns(T.nilable(T::Hash[String, Object])) }
     def get_result(repo_name)
       repo_data = @data['repositories'][repo_name]
       return nil if repo_data.nil?
@@ -155,7 +155,7 @@ module CookstyleRunner
     end
 
     # Get cache statistics - delegates to the CacheStats object
-    sig { returns(T::Hash[T.untyped, T.untyped]) }
+    sig { returns(T::Hash[String, Object]) }
     def cache_stats
       # Ensure stats has up-to-date cache data
       @stats.cache_data = @data
@@ -163,7 +163,7 @@ module CookstyleRunner
     end
 
     # Get runtime statistics
-    sig { returns(T::Hash[T.untyped, T.untyped]) }
+    sig { returns(T::Hash[String, Object]) }
     def runtime_stats
       @stats.runtime_stats
     end
@@ -180,7 +180,7 @@ module CookstyleRunner
 
     private
 
-    sig { returns(T::Hash[T.untyped, T.untyped]) }
+    sig { returns(T::Hash[String, Object]) }
     def parse_cache_file
       @logger.debug("Loading cache from #{@file}")
       begin
@@ -191,7 +191,7 @@ module CookstyleRunner
       end
     end
 
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[String, Object]) }
     def initialize_cache
       default_data = {
         'repositories' => {},

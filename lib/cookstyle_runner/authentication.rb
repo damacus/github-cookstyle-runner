@@ -18,7 +18,7 @@ module CookstyleRunner
     extend T::Sig
 
     # Class instance variables for singleton
-    @client = T.let(nil, T.nilable(T.any(Octokit::Client, T.untyped)))
+    @client = T.let(nil, T.nilable(Octokit::Client))
 
     # Credentials class to encapsulate different authentication methods
     class Credentials

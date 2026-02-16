@@ -99,7 +99,7 @@ module CookstyleRunner
 
     # Report cache statistics using structured logging
     # @param stats_hash [Hash] Cache statistics hash
-    sig { params(stats_hash: T::Hash[String, T.untyped]).void }
+    sig { params(stats_hash: T::Hash[String, Object]).void }
     def cache_stats(stats_hash)
       hits = stats_hash['cache_hits'] || 0
       misses = stats_hash['cache_misses'] || 0
