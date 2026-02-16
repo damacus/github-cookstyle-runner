@@ -17,12 +17,14 @@ The application tracks key performance indicators and operational metrics to hel
 ### Repository Processing Metrics
 
 #### `cookstyle_repos_processed_total`
+
 - **Type:** Counter
 - **Description:** Total number of repositories processed
 - **Labels:** `repo`, `status` (success, failed, skipped)
 - **Example:** `cookstyle_repos_processed_total{repo="my-cookbook",status="success"} 42`
 
 #### `cookstyle_processing_duration_seconds`
+
 - **Type:** Histogram
 - **Description:** Time spent processing repositories in seconds
 - **Labels:** `repo`
@@ -32,6 +34,7 @@ The application tracks key performance indicators and operational metrics to hel
 ### Cache Metrics
 
 #### `cookstyle_cache_hit_rate`
+
 - **Type:** Gauge
 - **Description:** Cache hit rate percentage (0-100)
 - **Labels:** None
@@ -40,12 +43,14 @@ The application tracks key performance indicators and operational metrics to hel
 ### GitHub API Metrics
 
 #### `cookstyle_api_requests_total`
+
 - **Type:** Counter
 - **Description:** Total number of GitHub API requests
 - **Labels:** `endpoint`, `status`
 - **Example:** `cookstyle_api_requests_total{endpoint="search_repositories",status="200"} 15`
 
 #### `cookstyle_errors_total`
+
 - **Type:** Counter
 - **Description:** Total number of errors encountered
 - **Labels:** `error_type`, `component`
@@ -78,13 +83,13 @@ export GCR_METRICS_PORT=9394
 
 When metrics are enabled, you can access them at:
 
-```
+```text
 http://localhost:9394/metrics
 ```
 
 ### Example Output
 
-```
+```text
 # HELP cookstyle_repos_processed_total Total number of repositories processed
 # TYPE cookstyle_repos_processed_total counter
 cookstyle_repos_processed_total{repo="my-cookbook",status="success"} 42

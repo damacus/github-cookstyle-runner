@@ -13,6 +13,7 @@ module CookstyleRunner
 
     # Define the schema for configuration validation
     # Need to use T.let for Sorbet in strict mode
+    # rubocop:disable Metrics/BlockLength
     SCHEMA = T.let(Dry::Schema.Params do
       # Required settings
       required(:owner).filled(:string)
@@ -56,6 +57,7 @@ module CookstyleRunner
       optional(:enable_metrics).filled(:bool)
       optional(:metrics_port).filled(:integer) { gt?(1024) & lt?(65_536) }
     end, Object)
+    # rubocop:enable Metrics/BlockLength
 
     # Instance method for validation that returns a Dry::Schema::Result
     # @param data [Hash] Configuration hash to validate
