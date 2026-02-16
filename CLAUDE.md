@@ -70,6 +70,7 @@ GCR_DEBUG_MODE=1 ./bin/cookstyle-runner run
 ### Core Design Patterns
 
 **Service Objects**: Each major operation is encapsulated in a dedicated service object following the Single Responsibility Principle:
+
 - `RepositoryProcessor` - Orchestrates repository processing with thread pool
 - `GitHubPRManager` - Manages PR/issue creation
 - `CookstyleOperations` - Executes Cookstyle and parses results
@@ -113,6 +114,7 @@ GCR_DEBUG_MODE=1 ./bin/cookstyle-runner run
 ### Authentication
 
 Supports two methods (only one required):
+
 - **GitHub App** (recommended): JWT-based with installation tokens (`GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, `GITHUB_APP_PRIVATE_KEY`)
 - **Personal Access Token**: Simpler setup (`GITHUB_TOKEN`)
 
@@ -123,6 +125,7 @@ Both provide authenticated HTTPS URLs for git operations and GitHub API access.
 ### Test-Driven Development (TDD)
 
 **CRITICAL**: This project follows strict TDD principles:
+
 1. Write a failing test first (Red)
 2. Implement minimum code to make it pass (Green)
 3. Refactor while keeping tests green
@@ -132,6 +135,7 @@ Both provide authenticated HTTPS URLs for git operations and GitHub API access.
 ### Sorbet Type Safety
 
 **STRICT COMPLIANCE REQUIRED**:
+
 - All code must use Sorbet `strict` mode
 - Add `sig` type signatures to all public methods
 - Use `extend T::Sig` in classes with type signatures
@@ -139,6 +143,7 @@ Both provide authenticated HTTPS URLs for git operations and GitHub API access.
 - **NEVER use `T.untyped` or `T.unsafe`** - these are prohibited
 
 Example:
+
 ```ruby
 extend T::Sig
 
@@ -151,11 +156,13 @@ end
 ### Logging with SemanticLogger
 
 **Logger Initialization**:
+
 ```ruby
 @logger = SemanticLogger[self.class]  # Use class-based logger names
 ```
 
 **Structured Logging**:
+
 - Always use structured payloads with `payload:` parameter
 - Include relevant context: `repo`, `operation`, `action`, `error`
 - Follow consistent key naming conventions
@@ -179,6 +186,7 @@ end
 ```
 
 **Log Levels**:
+
 - **DEBUG**: Internal operations, command execution, detailed flow
 - **INFO**: User-facing milestones, significant state changes
 - **WARN**: Recoverable issues, retry attempts
@@ -190,17 +198,20 @@ See `docs/development/logging-guidelines.md` for comprehensive patterns.
 ### Code Organization
 
 **Module Structure**:
+
 - All code under `lib/cookstyle_runner/`
 - One class per file
 - Use descriptive names
 - Follow Ruby naming conventions (snake_case for files/methods, CamelCase for classes)
 
 **When Complexity Increases**:
+
 - Extract internal helper methods rather than expanding public methods
 - Keep public APIs stable
 - Use guard clauses for early returns to reduce nesting
 
 **Code Hygiene**:
+
 - Delete unused code immediately (don't comment out)
 - Remove all TODO comments before finalizing
 - Maximum method length: 15 lines
@@ -217,6 +228,7 @@ See `docs/development/logging-guidelines.md` for comprehensive patterns.
 Environment variables prefixed with `GCR_` (GitHub Cookstyle Runner):
 
 **Required**:
+
 - `GCR_DESTINATION_REPO_OWNER` - Owner of repositories to update
 - `GCR_DESTINATION_REPO_TOPICS` - Topics to search for (CSV)
 - `GCR_GIT_EMAIL` - Email for git commits
@@ -224,6 +236,7 @@ Environment variables prefixed with `GCR_` (GitHub Cookstyle Runner):
 - Either GitHub App credentials OR `GITHUB_TOKEN`
 
 **Key Optional**:
+
 - `GCR_THREAD_COUNT` - Parallel processing threads (default: CPU cores)
 - `GCR_CACHE_MAX_AGE` - Cache expiration in days (default: 7)
 - `GCR_DEBUG_MODE` - Enable verbose debug logging (default: disabled)
@@ -274,13 +287,14 @@ end
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-```
+```text
 <type>: <description>
 
 [optional body]
 ```
 
 **Types**:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `refactor`: Code refactoring
@@ -325,9 +339,10 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## Documentation
 
-Full documentation available at: https://damacus.github.io/github-cookstyle-runner/
+Full documentation available at: <https://damacus.github.io/github-cookstyle-runner/>
 
 Key docs:
+
 - `docs/development/architecture.md` - Detailed architecture diagrams
 - `docs/development/logging-guidelines.md` - Comprehensive logging patterns
 - `docs/development/semantic-logger-patterns.md` - SemanticLogger examples
