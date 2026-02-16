@@ -84,6 +84,4 @@ end
 
 at_exit do
   next unless VCRSupport.debug?
-
-  puts '[VCR] Debug log written to tmp/vcr_debug.log'
 end

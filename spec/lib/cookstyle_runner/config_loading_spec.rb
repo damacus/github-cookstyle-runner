@@ -4,7 +4,7 @@ require 'spec_helper'
 require 'fileutils'
 require 'tmpdir'
 
-# rubocop:disable Metrics/BlockLength, RSpec/DescribeClass, RSpec/ExampleLength
+# rubocop:disable RSpec/DescribeClass, RSpec/ExampleLength
 RSpec.describe 'Configuration Loading Priority' do
   let(:temp_config_dir) { Dir.mktmpdir('config_test') }
   let(:settings_dir) { File.join(temp_config_dir, 'settings') }
@@ -231,4 +231,4 @@ RSpec.describe 'Configuration Loading Priority' do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength, RSpec/DescribeClass, RSpec/ExampleLength
+# rubocop:enable RSpec/DescribeClass, RSpec/ExampleLength
