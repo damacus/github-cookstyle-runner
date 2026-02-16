@@ -78,7 +78,7 @@ module CookstyleRunner
 
       @data['last_updated'] = Time.now.utc.iso8601
       File.write(@file, JSON.pretty_generate(@data))
-      @logger.debug("Saved cache to #{@file}")
+      @logger.debug('Saved cache', payload: { file: @file, operation: 'save_cache' })
       nil
     end
 
@@ -182,11 +182,11 @@ module CookstyleRunner
 
     sig { returns(T::Hash[String, Object]) }
     def parse_cache_file
-      @logger.debug("Loading cache from #{@file}")
+      @logger.debug('Loading cache', payload: { file: @file, operation: 'load_cache' })
       begin
         JSON.parse(File.read(@file))
       rescue JSON::ParserError => e
-        @logger.warn("Failed to parse cache file: #{e.message}")
+        @logger.warn('Failed to parse cache file', payload: { file: @file, error: e.message, operation: 'parse_cache' })
         initialize_cache
       end
     end
@@ -198,7 +198,7 @@ module CookstyleRunner
         'last_updated' => Time.now.utc.iso8601
       }
       @data = default_data
-      @logger.debug('Initialized new cache')
+      @logger.debug('Initialized new cache', payload: { operation: 'initialize_cache' })
       save
       default_data
     end
