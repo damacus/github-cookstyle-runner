@@ -27,6 +27,7 @@ group :development, :test do
   gem 'rspec', '~> 3.12'
   gem 'rubocop'
   gem 'rubocop-rspec'
+  gem 'rubycritic', require: false
   gem 'sorbet'
   gem 'tapioca', require: false
   gem 'timecop'
