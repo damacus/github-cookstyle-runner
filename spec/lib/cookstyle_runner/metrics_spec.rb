@@ -169,6 +169,7 @@ RSpec.describe CookstyleRunner::Metrics do
   describe 'metrics server functionality' do
     describe '.start_server' do
       it 'handles server startup gracefully' do
+        # This test verifies that the server method handles missing dependencies gracefully
         expect { described_class.start_server(port: 9395) }.not_to raise_error
       end
     end

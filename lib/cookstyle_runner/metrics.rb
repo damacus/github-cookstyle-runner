@@ -12,6 +12,7 @@ module CookstyleRunner
   # This module provides Prometheus metrics collection for observability.
   # It tracks key performance indicators and operational metrics.
   #
+  # rubocop:disable Metrics/ClassLength
   module Metrics
     extend T::Sig
 
@@ -29,6 +30,7 @@ module CookstyleRunner
       extend T::Sig
 
       # Initialize metrics if not already initialized
+      # rubocop:disable Metrics/MethodLength
       # @return [void]
       sig { void }
       def ensure_metrics_initialized
@@ -58,15 +60,16 @@ module CookstyleRunner
         @api_requests_total = PrometheusExporter::Metric::Counter.new(
           :cookstyle_api_requests_total,
           docstring: 'Total number of GitHub API requests',
-          labels: [:endpoint, :status]
+          labels: %i[endpoint status]
         )
 
         @errors_total = PrometheusExporter::Metric::Counter.new(
           :cookstyle_errors_total,
           docstring: 'Total number of errors encountered',
-          labels: [:error_type, :component]
+          labels: %i[error_type component]
         )
       end
+      # rubocop:enable Metrics/MethodLength
 
       # Start the metrics server
       # @param port [Integer] Port to run the metrics server on
@@ -76,8 +79,8 @@ module CookstyleRunner
         require 'prometheus_exporter/server'
         @registry = PrometheusExporter::Server.new(port: port)
         @registry.start
-      rescue LoadError => e
-        # Server not available, just log and continue
+      rescue StandardError => e
+        # Server not available or other error, just log and continue
         puts "Warning: Prometheus server not available: #{e.message}"
       end
 
@@ -85,7 +88,7 @@ module CookstyleRunner
       # @return [void]
       sig { void }
       def stop_server
-        @registry.stop if @registry
+        @registry&.stop
       rescue StandardError => e
         # Server not available, just log and continue
         puts "Warning: Could not stop metrics server: #{e.message}"
@@ -142,10 +145,9 @@ module CookstyleRunner
 
       # Get current metrics for debugging
       # @return [String] Current metrics in Prometheus format
+      # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
       sig { returns(String) }
       def current_metrics
-        return '' unless @repos_processed_total
-
         metrics = []
 
         # Format repos processed counter
@@ -154,26 +156,139 @@ module CookstyleRunner
           help_str = @repos_processed_total.help.to_s
           type_str = @repos_processed_total.type.to_s
           prefix_str = @repos_processed_total.prefix(name_str).to_s
-          metric_text_str = @repos_processed_total.metric_text.to_s
+
+          # Get metric data directly from the metric object
+          metric_data = @repos_processed_total.instance_variable_get(:@data)
+          metric_lines = []
+
+          if metric_data && !metric_data.empty?
+            metric_data.each do |labels, value|
+              labels_str = labels.map { |k, v| "#{k}=\"#{v}\"" }.join(',') if labels.is_a?(Hash)
+              labels_str ||= ''
+              metric_lines << "#{prefix_str}#{labels_str} #{value}"
+            end
+          end
 
           metrics << "# HELP #{prefix_str} #{help_str}"
           metrics << "# TYPE #{prefix_str} #{type_str}"
-          metrics << metric_text_str
+          metrics.concat(metric_lines) if metric_lines.any?
+        end
+
+        # Format processing duration histogram
+        if @processing_duration_seconds
+          name_str = @processing_duration_seconds.name.to_s
+          help_str = @processing_duration_seconds.help.to_s
+          type_str = @processing_duration_seconds.type.to_s
+          prefix_str = @processing_duration_seconds.prefix(name_str).to_s
+
+          # Get histogram data - histograms store data differently
+          sums = @processing_duration_seconds.instance_variable_get(:@sums)
+          if sums && !sums.empty?
+            sums.each do |labels, sum_value|
+              labels_str = labels.map { |k, v| "#{k}=\"#{v}\"" }.join(',') if labels.is_a?(Hash)
+              labels_str ||= ''
+              metrics << "#{prefix_str}_sum#{labels_str} #{sum_value}"
+            end
+          end
+
+          counts = @processing_duration_seconds.instance_variable_get(:@counts)
+          if counts && !counts.empty?
+            counts.each do |labels, count_value|
+              labels_str = labels.map { |k, v| "#{k}=\"#{v}\"" }.join(',') if labels.is_a?(Hash)
+              labels_str ||= ''
+              metrics << "#{prefix_str}_count#{labels_str} #{count_value}"
+            end
+          end
+
+          metrics << "# HELP #{prefix_str} #{help_str}"
+          metrics << "# TYPE #{prefix_str} #{type_str}"
+        end
+
+        # Format cache hit rate gauge
+        if @cache_hit_rate
+          name_str = @cache_hit_rate.name.to_s
+          help_str = @cache_hit_rate.help.to_s
+          type_str = @cache_hit_rate.type.to_s
+          prefix_str = @cache_hit_rate.prefix(name_str).to_s
+
+          # Get metric data
+          metric_data = @cache_hit_rate.instance_variable_get(:@data)
+          if metric_data && !metric_data.empty?
+            metric_data.each do |labels, value|
+              labels_str = labels.map { |k, v| "#{k}=\"#{v}\"" }.join(',') if labels.is_a?(Hash)
+              labels_str ||= ''
+              metrics << "#{prefix_str}#{labels_str} #{value}"
+            end
+          end
+
+          metrics << "# HELP #{prefix_str} #{help_str}"
+          metrics << "# TYPE #{prefix_str} #{type_str}"
+        end
+
+        # Format API requests counter
+        if @api_requests_total
+          name_str = @api_requests_total.name.to_s
+          help_str = @api_requests_total.help.to_s
+          type_str = @api_requests_total.type.to_s
+          prefix_str = @api_requests_total.prefix(name_str).to_s
+
+          # Get metric data
+          metric_data = @api_requests_total.instance_variable_get(:@data)
+          if metric_data && !metric_data.empty?
+            metric_data.each do |labels, value|
+              labels_str = labels.map { |k, v| "#{k}=\"#{v}\"" }.join(',') if labels.is_a?(Hash)
+              labels_str ||= ''
+              metrics << "#{prefix_str}#{labels_str} #{value}"
+            end
+          end
+
+          metrics << "# HELP #{prefix_str} #{help_str}"
+          metrics << "# TYPE #{prefix_str} #{type_str}"
+        end
+
+        # Format errors counter
+        if @errors_total
+          name_str = @errors_total.name.to_s
+          help_str = @errors_total.help.to_s
+          type_str = @errors_total.type.to_s
+          prefix_str = @errors_total.prefix(name_str).to_s
+
+          # Get metric data
+          metric_data = @errors_total.instance_variable_get(:@data)
+          if metric_data && !metric_data.empty?
+            metric_data.each do |labels, value|
+              labels_str = labels.map { |k, v| "#{k}=\"#{v}\"" }.join(',') if labels.is_a?(Hash)
+              labels_str ||= ''
+              metrics << "#{prefix_str}#{labels_str} #{value}"
+            end
+          end
+
+          metrics << "# HELP #{prefix_str} #{help_str}"
+          metrics << "# TYPE #{prefix_str} #{type_str}"
         end
 
         metrics.join("\n")
       end
+      # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/MethodLength, Metrics/PerceivedComplexity
 
       # Reset all metrics (useful for testing)
       # @return [void]
       sig { void }
       def reset_metrics!
-        @repos_processed_total.reset! if @repos_processed_total
-        @processing_duration_seconds.reset! if @processing_duration_seconds
-        @cache_hit_rate.reset! if @cache_hit_rate
-        @api_requests_total.reset! if @api_requests_total
-        @errors_total.reset! if @errors_total
+        @repos_processed_total&.reset!
+        @processing_duration_seconds&.reset!
+        @cache_hit_rate&.reset!
+        @api_requests_total&.reset!
+        @errors_total&.reset!
+
+        # Clear all metrics instances
+        @repos_processed_total = nil
+        @processing_duration_seconds = nil
+        @cache_hit_rate = nil
+        @api_requests_total = nil
+        @errors_total = nil
       end
     end
   end
+  # rubocop:enable Metrics/ClassLength
 end

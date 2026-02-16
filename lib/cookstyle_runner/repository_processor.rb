@@ -268,9 +268,7 @@ module CookstyleRunner
       up_to_date = @cache_manager.up_to_date?(repo_name, commit_sha, max_age: max_age_seconds)
 
       # Update cache hit rate metric
-      if @cache_manager.respond_to?(:hit_rate)
-        Metrics.set_cache_hit_rate(hit_rate: @cache_manager.hit_rate)
-      end
+      Metrics.set_cache_hit_rate(hit_rate: @cache_manager.hit_rate) if @cache_manager.respond_to?(:hit_rate)
 
       up_to_date
     end

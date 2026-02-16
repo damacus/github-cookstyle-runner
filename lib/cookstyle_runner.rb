@@ -277,13 +277,13 @@ module CookstyleRunner
       settings = Object.const_get('Settings')
       metrics_port = settings.respond_to?(:metrics_port) ? settings.metrics_port : 9394
 
-      if settings.respond_to?(:enable_metrics) && settings.enable_metrics
-        Metrics.start_server(port: metrics_port)
-        logger.info('Prometheus metrics server started', payload: {
-          port: metrics_port,
-          metrics_endpoint: "http://localhost:#{metrics_port}/metrics"
-        })
-      end
+      return unless settings.respond_to?(:enable_metrics) && settings.enable_metrics
+
+      Metrics.start_server(port: metrics_port)
+      logger.info('Prometheus metrics server started', payload: {
+                    port: metrics_port,
+                    metrics_endpoint: "http://localhost:#{metrics_port}/metrics"
+                  })
     end
 
     # Process repositories in parallel
