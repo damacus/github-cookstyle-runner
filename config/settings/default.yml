@@ -39,7 +39,7 @@ cache_max_age: 7 # days
 force_refresh: false
 
 # Processing configuration
-retry_count: 3
+retry_count: 3 # Can be overridden with GCR_RETRY_COUNT
 thread_count: 4
 
 # Logging configuration
