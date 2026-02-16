@@ -13,6 +13,23 @@
 
 * Updated `tty-progressbar` dependency to support `table_tennis`
 
+## [0.1.5](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.4...github-cookstyle-runner/v0.1.5) (2026-02-09)
+
+
+### Chores
+
+* **deps:** update davidanson/markdownlint-cli2-action action to v21 ([#155](https://github.com/damacus/github-cookstyle-runner/issues/155)) ([49c0307](https://github.com/damacus/github-cookstyle-runner/commit/49c0307c2e2eca3957aa1bb46595db76dfb7c4f0))
+
+
+### Features
+
+* **docs:** Document existing GitHub App and PAT authentication support ([#166](https://github.com/damacus/github-cookstyle-runner/issues/166)) ([6462294](https://github.com/damacus/github-cookstyle-runner/commit/6462294590f423ef78cdc1b7e7480a015f1fd252))
+
+
+### Code Refactoring
+
+* single-pass offense counting, retry logic, and code cleanup ([#169](https://github.com/damacus/github-cookstyle-runner/issues/169)) ([21abbe0](https://github.com/damacus/github-cookstyle-runner/commit/21abbe07c57634d47d627d71f7a63f610488689e))
+
 ## [0.1.4](https://github.com/damacus/github-cookstyle-runner/compare/github-cookstyle-runner/v0.1.3...github-cookstyle-runner/v0.1.4) (2025-12-13)
 
 
