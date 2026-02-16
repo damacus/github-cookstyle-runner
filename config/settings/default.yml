@@ -42,6 +42,10 @@ force_refresh: false
 retry_count: 3 # Can be overridden with GCR_RETRY_COUNT
 thread_count: 4
 
+# Metrics configuration
+enable_metrics: false
+metrics_port: 9394
+
 # Logging configuration
 log_level: INFO
 log_format: json # text or json

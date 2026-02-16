@@ -7,6 +7,7 @@ require_relative 'authentication'
 require_relative 'github_label_helper'
 require_relative 'github_pr_helper'
 require_relative 'retry_with_backoff'
+require_relative 'metrics'
 
 module CookstyleRunner
   # Module for GitHub API operations
@@ -35,17 +36,36 @@ module CookstyleRunner
         query = "org:#{owner}"
         topics.each { |topic| query += " topic:#{topic}" } if topics && !topics.empty?
         log.debug('Searching repositories', payload: { owner: owner, topics: topics, query: query })
+
         results = Authentication.client.search_repositories(query)
         log.info('Found repositories', payload: { count: results.total_count, owner: owner })
+
+        # Record successful API request metrics
+        Metrics.increment_api_requests(endpoint: 'search_repositories', status: '200')
+
         results.items.map(&:clone_url)
       end
+    rescue Octokit::TooManyRequests => e
+      log.error('Rate limit exceeded after retries', payload: { operation: 'search_repositories', error: e.message, owner: owner })
+      Metrics.increment_api_requests(endpoint: 'search_repositories', status: '429')
+      Metrics.increment_errors(error_type: 'RateLimit', component: 'GitHubAPI')
+      []
+    rescue Octokit::ServerError => e
+      log.error('GitHub API server error after retries', payload: { operation: 'search_repositories', error: e.message, owner: owner })
+      Metrics.increment_api_requests(endpoint: 'search_repositories', status: '500')
+      Metrics.increment_errors(error_type: 'ServerError', component: 'GitHubAPI')
+      []
     rescue Octokit::Error => e
       log.error('GitHub API error', payload: { operation: 'search_repositories', error: e.message, owner: owner })
       log.debug(T.must(e.backtrace).join("\n"))
+      Metrics.increment_api_requests(endpoint: 'search_repositories', status: 'error')
+      Metrics.increment_errors(error_type: 'OctokitError', component: 'GitHubAPI')
       []
     rescue StandardError => e
       log.error('Error fetching repositories', payload: { operation: 'search_repositories', error: e.message, owner: owner })
       log.debug(T.must(e.backtrace).join("\n"))
+      Metrics.increment_api_requests(endpoint: 'search_repositories', status: 'error')
+      Metrics.increment_errors(error_type: e.class.name, component: 'GitHubAPI')
       []
     end
     # rubocop:enable Metrics/MethodLength

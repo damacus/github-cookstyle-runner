@@ -51,6 +51,10 @@ module CookstyleRunner
 
       # Thread count for parallel processing
       optional(:thread_count).maybe(:integer)
+
+      # Metrics settings
+      optional(:enable_metrics).filled(:bool)
+      optional(:metrics_port).filled(:integer) { gt?(1024) & lt?(65536) }
     end, Object)
 
     # Instance method for validation that returns a Dry::Schema::Result

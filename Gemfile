@@ -15,6 +15,7 @@ gem 'octokit', '~> 10.0' # GitHub API client
 gem 'ostruct'
 gem 'parallel', '~> 1.26' # Parallel processing
 gem 'pastel', '~> 0.8' # Terminal colors
+gem 'prometheus_exporter', '~> 2.0' # Prometheus metrics
 gem 'semantic_logger', '~> 4.17' # Structured logging with JSON support
 gem 'sorbet-runtime'
 gem 'tty-command' # For running shell commands
