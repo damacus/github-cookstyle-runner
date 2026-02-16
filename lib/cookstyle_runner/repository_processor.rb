@@ -55,7 +55,7 @@ module CookstyleRunner
     end
 
     # Process a single repository
-    sig { params(repo_name: String, repo_url: String).returns(T::Hash[Symbol, T.untyped]) }
+    sig { params(repo_name: String, repo_url: String).returns(T::Hash[Symbol, Object]) }
     def process_repository(repo_name, repo_url)
       start_time = Time.now
       logger.debug('Processing repository', payload: { repo: repo_name, operation: 'process_repository' })
@@ -130,7 +130,7 @@ module CookstyleRunner
 
     private
 
-    sig { returns(T.untyped) }
+    sig { returns(SemanticLogger::Logger) }
     attr_reader :logger
 
     # Prepare the repository directory
@@ -306,7 +306,7 @@ module CookstyleRunner
     end
 
     # Create a manual fix issue
-    sig { params(repo_full_name: String, offense_details: T::Hash[String, T.untyped]).returns(T::Boolean) }
+    sig { params(repo_full_name: String, offense_details: T::Hash[String, Object]).returns(T::Boolean) }
     def create_manual_fix_issue(repo_full_name, offense_details)
       T.must(@pr_manager).create_issue(
         repo_full_name,
@@ -324,7 +324,7 @@ module CookstyleRunner
     end
 
     # Convert result hash to symbol keys for reporter compatibility
-    sig { params(result: T::Hash[String, T.untyped], repo_name: String).returns(T::Hash[Symbol, T.untyped]) }
+    sig { params(result: T::Hash[String, Object], repo_name: String).returns(T::Hash[Symbol, Object]) }
     def convert_result_to_symbols(result, repo_name)
       status = if result['state'] == 'processed'
                  result['issues_found'] ? :issues_found : :no_issues

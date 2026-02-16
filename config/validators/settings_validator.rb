@@ -51,12 +51,12 @@ module CookstyleRunner
 
       # Thread count for parallel processing
       optional(:thread_count).maybe(:integer)
-    end, T.untyped)
+    end, Object)
 
     # Instance method for validation that returns a Dry::Schema::Result
     # @param data [Hash] Configuration hash to validate
     # @return [Dry::Schema::Result] The validation result object
-    sig { params(data: T.untyped).returns(T.untyped) }
+    sig { params(data: Object).returns(Object) }
     def validate(data)
       # Simply call the schema validation - all tests pass with this approach
       self.class::SCHEMA.call(data)
@@ -65,7 +65,7 @@ module CookstyleRunner
     # Class method for backwards compatibility
     # @param config [Object] Configuration object to validate
     # @return [Array<String>] Array of validation error messages (empty if validation passes)
-    sig { params(config: T.untyped).returns(T::Array[String]) }
+    sig { params(config: Object).returns(T::Array[String]) }
     def self.validate(config)
       # Call the schema validation
       result = SCHEMA.call(config.to_h)
@@ -84,7 +84,7 @@ module CookstyleRunner
     # Validate authentication requirements
     # @param config [Object] Configuration object to validate
     # @return [Array<String>] Authentication validation errors
-    sig { params(config: T.untyped).returns(T::Array[String]) }
+    sig { params(config: Object).returns(T::Array[String]) }
     def self.validate_auth_requirements(config)
       return [] if token_auth_configured?(config) || app_auth_configured?(config)
 
@@ -94,7 +94,7 @@ module CookstyleRunner
     # Check if token authentication is configured
     # @param config [Object] Configuration object to check
     # @return [Boolean] True if token auth is configured
-    sig { params(config: T.untyped).returns(T::Boolean) }
+    sig { params(config: Object).returns(T::Boolean) }
     def self.token_auth_configured?(config)
       value?(config.github_token)
     end
@@ -102,7 +102,7 @@ module CookstyleRunner
     # Check if app authentication is fully configured
     # @param config [Object] Configuration object to check
     # @return [Boolean] True if app auth is fully configured
-    sig { params(config: T.untyped).returns(T::Boolean) }
+    sig { params(config: Object).returns(T::Boolean) }
     def self.app_auth_configured?(config)
       value?(config.github_app_id) &&
         value?(config.github_app_installation_id) &&
@@ -112,9 +112,12 @@ module CookstyleRunner
     # Check if a value is non-nil and non-empty
     # @param value [Object] Value to check
     # @return [Boolean] True if value is non-nil and non-empty
-    sig { params(value: T.untyped).returns(T::Boolean) }
+    sig { params(value: Object).returns(T::Boolean) }
     def self.value?(value)
-      !value.nil? && !value.empty?
+      return false if value.nil?
+      return !value.empty? if value.respond_to?(:empty?)
+
+      true
     end
   end
 end

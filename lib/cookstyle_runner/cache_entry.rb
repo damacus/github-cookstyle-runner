@@ -77,7 +77,7 @@ module CookstyleRunner
 
     # Convert the cache entry to a hash for serialization
     # @return [Hash] Hash representation of the cache entry
-    sig { returns(T::Hash[String, T.untyped]) }
+    sig { returns(T::Hash[String, Object]) }
     def to_h
       {
         'commit_sha' => @commit_sha,
@@ -91,7 +91,7 @@ module CookstyleRunner
     # Create a CacheEntry from a hash
     # @param hash [Hash] Hash representation of a cache entry
     # @return [CacheEntry] New CacheEntry instance
-    sig { params(hash: T::Hash[String, T.untyped]).returns(CacheEntry) }
+    sig { params(hash: T::Hash[String, Object]).returns(CacheEntry) }
     def self.from_hash(hash)
       new(
         commit_sha: hash['commit_sha'],

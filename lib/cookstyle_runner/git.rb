@@ -244,7 +244,7 @@ module CookstyleRunner
     end
 
     # Setup git config from hash if credentials are provided
-    sig { params(git_config: T::Hash[Symbol, T.untyped]).void }
+    sig { params(git_config: T::Hash[Symbol, String]).void }
     private_class_method def self.setup_git_config_from_hash(git_config)
       return unless git_config[:git_user_name] && git_config[:git_user_email]
 
@@ -254,7 +254,7 @@ module CookstyleRunner
       )
     end
 
-    sig { params(repo: T.untyped, branch_name: String).void }
+    sig { params(repo: Object, branch_name: String).void }
     def self._manage_branch_lifecycle(repo, branch_name)
       # Check if branch exists locally and delete it
       if repo.branches.local.map(&:name).include?(branch_name)

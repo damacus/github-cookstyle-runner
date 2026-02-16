@@ -117,12 +117,12 @@ module CookstyleRunner
       raw_files = cookstyle_output.fetch('files', [])
       return [] unless raw_files.is_a?(Array)
 
-      T.let(raw_files, T::Array[T::Hash[String, T.untyped]])
+      T.let(raw_files, T::Array[T::Hash[String, Object]])
     end
 
     def self.process_file(file_data)
       path = T.let(file_data.fetch('path', 'unknown_path'), String)
-      offenses = T.let(file_data.fetch('offenses', []), T::Array[T::Hash[String, T.untyped]])
+      offenses = T.let(file_data.fetch('offenses', []), T::Array[T::Hash[String, Object]])
 
       formatted_offenses = offenses.map { |offense| format_offense(offense) }
 
@@ -137,7 +137,7 @@ module CookstyleRunner
     end
 
     def self.extract_location_info(offense)
-      location = T.let(offense.fetch('location', {}), T::Hash[String, T.untyped])
+      location = T.let(offense.fetch('location', {}), T::Hash[String, Object])
       line = T.let(location.fetch('line', '?'), T.any(String, Integer))
       column = T.let(location.fetch('column', '?'), T.any(String, Integer))
 
